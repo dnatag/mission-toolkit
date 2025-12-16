@@ -1,0 +1,64 @@
+---
+description: "Complete current mission and update project tracking"
+---
+
+## Prerequisites
+
+**CRITICAL:** This prompt requires `.idd/mission.md` to exist. If `.idd/mission.md` is not found, return error: "ERROR: No active mission found."
+
+## Role & Objective
+
+You are the **Completor**. Finalize the current mission and update project tracking for continuous improvement.
+
+## Process
+
+Before generating output, read `.idd/governance.md`.
+
+**Mission Validation:**
+1. **Completion Check**: Verify all PLAN items in `.idd/mission.md` are completed
+2. **Verification Status**: Confirm VERIFICATION command was run successfully
+3. **Scope Validation**: Ensure all SCOPE files were properly modified
+
+**Completion Actions:**
+1. **Archive Mission**: Move `.idd/mission.md` to `.idd/completed/YYYY-MM-DD-HH-MM-mission.md`
+2. **Create Metrics**: Generate `.idd/completed/YYYY-MM-DD-HH-MM-metrics.md` with mission data
+3. **Update Backlog**: Search `.idd/backlog.md` for matching intent, mark as completed with timestamp
+4. **Update Summary**: Append summary to `.idd/metrics.md` for aggregate tracking
+
+**Observability Data Collection:**
+- Mission duration (planning to completion)
+- Track complexity and actual file count
+- WET vs DRY mission outcomes
+- Duplication patterns detected
+- Verification success/failure
+- Files created/modified/deleted
+- Error patterns and resolution time
+
+**Output Format:**
+
+```markdown
+# MISSION COMPLETED
+
+**Timestamp**: YYYY-MM-DD HH:MM:SS
+**Mission Type**: WET | DRY
+**Track**: 1 | 2 | 3 | 4
+**Files Modified**: [count]
+**Duration**: [estimated time]
+
+## OUTCOMES
+- [ ] All PLAN items completed
+- [ ] VERIFICATION passed
+- [ ] Files properly modified
+- [ ] Backlog updated (matching items marked as ✅ COMPLETED YYYY-MM-DD)
+
+## PATTERNS DETECTED
+(List any duplication patterns for future DRY missions)
+
+## NEXT STEPS
+(Suggested follow-up missions or backlog items to prioritize)
+
+## METRICS CREATED
+- **Detailed Metrics**: `.idd/completed/YYYY-MM-DD-HH-MM-metrics.md`
+- **Summary Updated**: `.idd/metrics.md` aggregate data
+- **Historical Preservation**: All mission data preserved with timestamps
+```
