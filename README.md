@@ -43,12 +43,14 @@ IDD implements this philosophy through a systematic approach that converts user 
 
 ## 🤝 The Slash Commands
 
-### 📝 `idd.plan` - The Planning Handshake
+*Note: Use `/` for most AI assistants, `@` for Amazon Q CLI and Kiro CLI*
+
+### 📝 `/idd.plan` - The Planning Handshake
 Converts your intent into a structured mission. You define what, AI proposes how, you authorize.
 
 ```bash
 # Example usage
-idd.plan "Add user authentication to the API"
+/idd.plan "Add user authentication to the API"
 ```
 
 **Features:**
@@ -57,12 +59,12 @@ idd.plan "Add user authentication to the API"
 - 🔒 Security validation and input sanitization
 - 📋 Backlog management for complex intents
 
-### 🚀 `idd.apply` - The Execution Handshake  
+### 🚀 `/idd.apply` - The Execution Handshake  
 Implements your authorized plan. AI handles execution while you maintain oversight.
 
 ```bash
 # Example usage
-idd.apply
+/idd.apply
 ```
 
 **Features:**
@@ -71,12 +73,12 @@ idd.apply
 - ✅ Mandatory verification execution
 - 🔍 Pattern detection for future refactoring
 
-### 📈 `idd.complete` - The Learning Handshake
+### 📈 `/idd.complete` - The Learning Handshake
 Captures what was accomplished and learned. Builds organizational memory for future missions.
 
 ```bash
 # Example usage
-idd.complete
+/idd.complete
 ```
 
 **Features:**
@@ -166,17 +168,17 @@ User Intent → idd.plan → .idd/mission.md → idd.apply → Verification → 
 
 2. **📝 Plan Your First Mission**
    ```bash
-   idd.plan "Your development intent here"
+   /idd.plan "Your development intent here"
    ```
 
 3. **⚙️ Execute the Mission**
    ```bash
-   idd.apply
+   /idd.apply
    ```
 
 4. **🏁 Complete and Track**
    ```bash
-   idd.complete
+   /idd.complete
    ```
 
 ## Observability Features
