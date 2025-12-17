@@ -40,6 +40,22 @@ If user responds with "y", "yes", "complete", or "finish" after successful execu
 - All PLAN steps completed
 - VERIFICATION passed
 
+📋 CHANGE SUMMARY:
+[Title]: [Brief description of the change]
+
+[Description]:
+- What was implemented/changed
+- Key files modified
+- Any important technical decisions
+
+Example:
+feat: add user authentication endpoint
+
+- Implemented JWT-based authentication in auth.js
+- Added login/logout routes to server.js
+- Created user validation middleware
+- Updated API documentation for auth endpoints
+
 🚀 NEXT STEPS:
 • Auto-complete: "y" or "yes" or "complete"
 • Manual completion: idd.complete

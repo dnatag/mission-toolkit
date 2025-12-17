@@ -23,9 +23,9 @@ Before generating output, read `.idd/governance.md`.
 **Completion Actions:**
 1. **Update Status**: Change `status: active` to `status: completed`
 2. **Archive Mission**: Move `.idd/mission.md` to `.idd/completed/YYYY-MM-DD-HH-MM-mission.md`
-3. **Create Metrics**: Generate `.idd/completed/YYYY-MM-DD-HH-MM-metrics.md` with mission data
+3. **Create Metrics**: Generate `.idd/completed/YYYY-MM-DD-HH-MM-metrics.md` with mission data including change summary
 4. **Update Backlog**: Search `.idd/backlog.md` for matching intent, mark as completed with timestamp
-5. **Update Summary**: Append summary to `.idd/metrics.md` for aggregate tracking
+5. **Update Summary**: Append summary with change summary title to `.idd/metrics.md` for aggregate tracking
 
 **Observability Data Collection:**
 - Mission duration (planning to completion)
@@ -34,6 +34,7 @@ Before generating output, read `.idd/governance.md`.
 - Duplication patterns detected
 - Verification success/failure
 - Files created/modified/deleted
+- Change summary (title + description)
 - Error patterns and resolution time
 
 **Output Format:**
@@ -46,6 +47,16 @@ Before generating output, read `.idd/governance.md`.
 **Track**: 1 | 2 | 3 | 4
 **Files Modified**: [count]
 **Duration**: [estimated time]
+
+## CHANGE SUMMARY
+[Copy the complete change summary from idd.apply execution]
+
+Title: [Brief description]
+
+Description:
+- [What was implemented/changed]
+- [Key files modified]
+- [Technical decisions made]
 
 ## OUTCOMES
 - [ ] All PLAN items completed
@@ -60,7 +71,7 @@ Before generating output, read `.idd/governance.md`.
 (Suggested follow-up missions or backlog items to prioritize)
 
 ## METRICS CREATED
-- **Detailed Metrics**: `.idd/completed/YYYY-MM-DD-HH-MM-metrics.md`
+- **Detailed Metrics**: `.idd/completed/YYYY-MM-DD-HH-MM-metrics.md` (includes change summary)
 - **Summary Updated**: `.idd/metrics.md` aggregate data
 - **Historical Preservation**: All mission data preserved with timestamps
 ```
