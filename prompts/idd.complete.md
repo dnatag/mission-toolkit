@@ -15,15 +15,17 @@ You are the **Completor**. Finalize the current mission and update project track
 Before generating output, read `.idd/governance.md`.
 
 **Mission Validation:**
-1. **Completion Check**: Verify all PLAN items in `.idd/mission.md` are completed
-2. **Verification Status**: Confirm VERIFICATION command was run successfully
-3. **Scope Validation**: Ensure all SCOPE files were properly modified
+1. **Status Check**: Ensure mission has `status: active` (not failed)
+2. **Completion Check**: Verify all PLAN items in `.idd/mission.md` are completed
+3. **Verification Status**: Confirm VERIFICATION command was run successfully
+4. **Scope Validation**: Ensure all SCOPE files were properly modified
 
 **Completion Actions:**
-1. **Archive Mission**: Move `.idd/mission.md` to `.idd/completed/YYYY-MM-DD-HH-MM-mission.md`
-2. **Create Metrics**: Generate `.idd/completed/YYYY-MM-DD-HH-MM-metrics.md` with mission data
-3. **Update Backlog**: Search `.idd/backlog.md` for matching intent, mark as completed with timestamp
-4. **Update Summary**: Append summary to `.idd/metrics.md` for aggregate tracking
+1. **Update Status**: Change `status: active` to `status: completed`
+2. **Archive Mission**: Move `.idd/mission.md` to `.idd/completed/YYYY-MM-DD-HH-MM-mission.md`
+3. **Create Metrics**: Generate `.idd/completed/YYYY-MM-DD-HH-MM-metrics.md` with mission data
+4. **Update Backlog**: Search `.idd/backlog.md` for matching intent, mark as completed with timestamp
+5. **Update Summary**: Append summary to `.idd/metrics.md` for aggregate tracking
 
 **Observability Data Collection:**
 - Mission duration (planning to completion)

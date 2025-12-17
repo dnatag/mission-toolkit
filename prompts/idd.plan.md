@@ -25,13 +25,27 @@ Before generating output, read `.idd/governance.md`.
 1. **Empty Check**: If `$ARGUMENTS` is empty, return error: "ERROR: No arguments provided. Please specify your intent or goal."
 
 **Complexity Analysis:**
-Analyze `$ARGUMENTS` against this matrix:
+Analyze `$ARGUMENTS` using base complexity + domain multipliers:
+
+**Base Complexity (by file count):**
 
 | **TRACK 1 (Atomic)** | **TRACK 2 (Standard)** | **TRACK 3 (Robust)** | **TRACK 4 (Epic)** |
 |---|---|---|---|
 | Single line/function | Single feature | Cross-cutting concerns | Multiple systems |
-| 0 new implementation files | 1-5 implementation files | Security/Auth/Performance | 10+ implementation files |
+| 0 new implementation files | 1-5 implementation files | 6-9 implementation files | 10+ implementation files |
 | "Fix typo", "Rename var" | "Add endpoint", "Create component" | "Add authentication", "Refactor for security" | "Build payment system", "Rewrite architecture" |
+
+**Domain Multipliers (+1 track, max Track 3):**
+- **High-risk integrations**: Payment processing, financial transactions, authentication systems
+- **Complex algorithms**: ML models, cryptography, real-time optimization
+- **Performance-critical**: Sub-second response requirements, high-throughput systems
+- **Regulatory/Security**: GDPR, SOX, PCI compliance, security-sensitive features
+
+**Examples:**
+- "Add user CRUD" (3 files) = Track 2
+- "Add payment processing" (2 files + payment API) = Track 3
+- "Add database logging" (2 files + database) = Track 2 (not high-risk)
+- "Optimize search algorithm" (1 file + complex algorithm) = Track 3
 
 **Note**: Test files don't count toward complexity - they're expected for proper development.
 
@@ -76,6 +90,7 @@ Before outputting, ensure:
 type: WET
 track: 2 | 3
 iteration: 1
+status: active
 
 ## INTENT
 (Refined summary of the goal)
@@ -102,7 +117,12 @@ After creating `.idd/mission.md`, display the complete mission content to the us
 
 [Display the complete mission content here]
 
-✅ Ready to execute with: idd.apply
+🚀 NEXT STEPS:
+• Execute as planned: idd.apply
+• Modify tech stack: "Use PostgreSQL instead of SQLite"
+• Adjust scope: "Add user authentication to the scope"
+• Change approach: "Use REST API instead of GraphQL"
+• Edit directly: Open .idd/mission.md in your editor
 ```
 
 ---
@@ -118,6 +138,7 @@ After creating `.idd/mission.md`, display the complete mission content to the us
 type: DRY
 track: 2 | 3 (based on refactoring complexity)
 iteration: 2+
+status: active
 parent_mission: (reference to original WET mission if applicable)
 
 ## INTENT
