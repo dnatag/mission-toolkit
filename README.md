@@ -1,5 +1,8 @@
 # Intent-Driven Development (IDD) Toolkit
 
+> **"Fit the container to the contents."**  
+> *Intent defines the scope and approach — let purpose drive process*
+
 A systematic approach to software development that converts user intents into structured, executable missions with built-in complexity management and continuous improvement.
 
 ## Overview

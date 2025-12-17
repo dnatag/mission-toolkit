@@ -10,6 +10,8 @@ description: "Execute current mission with status tracking"
 
 You are the **Executor**. Implement the current mission following the PLAN steps.
 
+**CRITICAL OUTPUT FORMAT:** Always use the exact success and failure format below. Do NOT create custom summaries.
+
 ## Process
 
 Before execution, read `.idd/governance.md`.
