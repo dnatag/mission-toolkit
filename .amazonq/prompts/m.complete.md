@@ -22,12 +22,13 @@ Before generating output, read `.mission/governance.md`.
 
 **Completion Actions:**
 1. **Update Status**: Change `status: active` to `status: completed`
-2. **Ensure Directory**: Create `.mission/completed/` directory if it doesn't exist
-3. **Archive Mission**: Move `.mission/mission.md` to `.mission/completed/YYYY-MM-DD-HH-MM-mission.md`
-3. **Create Metrics**: Generate `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` with mission data including change summary
-4. **Clean Active State**: Remove `.mission/mission.md` after successful archiving
-5. **Update Backlog**: Search `.mission/backlog.md` for matching intent, mark as completed with timestamp
-6. **Update Summary**: Append summary with change summary title to `.mission/metrics.md` for aggregate tracking
+2. **Add Timestamp**: Add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ` field after the status line using RFC3339 format
+3. **Ensure Directory**: Create `.mission/completed/` directory if it doesn't exist
+4. **Archive Mission**: Move `.mission/mission.md` to `.mission/completed/YYYY-MM-DD-HH-MM-mission.md`
+5. **Create Metrics**: Generate `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` with mission data including change summary
+6. **Clean Active State**: Remove `.mission/mission.md` after successful archiving
+7. **Update Backlog**: Search `.mission/backlog.md` for matching intent, mark as completed with timestamp
+8. **Update Summary**: Append summary with change summary title to `.mission/metrics.md` for aggregate tracking
 
 **Observability Data Collection:**
 - Mission duration (planning to completion)

@@ -12,16 +12,17 @@ import (
 
 // Mission represents a parsed mission
 type Mission struct {
-	Type        string
-	Track       string
-	Iteration   string
-	Status      string
-	Intent      string
-	Scope       []string
-	Plan        []string
-	Verification string
-	CompletedAt  *time.Time
-	FilePath     string
+	Type          string
+	Track         string
+	Iteration     string
+	Status        string
+	Intent        string
+	Scope         []string
+	Plan          []string
+	Verification  string
+	CompletedAt   *time.Time
+	ParentMission string
+	FilePath      string
 }
 
 // ReadCurrentMission reads the current mission from .mission/mission.md
@@ -32,7 +33,7 @@ func ReadCurrentMission() (*Mission, error) {
 // ReadCompletedMissions reads all completed missions from .mission/completed/
 func ReadCompletedMissions() ([]*Mission, error) {
 	completedDir := ".mission/completed"
-	
+
 	entries, err := os.ReadDir(completedDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read completed missions directory: %w", err)
@@ -71,14 +72,14 @@ func readMissionFile(filePath string) (*Mission, error) {
 
 	mission := &Mission{FilePath: filePath}
 	scanner := bufio.NewScanner(file)
-	
+
 	var currentSection string
 	var planItems []string
 	var scopeItems []string
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		if strings.HasPrefix(line, "type:") {
 			mission.Type = strings.TrimSpace(strings.TrimPrefix(line, "type:"))
 		} else if strings.HasPrefix(line, "track:") {
@@ -92,6 +93,8 @@ func readMissionFile(filePath string) (*Mission, error) {
 			if t, err := time.Parse(time.RFC3339, timeStr); err == nil {
 				mission.CompletedAt = &t
 			}
+		} else if strings.HasPrefix(line, "parent_mission:") {
+			mission.ParentMission = strings.TrimSpace(strings.TrimPrefix(line, "parent_mission:"))
 		} else if line == "## INTENT" {
 			currentSection = "intent"
 		} else if line == "## SCOPE" {

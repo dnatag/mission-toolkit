@@ -16,6 +16,7 @@ track: 2
 iteration: 1
 status: active
 completed_at: 2025-12-18T10:20:00.000-05:00
+parent_mission: 2025-12-17-15-30-mission.md
 
 ## INTENT
 Test mission for parsing
@@ -80,6 +81,9 @@ go test ./...`
 			t.Errorf("Expected CompletedAt %v, got %v", expectedTime, *mission.CompletedAt)
 		}
 	}
+	if mission.ParentMission != "2025-12-17-15-30-mission.md" {
+		t.Errorf("Expected ParentMission '2025-12-17-15-30-mission.md', got '%s'", mission.ParentMission)
+	}
 }
 
 func TestReadCompletedMissions(t *testing.T) {
@@ -123,7 +127,7 @@ Second test mission`
 	// Write mission files
 	mission1Path := filepath.Join(completedDir, "2025-12-18-10-15-mission.md")
 	mission2Path := filepath.Join(completedDir, "2025-12-18-10-20-mission.md")
-	
+
 	if err := os.WriteFile(mission1Path, []byte(mission1Content), 0644); err != nil {
 		t.Fatalf("Failed to write mission1: %v", err)
 	}
