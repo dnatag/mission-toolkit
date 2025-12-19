@@ -37,7 +37,7 @@ Before generating output, read `.mission/governance.md`.
    Please choose A, B, or C:
    ```
 3. **Handle Response**: 
-   - A: Stop and return "Please run: m.complete first, then retry m.plan"
+   - A: Stop and return "Please run: /m.complete first, then retry /m.plan"
    - B: Automatically create `.mission/paused/` directory if needed, move current mission to `.mission/paused/YYYY-MM-DD-HH-MM-mission.md` with `status: paused`, display confirmation, then proceed with new mission
    - C: Automatically proceed with new mission (overwrites existing), display warning about lost work
 
@@ -182,7 +182,7 @@ After creating `.mission/mission.md`, display the complete mission content to th
 [Display the complete mission content here]
 
 🚀 NEXT STEPS:
-• Execute as planned: m.apply
+• Execute as planned: /m.apply
 • Resume paused mission later: Copy from .mission/paused/ back to .mission/mission.md
 ```
 
@@ -196,7 +196,7 @@ After creating `.mission/mission.md`, display the complete mission content to th
 [Display the complete mission content here]
 
 🚀 NEXT STEPS:
-• Execute as planned: m.apply
+• Execute as planned: /m.apply
 ```
 
 **For Normal Creation (no existing mission):**
@@ -209,7 +209,7 @@ After creating `.mission/mission.md`, display the complete mission content to th
 [Display the complete mission content here]
 
 🚀 NEXT STEPS:
-• Execute as planned: m.apply
+• Execute as planned: /m.apply
 • Modify tech stack: "Use PostgreSQL instead of SQLite"
 • Adjust scope: "Add user authentication to the scope"
 • Change approach: "Use REST API instead of GraphQL"

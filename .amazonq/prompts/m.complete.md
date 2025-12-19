@@ -4,7 +4,7 @@ description: "Complete current mission and update project tracking"
 
 ## Prerequisites
 
-**CRITICAL:** This prompt requires `.mission/mission.md` to exist. If `.mission/mission.md` is not found, return error: "No active mission found. Use m.plan to create a new mission first."
+**CRITICAL:** This prompt requires `.mission/mission.md` to exist. If `.mission/mission.md` is not found, return error: "No active mission found. Use /m.plan to create a new mission first."
 
 ## Role & Objective
 
@@ -41,21 +41,45 @@ Before generating output, read `.mission/governance.md`.
 
 **Output Format:**
 
+```markdown
+# MISSION COMPLETED
+
+**Timestamp**: YYYY-MM-DD HH:MM:SS
+**Mission Type**: WET | DRY
+**Track**: 1 | 2 | 3 | 4
+**Files Modified**: [count]
+**Duration**: [estimated time]
+
+## CHANGE SUMMARY
+[Copy the complete change summary from /m.apply execution]
+
+Title: [Brief description]
+
+Description (max 4 bullet points):
+- [Implementation detail] → [reasoning for this choice]
+- [Key files changed] → [why these files were necessary]
+- [Technical approach taken] → [rationale behind the decision]
+- [Additional changes made] → [why these were needed]
+
+## OUTCOMES
+- [ ] All PLAN items completed
+- [ ] VERIFICATION passed
+- [ ] Files properly modified
+- [ ] Backlog updated (matching items marked as ✅ COMPLETED YYYY-MM-DD)
+
+## PATTERNS DETECTED
+(List any duplication patterns for future DRY missions)
+
+## NEXT STEPS
+(Suggested follow-up missions or backlog items to prioritize)
+
+## METRICS CREATED
+- **Detailed Metrics**: `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` (includes change summary)
+- **Summary Updated**: `.mission/metrics.md` aggregate data
+- **Historical Preservation**: All mission data preserved with timestamps
 ```
-✅ MISSION COMPLETED: .mission/mission.md
-- Mission archived to .mission/completed/YYYY-MM-DD-HH-MM-mission.md
-- Metrics recorded and backlog updated
-
-📋 FINAL SUMMARY:
-[Copy the complete change summary from m.apply execution]
-
-📈 MISSION METRICS:
-- **Type**: WET | DRY | **Track**: 1 | 2 | 3 | 4
-- **Duration**: [estimated time] | **Files**: [count] modified
-- **Patterns Detected**: [any duplication patterns for future DRY missions]
 
 🚀 WHAT'S NEXT:
-• Start new mission: m.plan "your next intent"
+• Start new mission: /m.plan "your next intent"
 • Review metrics: Check .mission/metrics.md
 • [Suggested follow-up missions or backlog items to prioritize]
-```

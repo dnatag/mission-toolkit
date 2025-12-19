@@ -488,22 +488,22 @@ func (m Model) renderCurrentMission() string {
 	switch mission.Status {
 	case "clarifying":
 		statusStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FFA500"))
-		nextSteps = "Next: Use 'm.clarify' to provide answers to clarification questions"
+		nextSteps = "Next: Use '/m.clarify' to provide answers to clarification questions"
 	case "planned":
 		statusStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00CED1"))
-		nextSteps = "Next: Run 'm.apply' to execute the mission"
+		nextSteps = "Next: Run '/m.apply' to execute the mission"
 	case "active":
 		statusStyle = activeStyle
-		nextSteps = "Next: Run 'm.complete' to finalize the mission"
+		nextSteps = "Next: Run '/m.complete' to finalize the mission"
 	case "completed":
 		statusStyle = completedStyle
 		nextSteps = "Mission completed successfully"
 	case "failed":
 		statusStyle = failedStyle
-		nextSteps = "Next: Create a new mission with smaller scope using 'm.plan'"
+		nextSteps = "Next: Create a new mission with smaller scope using '/m.plan'"
 	default:
 		statusStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
-		nextSteps = "Unknown status - use 'm.plan' to create a new mission"
+		nextSteps = "Unknown status - use '/m.plan' to create a new mission"
 	}
 
 	content := fmt.Sprintf("%s %s (Track %s)\n\n%s\n\n%s",
