@@ -1,6 +1,5 @@
 /*
 Copyright © 2025 Yi Xie dnatag@gmail.com
-
 */
 package cmd
 
@@ -23,7 +22,7 @@ var initCmd = &cobra.Command{
 for the specified AI assistant type. Creates .mission/ directory with governance files
 and AI-specific prompt templates.
 
-Supported AI types: q, claude, gemini, cursor, codex, cline, kiro`,
+Supported AI types: q, claude, gemini, cursor, codex, cline, kiro, opencode`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Validate AI type
 		if err := templates.ValidateAIType(aiType); err != nil {

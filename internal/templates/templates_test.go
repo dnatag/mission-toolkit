@@ -34,11 +34,11 @@ func getAvailablePromptTemplates() ([]string, error) {
 // generateExpectedFiles creates the expected file list for a given AI type
 func generateExpectedFiles(aiType, targetDir string, promptFiles []string) []string {
 	var wantFiles []string
-	
+
 	// Always include Mission Toolkit templates
 	missionFiles := []string{".mission/governance.md", ".mission/metrics.md", ".mission/backlog.md"}
 	wantFiles = append(wantFiles, missionFiles...)
-	
+
 	// Add prompt files based on AI type
 	var promptDir string
 	switch aiType {
@@ -56,14 +56,14 @@ func generateExpectedFiles(aiType, targetDir string, promptFiles []string) []str
 		promptDir = ".clinerules/workflows"
 	case "kiro":
 		promptDir = ".kiro/prompts"
-	default:
-		promptDir = "prompts"
+	case "opencode":
+		promptDir = ".opencode/command"
 	}
-	
+
 	for _, file := range promptFiles {
 		wantFiles = append(wantFiles, filepath.Join(promptDir, file))
 	}
-	
+
 	return wantFiles
 }
 
@@ -73,7 +73,7 @@ func TestWriteTemplates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to discover available templates: %v", err)
 	}
-	
+
 	if len(availableTemplates) == 0 {
 		t.Fatal("No prompt templates found - this indicates a problem with the embedded filesystem")
 	}
@@ -90,7 +90,7 @@ func TestWriteTemplates(t *testing.T) {
 		{"Codex templates", "codex", "/test"},
 		{"Cline templates", "cline", "/test"},
 		{"Kiro templates", "kiro", "/test"},
-		{"Default templates", "default", "/test"},
+		{"OpenCode templates", "opencode", "/test"},
 	}
 
 	for _, tt := range tests {
@@ -125,5 +125,19 @@ func TestWriteTemplates(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestWriteTemplatesUnsupportedAI(t *testing.T) {
+	fs := afero.NewMemMapFs()
+
+	err := WriteTemplates(fs, "/test", "unsupported")
+	if err == nil {
+		t.Error("Expected error for unsupported AI type, but got nil")
+	}
+
+	expectedError := "unsupported AI type 'unsupported'"
+	if !strings.Contains(err.Error(), expectedError) {
+		t.Errorf("Expected error to contain '%s', but got: %v", expectedError, err)
 	}
 }

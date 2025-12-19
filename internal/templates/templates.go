@@ -15,7 +15,7 @@ var missionTemplates embed.FS
 var promptTemplates embed.FS
 
 // SupportedAITypes lists all supported AI types
-var SupportedAITypes = []string{"q", "claude", "gemini", "cursor", "codex", "cline", "kiro"}
+var SupportedAITypes = []string{"q", "claude", "gemini", "cursor", "codex", "cline", "kiro", "opencode"}
 
 // ValidateAIType checks if the provided AI type is supported
 func ValidateAIType(aiType string) error {
@@ -63,8 +63,10 @@ func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
 		promptDir = filepath.Join(targetDir, ".clinerules", "workflows")
 	case "kiro":
 		promptDir = filepath.Join(targetDir, ".kiro", "prompts")
+	case "opencode":
+		promptDir = filepath.Join(targetDir, ".opencode", "command")
 	default:
-		promptDir = filepath.Join(targetDir, "prompts")
+		return fmt.Errorf("unsupported AI type '%s'. Supported types: %v", aiType, SupportedAITypes)
 	}
 
 	if err := fs.MkdirAll(promptDir, 0755); err != nil {
