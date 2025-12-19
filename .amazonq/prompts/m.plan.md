@@ -150,7 +150,7 @@ After clarification, will reassess track and create final mission.
 type: WET
 track: 2 | 3
 iteration: 1
-status: active
+status: planned
 
 ## INTENT
 (Refined summary of the goal)
@@ -174,11 +174,11 @@ After creating `.mission/mission.md`, display the complete mission content to th
 
 **For Option B (Paused):**
 ```
-⏸️  PREVIOUS MISSION PAUSED
-Archived to: .mission/paused/YYYY-MM-DD-HH-MM-mission.md
+✅ MISSION CREATED: .mission/mission.md
+- Previous mission paused and archived
+- New mission ready for execution
 
-📋 NEW MISSION CREATED: .mission/mission.md
-
+📋 NEW MISSION:
 [Display the complete mission content here]
 
 🚀 NEXT STEPS:
@@ -188,11 +188,11 @@ Archived to: .mission/paused/YYYY-MM-DD-HH-MM-mission.md
 
 **For Option C (Overwrite):**
 ```
-⚠️  PREVIOUS MISSION OVERWRITTEN
-Previous work has been lost.
+✅ MISSION CREATED: .mission/mission.md
+- Previous mission overwritten (work lost)
+- New mission ready for execution
 
-📋 NEW MISSION CREATED: .mission/mission.md
-
+📋 NEW MISSION:
 [Display the complete mission content here]
 
 🚀 NEXT STEPS:
@@ -201,8 +201,11 @@ Previous work has been lost.
 
 **For Normal Creation (no existing mission):**
 ```
-📋 MISSION CREATED: .mission/mission.md
+✅ MISSION CREATED: .mission/mission.md
+- Mission planned and ready for execution
+- All requirements validated
 
+📋 NEW MISSION:
 [Display the complete mission content here]
 
 🚀 NEXT STEPS:

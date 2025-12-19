@@ -14,7 +14,7 @@ You are the **Clarification Handler**. Process user responses to clarification q
 
 ## Prerequisites
 
-**CRITICAL:** This prompt requires `.mission/mission.md` to exist with `status: clarifying`. If not found, return error: "ERROR: No pending clarification found."
+**CRITICAL:** This prompt requires `.mission/mission.md` to exist with `status: clarifying`. If not found, return error: "No mission awaiting clarification. Use m.plan to create a new mission first."
 
 ## Process
 
@@ -81,8 +81,11 @@ status: planned
 After updating `.mission/mission.md`, display the complete updated mission:
 
 ```
-✅ CLARIFICATION COMPLETE: .mission/mission.md updated
+✅ MISSION CLARIFIED: .mission/mission.md
+- All clarifications incorporated
+- Mission ready for execution
 
+📋 UPDATED MISSION:
 [Display the complete updated mission content]
 
 🚀 NEXT STEPS:

@@ -5,8 +5,8 @@ description: "Execute current mission with status tracking"
 ## Prerequisites
 
 **CRITICAL:** This prompt requires `.mission/mission.md` to exist with `status: planned`. If not found, check for other statuses:
-- `status: clarifying` → return error: "ERROR: Mission needs clarification. Use m.clarify to provide answers."
-- No mission file → return error: "ERROR: No active mission found."
+- `status: clarifying` → return error: "Mission needs clarification. Use m.clarify to provide answers."
+- No mission file → return error: "No active mission found. Use m.plan to create a new mission first."
 
 ## Role & Objective
 
@@ -45,18 +45,19 @@ If user responds with "y", "yes", "complete", or "finish" after successful execu
 📋 CHANGE SUMMARY:
 [Title]: [Brief description of the change]
 
-[Description]:
-- What was implemented/changed
-- Key files modified
-- Any important technical decisions
+[Description] (max 4 bullet points):
+- [Implementation detail] → [reasoning for this choice]
+- [Key files changed] → [why these files were necessary]
+- [Technical approach taken] → [rationale behind the decision]
+- [Additional changes made] → [why these were needed]
 
 Example:
 feat: add user authentication endpoint
 
-- Implemented JWT-based authentication in auth.js
-- Added login/logout routes to server.js
-- Created user validation middleware
-- Updated API documentation for auth endpoints
+- Implemented JWT-based authentication in auth.js → provides stateless authentication suitable for API scalability
+- Added login/logout routes to server.js → centralized routing ensures consistent authentication flow
+- Created user validation middleware → middleware pattern enables reusable authentication across all protected routes
+- Updated API documentation → ensures developers understand new authentication requirements
 
 🚀 NEXT STEPS:
 • Auto-complete: "y" or "yes" or "complete"
