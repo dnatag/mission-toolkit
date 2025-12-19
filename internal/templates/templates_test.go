@@ -1,123 +1,96 @@
 package templates
 
 import (
+	"io/fs"
 	"path/filepath"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
 )
 
+// getAvailablePromptTemplates dynamically discovers all .md files in the prompts directory
+func getAvailablePromptTemplates() ([]string, error) {
+	var templates []string
+	err := fs.WalkDir(promptTemplates, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && strings.HasSuffix(path, ".md") {
+			// Remove "prompts/" prefix and keep just the filename
+			filename := filepath.Base(path)
+			templates = append(templates, filename)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(templates) // Ensure consistent ordering
+	return templates, nil
+}
+
+// generateExpectedFiles creates the expected file list for a given AI type
+func generateExpectedFiles(aiType, targetDir string, promptFiles []string) []string {
+	var wantFiles []string
+	
+	// Always include IDD templates
+	iddFiles := []string{".idd/governance.md", ".idd/metrics.md", ".idd/backlog.md"}
+	wantFiles = append(wantFiles, iddFiles...)
+	
+	// Add prompt files based on AI type
+	var promptDir string
+	switch aiType {
+	case "q":
+		promptDir = ".amazonq/prompts"
+	case "claude":
+		promptDir = ".claude/commands"
+	case "gemini":
+		promptDir = ".gemini/commands"
+	case "cursor":
+		promptDir = ".cursor/commands"
+	case "codex":
+		promptDir = ".codex/commands"
+	case "cline":
+		promptDir = ".clinerules/workflows"
+	case "kiro":
+		promptDir = ".kiro/prompts"
+	default:
+		promptDir = "prompts"
+	}
+	
+	for _, file := range promptFiles {
+		wantFiles = append(wantFiles, filepath.Join(promptDir, file))
+	}
+	
+	return wantFiles
+}
+
 func TestWriteTemplates(t *testing.T) {
+	// Dynamically discover available prompt templates
+	availableTemplates, err := getAvailablePromptTemplates()
+	if err != nil {
+		t.Fatalf("Failed to discover available templates: %v", err)
+	}
+	
+	if len(availableTemplates) == 0 {
+		t.Fatal("No prompt templates found - this indicates a problem with the embedded filesystem")
+	}
+
 	tests := []struct {
 		name      string
 		aiType    string
 		targetDir string
-		wantFiles []string
 	}{
-		{
-			name:      "Amazon Q templates",
-			aiType:    "q",
-			targetDir: "/test",
-			wantFiles: []string{
-				".idd/governance.md",
-				".idd/metrics.md",
-				".idd/backlog.md",
-				".amazonq/prompts/idd.complete.md",
-				".amazonq/prompts/idd.plan.md",
-				".amazonq/prompts/idd.apply.md",
-			},
-		},
-		{
-			name:      "Claude templates",
-			aiType:    "claude",
-			targetDir: "/test",
-			wantFiles: []string{
-				".idd/governance.md",
-				".idd/metrics.md",
-				".idd/backlog.md",
-				".claude/commands/idd.complete.md",
-				".claude/commands/idd.plan.md",
-				".claude/commands/idd.apply.md",
-			},
-		},
-		{
-			name:      "Gemini templates",
-			aiType:    "gemini",
-			targetDir: "/test",
-			wantFiles: []string{
-				".idd/governance.md",
-				".idd/metrics.md",
-				".idd/backlog.md",
-				".gemini/commands/idd.complete.md",
-				".gemini/commands/idd.plan.md",
-				".gemini/commands/idd.apply.md",
-			},
-		},
-		{
-			name:      "Cursor templates",
-			aiType:    "cursor",
-			targetDir: "/test",
-			wantFiles: []string{
-				".idd/governance.md",
-				".idd/metrics.md",
-				".idd/backlog.md",
-				".cursor/commands/idd.complete.md",
-				".cursor/commands/idd.plan.md",
-				".cursor/commands/idd.apply.md",
-			},
-		},
-		{
-			name:      "Codex templates",
-			aiType:    "codex",
-			targetDir: "/test",
-			wantFiles: []string{
-				".idd/governance.md",
-				".idd/metrics.md",
-				".idd/backlog.md",
-				".codex/commands/idd.complete.md",
-				".codex/commands/idd.plan.md",
-				".codex/commands/idd.apply.md",
-			},
-		},
-		{
-			name:      "Cline templates",
-			aiType:    "cline",
-			targetDir: "/test",
-			wantFiles: []string{
-				".idd/governance.md",
-				".idd/metrics.md",
-				".idd/backlog.md",
-				".clinerules/workflows/idd.complete.md",
-				".clinerules/workflows/idd.plan.md",
-				".clinerules/workflows/idd.apply.md",
-			},
-		},
-		{
-			name:      "Kiro templates",
-			aiType:    "kiro",
-			targetDir: "/test",
-			wantFiles: []string{
-				".idd/governance.md",
-				".idd/metrics.md",
-				".idd/backlog.md",
-				".kiro/prompts/idd.complete.md",
-				".kiro/prompts/idd.plan.md",
-				".kiro/prompts/idd.apply.md",
-			},
-		},
-		{
-			name:      "Default templates",
-			aiType:    "default",
-			targetDir: "/test",
-			wantFiles: []string{
-				".idd/governance.md",
-				".idd/metrics.md",
-				".idd/backlog.md",
-				"prompts/idd.complete.md",
-				"prompts/idd.plan.md",
-				"prompts/idd.apply.md",
-			},
-		},
+		{"Amazon Q templates", "q", "/test"},
+		{"Claude templates", "claude", "/test"},
+		{"Gemini templates", "gemini", "/test"},
+		{"Cursor templates", "cursor", "/test"},
+		{"Codex templates", "codex", "/test"},
+		{"Cline templates", "cline", "/test"},
+		{"Kiro templates", "kiro", "/test"},
+		{"Default templates", "default", "/test"},
 	}
 
 	for _, tt := range tests {
@@ -129,7 +102,10 @@ func TestWriteTemplates(t *testing.T) {
 				t.Fatalf("WriteTemplates() error = %v", err)
 			}
 
-			for _, file := range tt.wantFiles {
+			// Generate expected files dynamically
+			wantFiles := generateExpectedFiles(tt.aiType, tt.targetDir, availableTemplates)
+
+			for _, file := range wantFiles {
 				fullPath := filepath.Join(tt.targetDir, file)
 				exists, err := afero.Exists(fs, fullPath)
 				if err != nil {

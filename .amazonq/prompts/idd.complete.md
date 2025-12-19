@@ -22,10 +22,12 @@ Before generating output, read `.idd/governance.md`.
 
 **Completion Actions:**
 1. **Update Status**: Change `status: active` to `status: completed`
-2. **Archive Mission**: Move `.idd/mission.md` to `.idd/completed/YYYY-MM-DD-HH-MM-mission.md`
+2. **Ensure Directory**: Create `.idd/completed/` directory if it doesn't exist
+3. **Archive Mission**: Move `.idd/mission.md` to `.idd/completed/YYYY-MM-DD-HH-MM-mission.md`
 3. **Create Metrics**: Generate `.idd/completed/YYYY-MM-DD-HH-MM-metrics.md` with mission data including change summary
-4. **Update Backlog**: Search `.idd/backlog.md` for matching intent, mark as completed with timestamp
-5. **Update Summary**: Append summary with change summary title to `.idd/metrics.md` for aggregate tracking
+4. **Clean Active State**: Remove `.idd/mission.md` after successful archiving
+5. **Update Backlog**: Search `.idd/backlog.md` for matching intent, mark as completed with timestamp
+6. **Update Summary**: Append summary with change summary title to `.idd/metrics.md` for aggregate tracking
 
 **Observability Data Collection:**
 - Mission duration (planning to completion)

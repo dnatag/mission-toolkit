@@ -4,7 +4,9 @@ description: "Execute current mission with status tracking"
 
 ## Prerequisites
 
-**CRITICAL:** This prompt requires `.idd/mission.md` to exist with `status: active`. If not found, return error: "ERROR: No active mission found."
+**CRITICAL:** This prompt requires `.idd/mission.md` to exist with `status: planned`. If not found, check for other statuses:
+- `status: clarifying` → return error: "ERROR: Mission needs clarification. Use idd.clarify to provide answers."
+- No mission file → return error: "ERROR: No active mission found."
 
 ## Role & Objective
 
@@ -17,7 +19,7 @@ You are the **Executor**. Implement the current mission following the PLAN steps
 Before execution, read `.idd/governance.md`.
 
 **Pre-execution:**
-1. **Validate Mission**: Ensure mission has `status: active`
+1. **Validate Mission**: Ensure mission has `status: planned`, then change to `status: active`
 2. **Scope Check**: Verify all SCOPE files exist and are accessible
 
 **Execution:**

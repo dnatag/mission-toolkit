@@ -1,32 +1,3 @@
-# MISSION
+# No active mission
 
-type: WET
-track: 3
-iteration: 1
-status: completed
-completed_at: 2025-12-18T10:56:07.465-05:00
-
-## INTENT
-Add TUI-based status command to display current and completed mission status with search functionality and clear next steps
-
-## SCOPE
-cmd/status.go
-internal/tui/status.go
-internal/mission/reader.go
-internal/mission/reader_test.go
-
-## PLAN
-- [x] Create internal/mission/reader.go to parse current and completed mission.md files
-- [x] Add function to search and load missions from .idd/completed/ directory
-- [x] Create internal/tui/status.go with bubbletea TUI components
-- [x] Design status display showing current mission state (active/completed/failed)
-- [x] Add completed missions list with search/filter functionality
-- [x] Add next steps guidance based on mission status
-- [x] Implement color-coded status indicators using lipgloss
-- [x] Update cmd/status.go to use TUI instead of simple print
-- [x] Add keyboard navigation and help text for mission browsing
-- [x] Add unit tests for mission reader functionality
-- [x] Note: Allow duplication for initial implementation
-
-## VERIFICATION
-go run . status && echo "TUI status command executed successfully"
+Use `/idd.plan` to start a new mission.

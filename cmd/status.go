@@ -20,8 +20,8 @@ var statusCmd = &cobra.Command{
 interactive Terminal User Interface (TUI). Shows mission details, progress, 
 and provides clear guidance on next steps.
 
-Use Tab to switch between current mission and completed missions history.
-Use arrow keys to navigate through completed missions.`,
+Use ↑/↓ to navigate missions, Enter to view details, / to search.
+Use ←/→ for pagination, Esc to go back, q to quit.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := tui.RunStatusTUI(); err != nil {
 			fmt.Fprintf(os.Stderr, "Error running status TUI: %v\n", err)

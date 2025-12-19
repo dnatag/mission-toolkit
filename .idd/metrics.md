@@ -3,37 +3,34 @@
 *Detailed metrics with change summaries stored in `.idd/completed/` with timestamps*
 
 ## AGGREGATE STATISTICS
-- **Total Missions**: 5
+- **Total Missions**: 9
 - **Success Rate**: 100%
-- **Average Duration**: ~15 minutes
+- **Average Duration**: ~12 minutes
 
 ## TRACK DISTRIBUTION
-- **TRACK 1**: 0 missions, avg duration: N/A
-- **TRACK 2**: 4 missions, avg duration: ~10 minutes 
-- **TRACK 3**: 1 missions, avg duration: ~38 minutes
-- **TRACK 4**: 0 decompositions
+- **TRACK 1**: 1 atomic task (direct edit)
+- **TRACK 2**: 7 missions, avg duration: ~7 minutes 
+- **TRACK 3**: 1 mission, duration: ~38 minutes
+- **TRACK 4**: 1 epic decomposition (TUI enhancements)
 
 ## WET-DRY EVOLUTION
-- **WET Missions**: 5
+- **WET Missions**: 8
 - **DRY Missions**: 0
 - **Refactoring Success Rate**: N/A
 
 ## RECENT COMPLETIONS
 (Last 5 missions with change summaries - see `.idd/completed/` for full history)
 
-- 2025-12-18 Track 3: feat: add TUI-based status command with mission history
-- 2025-12-17 Track 2: feat: add --ai flag to init command with validation
-- 2025-12-17 Track 2: feat: add support for gemini, cursor, codex, cline, and kiro AI types
-- 2025-12-17 Track 2: feat: add Claude AI support with .claude/commands directory
-- 2025-12-17 Track 2: feat: add embedded templates with afero filesystem support
+- 2025-12-18 Track 2: Remove unused history command and update README with init/status documentation
+- 2025-12-18 Track 2: Add comprehensive unit tests for TUI status implementation
+- 2025-12-18 Track 3: Add TUI-based status command with search functionality and mission history
+- 2025-12-18 Track 2: Add pagination to completed missions history list with 5 items per page
+- 2025-12-18 Track 2: Add scrollable viewport for mission details with scroll indicators
 
 ## PROCESS INSIGHTS
-(Key learnings and workflow improvements)
-
-- Embedded templates with afero filesystem abstraction working well for testing
-- Tests provide good coverage for template writing functionality
-- AI type extension pattern is clean and maintainable
-- Switch statement approach scales well for multiple AI types
-- CLI flag validation pattern is straightforward and effective
-- TUI development requires more time but provides excellent user experience
-- Unit tests added during execution improve mission quality
+- Epic decomposition strategy highly effective for complex UI features
+- TUI enhancements benefit from incremental implementation approach
+- Pagination with 5 items per page provides optimal user experience
+- Helper functions essential for maintainable pagination logic
+- User feedback mechanisms (page indicators) critical for navigation UX
+- WET approach allowing for rapid feature development and immediate testing

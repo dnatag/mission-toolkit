@@ -162,21 +162,33 @@ User Intent → idd.plan → .idd/mission.md → idd.apply → Verification → 
 
 1. **📁 Initialize Project**
    ```bash
-   mkdir .idd
-   # Copy governance.md, backlog.md, metrics.md templates
+   # Initialize IDD project with AI-specific templates
+   idd init --ai-type q
+   
+   # Supported AI types: q, claude, gemini, cursor, codex, cline, kiro
+   # Creates .idd/ directory with governance files and prompt templates
    ```
 
-2. **📝 Plan Your First Mission**
+2. **📊 Check Project Status**
+   ```bash
+   # Display interactive TUI showing current and completed missions
+   idd status
+   
+   # Use ↑/↓ to navigate missions, Enter to view details, / to search
+   # Shows mission progress and provides clear next steps
+   ```
+
+3. **📝 Plan Your First Mission**
    ```bash
    /idd.plan "Your development intent here"
    ```
 
-3. **⚙️ Execute the Mission**
+4. **⚙️ Execute the Mission**
    ```bash
    /idd.apply
    ```
 
-4. **🏁 Complete and Track**
+5. **🏁 Complete and Track**
    ```bash
    /idd.complete
    ```

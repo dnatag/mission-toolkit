@@ -71,7 +71,7 @@ func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
 		return err
 	}
 
-	promptFiles := []string{"idd.complete.md", "idd.plan.md", "idd.apply.md"}
+	promptFiles := []string{"idd.complete.md", "idd.plan.md", "idd.apply.md", "idd.clarify.md"}
 	for _, file := range promptFiles {
 		content, err := promptTemplates.ReadFile("prompts/" + file)
 		if err != nil {

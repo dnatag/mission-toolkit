@@ -21,19 +21,51 @@ You are the **Planner**. Convert the user's raw intent into a formal `.idd/missi
 
 Before generating output, read `.idd/governance.md`.
 
+**Mission State Check:**
+1. **Existing Mission**: Check if `.idd/mission.md` exists
+2. **If exists**: Ask user what to do:
+   ```
+   ⚠️  EXISTING MISSION DETECTED
+   
+   Found active mission in .idd/mission.md that hasn't been archived.
+   
+   What would you like to do?
+   A) Complete current mission first (recommended)
+   B) Archive current mission as "paused" and start new one
+   C) Overwrite current mission (loses current work)
+   
+   Please choose A, B, or C:
+   ```
+3. **Handle Response**: 
+   - A: Return "Please run: idd.complete"
+   - B: Create `.idd/paused/` directory if needed, move current mission to `.idd/paused/YYYY-MM-DD-HH-MM-mission.md` with `status: paused`, then proceed
+   - C: Proceed with new mission (overwrites existing)
+
 **Input Validation:**
 1. **Empty Check**: If `$ARGUMENTS` is empty, return error: "ERROR: No arguments provided. Please specify your intent or goal."
+2. **Force Flag**: If `$ARGUMENTS` contains `--force`, skip mission state check and proceed
+
+**Clarification Analysis:**
+Scan `$ARGUMENTS` for ambiguous requirements that need clarification:
+- **Technology Stack**: Unspecified frameworks, databases, or libraries
+- **Business Logic**: Unclear validation rules, data relationships, or workflows
+- **Integration Points**: External APIs, services, or data sources without details
+- **Performance Requirements**: Unspecified response times, throughput, or scalability needs
+- **Security Requirements**: Authentication, authorization, or data protection specifics
+
+If clarifications are needed, create a NEED_CLARIFICATION mission instead of proceeding.
 
 **Complexity Analysis:**
 Analyze `$ARGUMENTS` using base complexity + domain multipliers:
 
-**Base Complexity (by file count):**
+**Base Complexity (by implementation scope):**
 
 | **TRACK 1 (Atomic)** | **TRACK 2 (Standard)** | **TRACK 3 (Robust)** | **TRACK 4 (Epic)** |
 |---|---|---|---|
-| Single line/function | Single feature | Cross-cutting concerns | Multiple systems |
-| 0 new implementation files | 1-5 implementation files | 6-9 implementation files | 10+ implementation files |
-| "Fix typo", "Rename var" | "Add endpoint", "Create component" | "Add authentication", "Refactor for security" | "Build payment system", "Rewrite architecture" |
+| Single line/function changes | Single feature implementation | Cross-cutting concerns | Multiple systems |
+| 0 new implementation files | 1-5 new implementation files | 6-9 new implementation files | 10+ new implementation files |
+| 1-5 lines of code changed | 10-100 lines of code changed | 100-500 lines of code changed | 500+ lines of code changed |
+| "Fix typo", "Add to array", "Rename var" | "Add endpoint", "Create component" | "Add authentication", "Refactor for security" | "Build payment system", "Rewrite architecture" |
 
 **Domain Multipliers (+1 track, max Track 3):**
 - **High-risk integrations**: Payment processing, financial transactions, authentication systems
@@ -42,10 +74,14 @@ Analyze `$ARGUMENTS` using base complexity + domain multipliers:
 - **Regulatory/Security**: GDPR, SOX, PCI compliance, security-sensitive features
 
 **Examples:**
-- "Add user CRUD" (3 files) = Track 2
-- "Add payment processing" (2 files + payment API) = Track 3
-- "Add database logging" (2 files + database) = Track 2 (not high-risk)
-- "Optimize search algorithm" (1 file + complex algorithm) = Track 3
+- "Add missing item to array" (0 new files, 1 line) = Track 1
+- "Fix typo in variable name" (0 new files, 1 line) = Track 1
+- "Add user CRUD" (3 new files, ~50 lines) = Track 2
+- "Add payment processing" (2 new files, ~30 lines + payment API) = Track 3
+- "Add database logging" (2 new files, ~40 lines + database) = Track 2 (not high-risk)
+- "Optimize search algorithm" (1 new file, ~200 lines + complex algorithm) = Track 3
+
+**Assessment Rule**: Take the higher track from either file count or line count metrics.
 
 **Note**: Test files don't count toward complexity - they're expected for proper development.
 
@@ -83,7 +119,31 @@ Before outputting, ensure:
 
 **TRACK 1**: Return "ATOMIC TASK: Suggest direct edit instead of mission"
 
-**TRACK 2-3**: 
+**NEED_CLARIFICATION**:
+```markdown
+# MISSION
+
+type: CLARIFICATION
+track: TBD
+iteration: 1
+status: clarifying
+
+## INTENT
+(Initial understanding of the goal)
+
+## NEED_CLARIFICATION
+- [ ] (Specific question 1)
+- [ ] (Specific question 2)
+- [ ] (Specific question 3)
+
+## PROVISIONAL_SCOPE
+(Estimated file paths based on current understanding)
+
+## NEXT_STEPS
+After clarification, will reassess track and create final mission.
+```
+
+**TRACK 2-3**:
 ```markdown
 # MISSION
 
