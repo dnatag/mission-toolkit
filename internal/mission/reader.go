@@ -24,14 +24,14 @@ type Mission struct {
 	FilePath     string
 }
 
-// ReadCurrentMission reads the current mission from .idd/mission.md
+// ReadCurrentMission reads the current mission from .mission/mission.md
 func ReadCurrentMission() (*Mission, error) {
-	return readMissionFile(".idd/mission.md")
+	return readMissionFile(".mission/mission.md")
 }
 
-// ReadCompletedMissions reads all completed missions from .idd/completed/
+// ReadCompletedMissions reads all completed missions from .mission/completed/
 func ReadCompletedMissions() ([]*Mission, error) {
-	completedDir := ".idd/completed"
+	completedDir := ".mission/completed"
 	
 	entries, err := os.ReadDir(completedDir)
 	if err != nil {

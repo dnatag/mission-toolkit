@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/afero"
 )
 
-//go:embed idd/*.md
-var iddTemplates embed.FS
+//go:embed mission/*.md
+var missionTemplates embed.FS
 
 //go:embed prompts/*.md
 var promptTemplates embed.FS
@@ -29,19 +29,19 @@ func ValidateAIType(aiType string) error {
 
 // WriteTemplates writes embedded templates to the specified filesystem
 func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
-	// Write IDD templates to .idd directory
-	iddDir := filepath.Join(targetDir, ".idd")
-	if err := fs.MkdirAll(iddDir, 0755); err != nil {
+	// Write Mission Toolkit templates to .mission directory
+	missionDir := filepath.Join(targetDir, ".mission")
+	if err := fs.MkdirAll(missionDir, 0755); err != nil {
 		return err
 	}
 
-	iddFiles := []string{"governance.md", "metrics.md", "backlog.md"}
-	for _, file := range iddFiles {
-		content, err := iddTemplates.ReadFile("idd/" + file)
+	missionFiles := []string{"governance.md", "metrics.md", "backlog.md"}
+	for _, file := range missionFiles {
+		content, err := missionTemplates.ReadFile("mission/" + file)
 		if err != nil {
 			return err
 		}
-		if err := afero.WriteFile(fs, filepath.Join(iddDir, file), content, 0644); err != nil {
+		if err := afero.WriteFile(fs, filepath.Join(missionDir, file), content, 0644); err != nil {
 			return err
 		}
 	}
@@ -71,7 +71,7 @@ func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
 		return err
 	}
 
-	promptFiles := []string{"idd.complete.md", "idd.plan.md", "idd.apply.md", "idd.clarify.md"}
+	promptFiles := []string{"m.complete.md", "m.plan.md", "m.apply.md", "m.clarify.md"}
 	for _, file := range promptFiles {
 		content, err := promptTemplates.ReadFile("prompts/" + file)
 		if err != nil {

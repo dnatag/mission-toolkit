@@ -1,6 +1,6 @@
-# IDD METRICS SUMMARY
+# MISSION TOOLKIT METRICS SUMMARY
 
-*Detailed metrics with change summaries stored in `.idd/completed/` with timestamps*
+*Detailed metrics with change summaries stored in `.mission/completed/` with timestamps*
 
 ## AGGREGATE STATISTICS
 - **Total Missions**: 9
@@ -19,7 +19,7 @@
 - **Refactoring Success Rate**: N/A
 
 ## RECENT COMPLETIONS
-(Last 5 missions with change summaries - see `.idd/completed/` for full history)
+(Last 5 missions with change summaries - see `.mission/completed/` for full history)
 
 - 2025-12-18 Track 2: Remove unused history command and update README with init/status documentation
 - 2025-12-18 Track 2: Add comprehensive unit tests for TUI status implementation

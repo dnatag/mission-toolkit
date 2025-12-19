@@ -4,8 +4,8 @@ description: "Execute current mission with status tracking"
 
 ## Prerequisites
 
-**CRITICAL:** This prompt requires `.idd/mission.md` to exist with `status: planned`. If not found, check for other statuses:
-- `status: clarifying` → return error: "ERROR: Mission needs clarification. Use idd.clarify to provide answers."
+**CRITICAL:** This prompt requires `.mission/mission.md` to exist with `status: planned`. If not found, check for other statuses:
+- `status: clarifying` → return error: "ERROR: Mission needs clarification. Use m.clarify to provide answers."
 - No mission file → return error: "ERROR: No active mission found."
 
 ## Role & Objective
@@ -16,7 +16,7 @@ You are the **Executor**. Implement the current mission following the PLAN steps
 
 ## Process
 
-Before execution, read `.idd/governance.md`.
+Before execution, read `.mission/governance.md`.
 
 **Pre-execution:**
 1. **Validate Mission**: Ensure mission has `status: planned`, then change to `status: active`
@@ -32,13 +32,13 @@ Before execution, read `.idd/governance.md`.
 - **On Failure**: Change `status: active` to `status: failed` and run `git checkout .`
 
 **Auto-Completion:**
-If user responds with "y", "yes", "complete", or "finish" after successful execution, automatically run idd.complete process.
+If user responds with "y", "yes", "complete", or "finish" after successful execution, automatically run m.complete process.
 
 **Output Format:**
 
 **Success:**
 ```
-✅ MISSION EXECUTED: .idd/mission.md
+✅ MISSION EXECUTED: .mission/mission.md
 - All PLAN steps completed
 - VERIFICATION passed
 
@@ -60,13 +60,13 @@ feat: add user authentication endpoint
 
 🚀 NEXT STEPS:
 • Auto-complete: "y" or "yes" or "complete"
-• Manual completion: idd.complete
+• Manual completion: m.complete
 • Review changes first: check files and then decide
 ```
 
 **Failure:**
 ```
-❌ MISSION FAILED: .idd/mission.md
+❌ MISSION FAILED: .mission/mission.md
 - Status changed to: failed
 - Changes reverted with: git checkout .
 - Create new mission with smaller scope

@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 package main
 
-import "github.com/dnatag/idd/cmd"
+import "github.com/dnatag/mission-toolkit/cmd"
 
 func main() {
 	cmd.Execute()

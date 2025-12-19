@@ -4,7 +4,7 @@ description: "Complete current mission and update project tracking"
 
 ## Prerequisites
 
-**CRITICAL:** This prompt requires `.idd/mission.md` to exist. If `.idd/mission.md` is not found, return error: "ERROR: No active mission found."
+**CRITICAL:** This prompt requires `.mission/mission.md` to exist. If `.mission/mission.md` is not found, return error: "ERROR: No active mission found."
 
 ## Role & Objective
 
@@ -12,22 +12,22 @@ You are the **Completor**. Finalize the current mission and update project track
 
 ## Process
 
-Before generating output, read `.idd/governance.md`.
+Before generating output, read `.mission/governance.md`.
 
 **Mission Validation:**
 1. **Status Check**: Ensure mission has `status: active` (not failed)
-2. **Completion Check**: Verify all PLAN items in `.idd/mission.md` are completed
+2. **Completion Check**: Verify all PLAN items in `.mission/mission.md` are completed
 3. **Verification Status**: Confirm VERIFICATION command was run successfully
 4. **Scope Validation**: Ensure all SCOPE files were properly modified
 
 **Completion Actions:**
 1. **Update Status**: Change `status: active` to `status: completed`
-2. **Ensure Directory**: Create `.idd/completed/` directory if it doesn't exist
-3. **Archive Mission**: Move `.idd/mission.md` to `.idd/completed/YYYY-MM-DD-HH-MM-mission.md`
-3. **Create Metrics**: Generate `.idd/completed/YYYY-MM-DD-HH-MM-metrics.md` with mission data including change summary
-4. **Clean Active State**: Remove `.idd/mission.md` after successful archiving
-5. **Update Backlog**: Search `.idd/backlog.md` for matching intent, mark as completed with timestamp
-6. **Update Summary**: Append summary with change summary title to `.idd/metrics.md` for aggregate tracking
+2. **Ensure Directory**: Create `.mission/completed/` directory if it doesn't exist
+3. **Archive Mission**: Move `.mission/mission.md` to `.mission/completed/YYYY-MM-DD-HH-MM-mission.md`
+3. **Create Metrics**: Generate `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` with mission data including change summary
+4. **Clean Active State**: Remove `.mission/mission.md` after successful archiving
+5. **Update Backlog**: Search `.mission/backlog.md` for matching intent, mark as completed with timestamp
+6. **Update Summary**: Append summary with change summary title to `.mission/metrics.md` for aggregate tracking
 
 **Observability Data Collection:**
 - Mission duration (planning to completion)
@@ -51,7 +51,7 @@ Before generating output, read `.idd/governance.md`.
 **Duration**: [estimated time]
 
 ## CHANGE SUMMARY
-[Copy the complete change summary from idd.apply execution]
+[Copy the complete change summary from m.apply execution]
 
 Title: [Brief description]
 
@@ -73,7 +73,7 @@ Description:
 (Suggested follow-up missions or backlog items to prioritize)
 
 ## METRICS CREATED
-- **Detailed Metrics**: `.idd/completed/YYYY-MM-DD-HH-MM-metrics.md` (includes change summary)
-- **Summary Updated**: `.idd/metrics.md` aggregate data
+- **Detailed Metrics**: `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` (includes change summary)
+- **Summary Updated**: `.mission/metrics.md` aggregate data
 - **Historical Preservation**: All mission data preserved with timestamps
 ```

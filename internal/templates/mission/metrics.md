@@ -1,6 +1,6 @@
-# IDD METRICS SUMMARY
+# MISSION TOOLKIT METRICS SUMMARY
 
-*Detailed metrics with change summaries stored in `.idd/completed/` with timestamps*
+*Detailed metrics with change summaries stored in `.mission/completed/` with timestamps*
 
 ## AGGREGATE STATISTICS
 - **Total Missions**: [count]
@@ -19,7 +19,7 @@
 - **Refactoring Success Rate**: [percentage]
 
 ## RECENT COMPLETIONS
-(Last 5 missions with change summaries - see `.idd/completed/` for full history)
+(Last 5 missions with change summaries - see `.mission/completed/` for full history)
 
 - [YYYY-MM-DD] Track X: [Change summary title]
 - [YYYY-MM-DD] Track X: [Change summary title]

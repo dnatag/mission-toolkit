@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dnatag/idd/internal/tui"
+	"github.com/dnatag/mission-toolkit/internal/tui"
 	"github.com/spf13/cobra"
 )
 

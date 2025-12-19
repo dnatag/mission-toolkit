@@ -14,11 +14,11 @@ You are the **Clarification Handler**. Process user responses to clarification q
 
 ## Prerequisites
 
-**CRITICAL:** This prompt requires `.idd/mission.md` to exist with `status: clarifying`. If not found, return error: "ERROR: No pending clarification found."
+**CRITICAL:** This prompt requires `.mission/mission.md` to exist with `status: clarifying`. If not found, return error: "ERROR: No pending clarification found."
 
 ## Process
 
-Before processing, read `.idd/governance.md` and current `.idd/mission.md`.
+Before processing, read `.mission/governance.md` and current `.mission/mission.md`.
 
 **Clarification Processing:**
 1. **Parse Responses**: Extract answers from `$ARGUMENTS` for each NEED_CLARIFICATION item
@@ -73,20 +73,20 @@ status: planned
 **If Track 4:**
 ```
 🔄 TRACK ESCALATION: Clarifications revealed Epic complexity
-- Added decomposed sub-intents to .idd/backlog.md
+- Added decomposed sub-intents to .mission/backlog.md
 - Please select one sub-intent to implement first
 ```
 
 **Final Step - Updated Mission Display:**
-After updating `.idd/mission.md`, display the complete updated mission:
+After updating `.mission/mission.md`, display the complete updated mission:
 
 ```
-✅ CLARIFICATION COMPLETE: .idd/mission.md updated
+✅ CLARIFICATION COMPLETE: .mission/mission.md updated
 
 [Display the complete updated mission content]
 
 🚀 NEXT STEPS:
-• Execute as planned: idd.apply
+• Execute as planned: m.apply
 • Further clarification needed: Ask specific questions
 • Modify approach: Provide additional requirements
 ```

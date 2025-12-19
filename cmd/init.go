@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dnatag/idd/internal/templates"
+	"github.com/dnatag/mission-toolkit/internal/templates"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -18,9 +18,9 @@ var aiType string
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Initialize IDD project with templates for specified AI type",
-	Long: `Initialize Intent-Driven Development (IDD) project structure with templates
-for the specified AI assistant type. Creates .idd/ directory with governance files
+	Short: "Initialize Mission Toolkit project with templates for specified AI type",
+	Long: `Initialize Mission Toolkit project structure with templates
+for the specified AI assistant type. Creates .mission/ directory with governance files
 and AI-specific prompt templates.
 
 Supported AI types: q, claude, gemini, cursor, codex, cline, kiro`,
@@ -47,7 +47,7 @@ Supported AI types: q, claude, gemini, cursor, codex, cline, kiro`,
 			os.Exit(1)
 		}
 
-		fmt.Printf("IDD project initialized successfully for AI type: %s\n", aiType)
+		fmt.Printf("Mission Toolkit project initialized successfully for AI type: %s\n", aiType)
 	},
 }
 

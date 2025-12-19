@@ -84,7 +84,7 @@ go test ./...`
 
 func TestReadCompletedMissions(t *testing.T) {
 	// Create temporary directory structure
-	tmpDir, err := os.MkdirTemp("", "test-idd-*")
+	tmpDir, err := os.MkdirTemp("", "test-mission-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -95,8 +95,8 @@ func TestReadCompletedMissions(t *testing.T) {
 	defer os.Chdir(oldWd)
 	os.Chdir(tmpDir)
 
-	// Create .idd/completed directory
-	completedDir := ".idd/completed"
+	// Create .mission/completed directory
+	completedDir := ".mission/completed"
 	if err := os.MkdirAll(completedDir, 0755); err != nil {
 		t.Fatalf("Failed to create completed dir: %v", err)
 	}
@@ -154,7 +154,7 @@ Second test mission`
 
 func TestReadCurrentMission(t *testing.T) {
 	// Create temporary directory structure
-	tmpDir, err := os.MkdirTemp("", "test-idd-*")
+	tmpDir, err := os.MkdirTemp("", "test-mission-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -165,9 +165,9 @@ func TestReadCurrentMission(t *testing.T) {
 	defer os.Chdir(oldWd)
 	os.Chdir(tmpDir)
 
-	// Create .idd directory
-	if err := os.MkdirAll(".idd", 0755); err != nil {
-		t.Fatalf("Failed to create .idd dir: %v", err)
+	// Create .mission directory
+	if err := os.MkdirAll(".mission", 0755); err != nil {
+		t.Fatalf("Failed to create .mission dir: %v", err)
 	}
 
 	// Create current mission file
@@ -179,7 +179,7 @@ status: active
 ## INTENT
 Current test mission`
 
-	missionPath := ".idd/mission.md"
+	missionPath := ".mission/mission.md"
 	if err := os.WriteFile(missionPath, []byte(missionContent), 0644); err != nil {
 		t.Fatalf("Failed to write current mission: %v", err)
 	}

@@ -1,11 +1,11 @@
-# Intent-Driven Development (IDD) Toolkit
+# Mission Toolkit
 
 > **"Slow down the process to speed up the understanding"**  
 > *Intent defines the scope and approach — let purpose drive process*
 
 ## 🧠 The Philosophy
 
-IDD is a minimalist workflow designed to bridge the gap between "Vibe Coding" (Chaos) and "Spec-Driven Development" (Bureaucracy).
+Mission Toolkit is a minimalist workflow designed to bridge the gap between "Vibe Coding" (Chaos) and "Spec-Driven Development" (Bureaucracy).
 
 We believe that AI coding fails in two extremes:
 
@@ -15,21 +15,21 @@ We believe that AI coding fails in two extremes:
 
 *System 1 and System 2 terminologies are from Daniel Kahneman's "Thinking, Fast and Slow"*
 
-**✨ IDD is the Golden Ratio.** It forces a "🤝 Handshake" before every coding task. You don't write the code, but you authorize the architecture and verify the implementation.
+**✨ Mission Toolkit is the Golden Ratio.** It forces a "🤝 Handshake" before every coding task. You don't write the code, but you authorize the architecture and verify the implementation.
 
 ### 🤝 The Handshake Moment
 
 This creates the psychological sweet spot where you maintain ownership while leveraging AI capabilities. The secret is **Tactical System 2** — "slow down the process to speed up the understanding."
 
-IDD speeds up understanding by working only on atomic-sized intents. Large epics get decomposed into manageable pieces where your brain can keep pace with AI speed. Instead of trying to comprehend massive changes all at once, you understand each small mission completely before moving forward. This piecemeal approach lets human cognition stay in sync with AI execution.
+Mission Toolkit speeds up understanding by working only on atomic-sized intents. Large epics get decomposed into manageable pieces where your brain can keep pace with AI speed. Instead of trying to comprehend massive changes all at once, you understand each small mission completely before moving forward. This piecemeal approach lets human cognition stay in sync with AI execution.
 
 ## ⚙️ How It Works
 
-IDD implements this philosophy through a systematic approach that converts user intents into structured, executable missions with built-in complexity management and continuous improvement.
+Mission Toolkit implements this philosophy through a systematic approach that converts user intents into structured, executable missions with built-in complexity management and continuous improvement.
 
 ### 🔄 The Three-Phase Handshake
 
-**1. 📝 Intent Analysis (Human)** - You define what you want, IDD categorizes complexity using a 4-track system
+**1. 📝 Intent Analysis (Human)** - You define what you want, Mission Toolkit categorizes complexity using a 4-track system
 
 **2. 🛠️ Mission Planning (AI + Human)** - AI proposes scope and plan, you authorize the architecture
 
@@ -45,12 +45,12 @@ IDD implements this philosophy through a systematic approach that converts user 
 
 *Note: Use `/` for most AI assistants, `@` for Amazon Q CLI and Kiro CLI*
 
-### 📝 `/idd.plan` - The Planning Handshake
+### 📝 `/m.plan` - The Planning Handshake
 Converts your intent into a structured mission. You define what, AI proposes how, you authorize.
 
 ```bash
 # Example usage
-/idd.plan "Add user authentication to the API"
+/m.plan "Add user authentication to the API"
 ```
 
 **Features:**
@@ -59,12 +59,26 @@ Converts your intent into a structured mission. You define what, AI proposes how
 - 🔒 Security validation and input sanitization
 - 📋 Backlog management for complex intents
 
-### 🚀 `/idd.apply` - The Execution Handshake  
+### 🔍 `/m.clarify` - The Clarification Handshake (Optional)
+Refines vague or complex intents before planning. Helps break down ambiguous requirements into actionable missions.
+
+```bash
+# Example usage
+/m.clarify "Make the app better"
+```
+
+**Features:**
+- 🎯 Intent disambiguation and scope refinement
+- 📋 Requirement extraction from vague descriptions
+- 🔄 Interactive clarification process
+- 📝 Structured output ready for m.apply
+
+### 🚀 `/m.apply` - The Execution Handshake  
 Implements your authorized plan. AI handles execution while you maintain oversight.
 
 ```bash
 # Example usage
-/idd.apply
+/m.apply
 ```
 
 **Features:**
@@ -73,12 +87,12 @@ Implements your authorized plan. AI handles execution while you maintain oversig
 - ✅ Mandatory verification execution
 - 🔍 Pattern detection for future refactoring
 
-### 📈 `/idd.complete` - The Learning Handshake
+### 📈 `/m.complete` - The Learning Handshake
 Captures what was accomplished and learned. Builds organizational memory for future missions.
 
 ```bash
 # Example usage
-/idd.complete
+/m.complete
 ```
 
 **Features:**
@@ -90,7 +104,7 @@ Captures what was accomplished and learned. Builds organizational memory for fut
 ## Project Structure
 
 ```
-.idd/
+.mission/
 ├── governance.md          # Core principles and workflow rules
 ├── backlog.md            # Future work and refactoring opportunities
 ├── metrics.md            # Aggregate performance statistics
@@ -100,16 +114,17 @@ Captures what was accomplished and learned. Builds organizational memory for fut
     └── YYYY-MM-DD-HH-MM-metrics.md
 
 prompts/
-├── idd.plan.md           # Planning prompt and complexity matrix
-├── idd.apply.md          # Execution prompt and safety checks
-└── idd.complete.md       # Completion prompt and observability
+├── m.clarify.md        # Clarification prompt for vague intents
+├── m.plan.md           # Planning prompt and complexity matrix
+├── m.apply.md          # Execution prompt and safety checks
+└── m.complete.md       # Completion prompt and observability
 ```
 
 ## Complexity Matrix
 
 | Track | Scope | Files | Keywords | Action |
 |-------|-------|-------|----------|--------|
-| **TRACK 1** (Atomic) | Single line/function | 0 new files | "Fix typo", "Rename var" | Skip IDD, direct edit |
+| **TRACK 1** (Atomic) | Single line/function | 0 new files | "Fix typo", "Rename var" | Skip Mission, direct edit |
 | **TRACK 2** (Standard) | Single feature | 1-5 files | "Add endpoint", "Create component" | Standard WET mission |
 | **TRACK 3** (Robust) | Cross-cutting concerns | Security/Auth/Performance | "Add authentication", "Refactor for security" | Robust WET mission |
 | **TRACK 4** (Epic) | Multiple systems | 10+ files | "Build payment system", "Rewrite architecture" | Decompose to backlog |
@@ -131,9 +146,9 @@ prompts/
 ## Mission Lifecycle
 
 ```
-User Intent → idd.plan → .idd/mission.md → idd.apply → Verification → idd.complete → Archive
-                ↓                                                                    ↓
-            .idd/backlog.md ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←← .idd/metrics.md
+User Intent → [m.clarify] → m.plan → .mission/mission.md → m.apply → Verification → m.complete → Archive
+                              ↓                                                                    ↓
+                          .mission/backlog.md ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←← .mission/metrics.md
 ```
 
 ## Key Principles
@@ -162,17 +177,17 @@ User Intent → idd.plan → .idd/mission.md → idd.apply → Verification → 
 
 1. **📁 Initialize Project**
    ```bash
-   # Initialize IDD project with AI-specific templates
-   idd init --ai-type q
+   # Initialize Mission Toolkit project with AI-specific templates
+   m init --ai-type q
    
    # Supported AI types: q, claude, gemini, cursor, codex, cline, kiro
-   # Creates .idd/ directory with governance files and prompt templates
+   # Creates .mission/ directory with governance files and prompt templates
    ```
 
 2. **📊 Check Project Status**
    ```bash
    # Display interactive TUI showing current and completed missions
-   idd status
+   m status
    
    # Use ↑/↓ to navigate missions, Enter to view details, / to search
    # Shows mission progress and provides clear next steps
@@ -180,17 +195,17 @@ User Intent → idd.plan → .idd/mission.md → idd.apply → Verification → 
 
 3. **📝 Plan Your First Mission**
    ```bash
-   /idd.plan "Your development intent here"
+   /m.plan "Your development intent here"
    ```
 
 4. **⚙️ Execute the Mission**
    ```bash
-   /idd.apply
+   /m.apply
    ```
 
 5. **🏁 Complete and Track**
    ```bash
-   /idd.complete
+   /m.complete
    ```
 
 ## Observability Features

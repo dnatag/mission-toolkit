@@ -1,4 +1,4 @@
-module github.com/dnatag/idd
+module github.com/dnatag/mission-toolkit
 
 go 1.25.4
 

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dnatag/idd/internal/mission"
+	"github.com/dnatag/mission-toolkit/internal/mission"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

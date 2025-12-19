@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/dnatag/idd/internal/mission"
+	"github.com/dnatag/mission-toolkit/internal/mission"
 )
 
 var (
@@ -231,7 +231,7 @@ func (m Model) View() string {
 	var sections []string
 
 	// Title
-	sections = append(sections, titleStyle.Render("IDD Mission Status"))
+	sections = append(sections, titleStyle.Render("Mission Toolkit Status"))
 	sections = append(sections, "")
 
 	// Current Mission (Top Section)
@@ -488,22 +488,22 @@ func (m Model) renderCurrentMission() string {
 	switch mission.Status {
 	case "clarifying":
 		statusStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FFA500"))
-		nextSteps = "Next: Use 'idd.clarify' to provide answers to clarification questions"
+		nextSteps = "Next: Use 'm.clarify' to provide answers to clarification questions"
 	case "planned":
 		statusStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00CED1"))
-		nextSteps = "Next: Run 'idd.apply' to execute the mission"
+		nextSteps = "Next: Run 'm.apply' to execute the mission"
 	case "active":
 		statusStyle = activeStyle
-		nextSteps = "Next: Run 'idd.complete' to finalize the mission"
+		nextSteps = "Next: Run 'm.complete' to finalize the mission"
 	case "completed":
 		statusStyle = completedStyle
 		nextSteps = "Mission completed successfully"
 	case "failed":
 		statusStyle = failedStyle
-		nextSteps = "Next: Create a new mission with smaller scope using 'idd.plan'"
+		nextSteps = "Next: Create a new mission with smaller scope using 'm.plan'"
 	default:
 		statusStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
-		nextSteps = "Unknown status - use 'idd.plan' to create a new mission"
+		nextSteps = "Unknown status - use 'm.plan' to create a new mission"
 	}
 
 	content := fmt.Sprintf("%s %s (Track %s)\n\n%s\n\n%s",

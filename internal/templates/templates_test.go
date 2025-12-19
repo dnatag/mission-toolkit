@@ -35,9 +35,9 @@ func getAvailablePromptTemplates() ([]string, error) {
 func generateExpectedFiles(aiType, targetDir string, promptFiles []string) []string {
 	var wantFiles []string
 	
-	// Always include IDD templates
-	iddFiles := []string{".idd/governance.md", ".idd/metrics.md", ".idd/backlog.md"}
-	wantFiles = append(wantFiles, iddFiles...)
+	// Always include Mission Toolkit templates
+	missionFiles := []string{".mission/governance.md", ".mission/metrics.md", ".mission/backlog.md"}
+	wantFiles = append(wantFiles, missionFiles...)
 	
 	// Add prompt files based on AI type
 	var promptDir string
