@@ -34,6 +34,14 @@ Before execution, read `.mission/governance.md`.
 **Auto-Completion:**
 If user responds with "y", "yes", "complete", or "finish" after successful execution, automatically run /m.complete process.
 
+**CRITICAL - STRICT EXECUTION PROTOCOL:**
+1. **STOP**: Do not read the Output Format yet.
+2. **EXECUTE**: You MUST perform all coding tasks and run the VERIFICATION command using the `bash` tool.
+3. **CHECK**: Did the verification command succeed?
+   - IF YES: You are authorized to use the "Success" format.
+   - IF NO: You MUST run `git checkout .` and use the "Failure" format.
+4. **REPORT**: Generate the appropriate output only after these steps.
+
 **Output Format:**
 
 **Success:**

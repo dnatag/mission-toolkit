@@ -38,6 +38,12 @@ After incorporating clarifications, re-analyze using the complexity matrix:
 **TRACK 2-3**: Create standard WET mission
 **TRACK 4**: Decompose to backlog, ask user to select sub-intent
 
+**CRITICAL - STRICT EXECUTION PROTOCOL:**
+1. **STOP**: Do not read the Output Format yet.
+2. **EXECUTE**: You MUST use the `write` or `edit` tool to actually update `.mission/mission.md` with the new INTENT, SCOPE, and PLAN.
+3. **VERIFY**: Check that the file content has changed on disk.
+4. **REPORT**: ONLY after the file is updated, generate the outcome below.
+
 **Output Format:**
 
 **If Track 1:**
