@@ -5,8 +5,8 @@ description: "Execute current mission with status tracking"
 ## Prerequisites
 
 **CRITICAL:** This prompt requires `.mission/mission.md` to exist with `status: planned`. If not found, check for other statuses:
-- `status: clarifying` → return error: "Mission needs clarification. Use /m.clarify to provide answers."
-- No mission file → return error: "No active mission found. Use /m.plan to create a new mission first."
+- `status: clarifying` → return error: "Mission needs clarification. Use @m.clarify to provide answers."
+- No mission file → return error: "No active mission found. Use @m.plan to create a new mission first."
 
 ## Role & Objective
 
@@ -32,7 +32,7 @@ Before execution, read `.mission/governance.md`.
 - **On Failure**: Change `status: active` to `status: failed` and run `git checkout .`
 
 **Auto-Completion:**
-If user responds with "y", "yes", "complete", or "finish" after successful execution, automatically run /m.complete process.
+If user responds with "y", "yes", "complete", or "finish" after successful execution, automatically run @m.complete process.
 
 **CRITICAL - STRICT EXECUTION PROTOCOL:**
 1. **STOP**: Do not read the Output Format yet.
@@ -69,7 +69,7 @@ feat: add user authentication endpoint
 
 🚀 NEXT STEPS:
 • Auto-complete: "y" or "yes" or "complete"
-• Manual completion: /m.complete
+• Manual completion: @m.complete
 • Review changes first: check files and then decide
 ```
 

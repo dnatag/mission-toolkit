@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/afero"
 )
@@ -15,7 +16,17 @@ var missionTemplates embed.FS
 var promptTemplates embed.FS
 
 // SupportedAITypes lists all supported AI types
-var SupportedAITypes = []string{"q", "claude", "gemini", "cursor", "codex", "cline", "kiro", "opencode"}
+var SupportedAITypes = []string{"q", "claude", "gemini", "cursor", "codex", "kiro", "opencode"}
+
+// getSlashPrefix returns the appropriate slash command prefix for the AI type
+func getSlashPrefix(aiType string) string {
+	switch aiType {
+	case "q", "kiro":
+		return "@"
+	default:
+		return "/"
+	}
+}
 
 // ValidateAIType checks if the provided AI type is supported
 func ValidateAIType(aiType string) error {
@@ -29,6 +40,8 @@ func ValidateAIType(aiType string) error {
 
 // WriteTemplates writes embedded templates to the specified filesystem
 func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
+	prefix := getSlashPrefix(aiType)
+	
 	// Write Mission Toolkit templates to .mission directory
 	missionDir := filepath.Join(targetDir, ".mission")
 	if err := fs.MkdirAll(missionDir, 0755); err != nil {
@@ -41,7 +54,12 @@ func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
 		if err != nil {
 			return err
 		}
-		if err := afero.WriteFile(fs, filepath.Join(missionDir, file), content, 0644); err != nil {
+		
+		// Replace slash command prefix in content
+		contentStr := string(content)
+		contentStr = strings.ReplaceAll(contentStr, "/m.", prefix+"m.")
+		
+		if err := afero.WriteFile(fs, filepath.Join(missionDir, file), []byte(contentStr), 0644); err != nil {
 			return err
 		}
 	}
@@ -59,8 +77,6 @@ func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
 		promptDir = filepath.Join(targetDir, ".cursor", "commands")
 	case "codex":
 		promptDir = filepath.Join(targetDir, ".codex", "commands")
-	case "cline":
-		promptDir = filepath.Join(targetDir, ".clinerules", "workflows")
 	case "kiro":
 		promptDir = filepath.Join(targetDir, ".kiro", "prompts")
 	case "opencode":
@@ -79,7 +95,12 @@ func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
 		if err != nil {
 			return err
 		}
-		if err := afero.WriteFile(fs, filepath.Join(promptDir, file), content, 0644); err != nil {
+		
+		// Replace slash command prefix in content
+		contentStr := string(content)
+		contentStr = strings.ReplaceAll(contentStr, "/m.", prefix+"m.")
+		
+		if err := afero.WriteFile(fs, filepath.Join(promptDir, file), []byte(contentStr), 0644); err != nil {
 			return err
 		}
 	}

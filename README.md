@@ -180,7 +180,7 @@ User Intent → [m.clarify] → m.plan → .mission/mission.md → m.apply → V
    # Initialize Mission Toolkit project with AI-specific templates
    m init --ai-type q
    
-   # Supported AI types: q, claude, gemini, cursor, codex, cline, kiro
+   # Supported AI types: q, claude, gemini, cursor, codex, kiro
    # Creates .mission/ directory with governance files and prompt templates
    ```
 

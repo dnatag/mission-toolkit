@@ -4,7 +4,7 @@ description: "Complete current mission and update project tracking"
 
 ## Prerequisites
 
-**CRITICAL:** This prompt requires `.mission/mission.md` to exist. If `.mission/mission.md` is not found, return error: "No active mission found. Use /m.plan to create a new mission first."
+**CRITICAL:** This prompt requires `.mission/mission.md` to exist. If `.mission/mission.md` is not found, return error: "No active mission found. Use @m.plan to create a new mission first."
 
 ## Role & Objective
 
@@ -24,7 +24,7 @@ Before generating output, read `.mission/governance.md`.
 1. **Update Mission**: Change `status: active` to `status: completed` and add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ`
 2. **Archive Mission**: Move `.mission/mission.md` to `.mission/completed/YYYY-MM-DD-HH-MM-mission.md`
 3. **Create Metrics**: Generate `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` with detailed data
-4. **Update Summary**: Add completion entry to `.mission/metrics.md` RECENT COMPLETIONS section
+4. **Update Summary**: Update `.mission/metrics.md` by refreshing all aggregate statistics and adding new completion to RECENT COMPLETIONS
 5. **Update Backlog**: Search `.mission/backlog.md` for matching intent, mark as completed with timestamp
 6. **Clean Up**: Remove `.mission/mission.md` after successful archiving
 
@@ -46,7 +46,7 @@ Before generating output, read `.mission/governance.md`.
 **Duration**: [estimated time]
 
 ## CHANGE SUMMARY
-[Copy the complete change summary from /m.apply execution]
+[Copy the complete change summary from @m.apply execution]
 
 Title: [Brief description]
 
@@ -70,11 +70,11 @@ Description (max 4 bullet points):
 
 ## METRICS CREATED
 - **Detailed Metrics**: `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` (includes change summary)
-- **Summary Updated**: `.mission/metrics.md` aggregate data
+- **Summary Updated**: `.mission/metrics.md` aggregate statistics refreshed
 - **Historical Preservation**: All mission data preserved with timestamps
 ```
 
 🚀 WHAT'S NEXT:
-• Start new mission: /m.plan "your next intent"
+• Start new mission: @m.plan "your next intent"
 • Review metrics: Check .mission/metrics.md
 • [Suggested follow-up missions or backlog items to prioritize]

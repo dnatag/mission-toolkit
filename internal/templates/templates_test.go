@@ -52,8 +52,6 @@ func generateExpectedFiles(aiType, targetDir string, promptFiles []string) []str
 		promptDir = ".cursor/commands"
 	case "codex":
 		promptDir = ".codex/commands"
-	case "cline":
-		promptDir = ".clinerules/workflows"
 	case "kiro":
 		promptDir = ".kiro/prompts"
 	case "opencode":
@@ -88,7 +86,6 @@ func TestWriteTemplates(t *testing.T) {
 		{"Gemini templates", "gemini", "/test"},
 		{"Cursor templates", "cursor", "/test"},
 		{"Codex templates", "codex", "/test"},
-		{"Cline templates", "cline", "/test"},
 		{"Kiro templates", "kiro", "/test"},
 		{"OpenCode templates", "opencode", "/test"},
 	}
@@ -139,5 +136,65 @@ func TestWriteTemplatesUnsupportedAI(t *testing.T) {
 	expectedError := "unsupported AI type 'unsupported'"
 	if !strings.Contains(err.Error(), expectedError) {
 		t.Errorf("Expected error to contain '%s', but got: %v", expectedError, err)
+	}
+}
+
+func TestGetSlashPrefix(t *testing.T) {
+	tests := []struct {
+		aiType   string
+		expected string
+	}{
+		{"q", "@"},
+		{"kiro", "@"},
+		{"claude", "/"},
+		{"gemini", "/"},
+		{"cursor", "/"},
+		{"codex", "/"},
+		{"opencode", "/"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.aiType, func(t *testing.T) {
+			result := getSlashPrefix(tt.aiType)
+			if result != tt.expected {
+				t.Errorf("getSlashPrefix(%s) = %s, want %s", tt.aiType, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestSlashPrefixReplacement(t *testing.T) {
+	tests := []struct {
+		name   string
+		aiType string
+		prefix string
+	}{
+		{"Amazon Q uses @", "q", "@"},
+		{"Kiro uses @", "kiro", "@"},
+		{"Claude uses /", "claude", "/"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+
+			err := WriteTemplates(fs, "/test", tt.aiType)
+			if err != nil {
+				t.Fatalf("WriteTemplates() error = %v", err)
+			}
+
+			// Check governance.md for correct prefix
+			govPath := "/test/.mission/governance.md"
+			content, err := afero.ReadFile(fs, govPath)
+			if err != nil {
+				t.Fatalf("Failed to read governance.md: %v", err)
+			}
+
+			contentStr := string(content)
+			expectedPattern := tt.prefix + "m.clarify"
+			if !strings.Contains(contentStr, expectedPattern) {
+				t.Errorf("Expected governance.md to contain '%s', but it doesn't. Content: %s", expectedPattern, contentStr)
+			}
+		})
 	}
 }
