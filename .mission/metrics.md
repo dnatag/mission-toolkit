@@ -21,11 +21,11 @@
 ## RECENT COMPLETIONS
 (Last 5 missions with change summaries - see `.mission/completed/` for full history)
 
+- 2025-12-19 Track 2: Fix mission.md inconsistencies between Go code and prompt templates
 - 2025-12-18 Track 2: Remove unused history command and update README with init/status documentation
 - 2025-12-18 Track 2: Add comprehensive unit tests for TUI status implementation
 - 2025-12-18 Track 3: Add TUI-based status command with search functionality and mission history
 - 2025-12-18 Track 2: Add pagination to completed missions history list with 5 items per page
-- 2025-12-18 Track 2: Add scrollable viewport for mission details with scroll indicators
 
 ## PROCESS INSIGHTS
 - Epic decomposition strategy highly effective for complex UI features

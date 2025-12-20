@@ -21,24 +21,18 @@ Before generating output, read `.mission/governance.md`.
 4. **Scope Validation**: Ensure all SCOPE files were properly modified
 
 **Completion Actions:**
-1. **Update Status**: Change `status: active` to `status: completed`
-2. **Add Timestamp**: Add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ` field after the status line using RFC3339 format
-3. **Ensure Directory**: Create `.mission/completed/` directory if it doesn't exist
-4. **Archive Mission**: Move `.mission/mission.md` to `.mission/completed/YYYY-MM-DD-HH-MM-mission.md`
-5. **Create Metrics**: Generate `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` with mission data including change summary
-6. **Clean Active State**: Remove `.mission/mission.md` after successful archiving
-7. **Update Backlog**: Search `.mission/backlog.md` for matching intent, mark as completed with timestamp
-8. **Update Summary**: Append summary with change summary title to `.mission/metrics.md` for aggregate tracking
+1. **Update Mission**: Change `status: active` to `status: completed` and add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ`
+2. **Archive Mission**: Move `.mission/mission.md` to `.mission/completed/YYYY-MM-DD-HH-MM-mission.md`
+3. **Create Metrics**: Generate `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` with detailed data
+4. **Update Summary**: Add completion entry to `.mission/metrics.md` RECENT COMPLETIONS section
+5. **Update Backlog**: Search `.mission/backlog.md` for matching intent, mark as completed with timestamp
+6. **Clean Up**: Remove `.mission/mission.md` after successful archiving
 
-**Observability Data Collection:**
-- Mission duration (planning to completion)
-- Track complexity and actual file count
-- WET vs DRY mission outcomes
-- Duplication patterns detected
-- Verification success/failure
-- Files created/modified/deleted
-- Change summary (title + description)
-- Error patterns and resolution time
+**CRITICAL - STRICT EXECUTION PROTOCOL:**
+1. **STOP**: Do not read the Output Format yet.
+2. **EXECUTE**: You MUST use the `write`, `edit`, and `bash` tools to perform actions 1-6 above.
+3. **VERIFY**: Check that `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` actually exists on disk.
+4. **REPORT**: ONLY after the tools have successfully run, generate the outcome below.
 
 **Output Format:**
 
