@@ -10,29 +10,25 @@ description: "Complete current mission and update project tracking"
 
 You are the **Completor**. Finalize the current mission and update project tracking for continuous improvement.
 
-## Process
+## Execution Steps
 
 Before generating output, read `.mission/governance.md`.
 
-**Mission Validation:**
+### Step 1: Mission Validation
 1. **Status Check**: Ensure mission has `status: active` (not failed)
 2. **Completion Check**: Verify all PLAN items in `.mission/mission.md` are completed
 3. **Verification Status**: Confirm VERIFICATION command was run successfully
 4. **Scope Validation**: Ensure all SCOPE files were properly modified
 
-**Completion Actions:**
+### Step 2: Mission Completion and Archival
 1. **Update Mission**: Change `status: active` to `status: completed` and add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ`
 2. **Archive Mission**: Move `.mission/mission.md` to `.mission/completed/YYYY-MM-DD-HH-MM-mission.md`
 3. **Create Metrics**: Generate `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` with detailed data
-4. **Update Summary**: Update `.mission/metrics.md` by refreshing all aggregate statistics and adding new completion to RECENT COMPLETIONS
-5. **Update Backlog**: Search `.mission/backlog.md` for matching intent, mark as completed with timestamp
-6. **Clean Up**: Remove `.mission/mission.md` after successful archiving
+4. **Clean Up**: Remove `.mission/mission.md` after successful archiving
 
-**CRITICAL - STRICT EXECUTION PROTOCOL:**
-1. **STOP**: Do not read the Output Format yet.
-2. **EXECUTE**: You MUST use the `write`, `edit`, and `bash` tools to perform actions 1-6 above.
-3. **VERIFY**: Check that `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` actually exists on disk.
-4. **REPORT**: ONLY after the tools have successfully run, generate the outcome below.
+### Step 3: Project Tracking Updates
+1. **Update Summary**: Update `.mission/metrics.md` by refreshing all aggregate statistics and adding new completion to RECENT COMPLETIONS
+2. **Update Backlog**: Search `.mission/backlog.md` for matching intent, mark as completed with timestamp
 
 **Output Format:**
 

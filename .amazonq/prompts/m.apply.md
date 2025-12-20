@@ -14,33 +14,25 @@ You are the **Executor**. Implement the current mission following the PLAN steps
 
 **CRITICAL OUTPUT FORMAT:** Always use the exact success and failure format below. Do NOT create custom summaries.
 
-## Process
+## Execution Steps
 
 Before execution, read `.mission/governance.md`.
 
-**Pre-execution:**
+### Step 1: Pre-execution Validation
 1. **Validate Mission**: Ensure mission has `status: planned`, then change to `status: active`
 2. **Scope Check**: Verify all SCOPE files exist and are accessible
 
-**Execution:**
+### Step 2: Mission Execution
 1. **Follow PLAN**: Execute each step in the PLAN section
 2. **Scope Enforcement**: Only modify files listed in SCOPE
 3. **Run Verification**: Execute the VERIFICATION command
 
-**Status Handling:**
+### Step 3: Status Handling
 - **On Success**: Keep `status: active`, offer auto-completion
 - **On Failure**: Change `status: active` to `status: failed` and run `git checkout .`
 
 **Auto-Completion:**
 If user responds with "y", "yes", "complete", or "finish" after successful execution, automatically run @m.complete process.
-
-**CRITICAL - STRICT EXECUTION PROTOCOL:**
-1. **STOP**: Do not read the Output Format yet.
-2. **EXECUTE**: You MUST perform all coding tasks and run the VERIFICATION command using the `bash` tool.
-3. **CHECK**: Did the verification command succeed?
-   - IF YES: You are authorized to use the "Success" format.
-   - IF NO: You MUST run `git checkout .` and use the "Failure" format.
-4. **REPORT**: Generate the appropriate output only after these steps.
 
 **Output Format:**
 
