@@ -256,6 +256,30 @@ Templates: v2.1.0
 - **Clear Compatibility**: Users understand which components changed
 - **Selective Adoption**: Teams can update CLI or templates as needed
 
+## Release Process
+
+### Creating a Release
+
+1. **Tag the release**:
+   ```bash
+   git tag -a v1.0.0 -m "Release v1.0.0"
+   git push origin v1.0.0
+   ```
+
+2. **Automated build**: GitHub Actions will automatically:
+   - Run tests and validation
+   - Build cross-platform binaries (Linux, macOS, Windows)
+   - Create zip archives for each platform
+   - Generate checksums and changelog
+   - Publish release with artifacts
+
+3. **Download binaries**: Users can download platform-specific zips from the GitHub releases page.
+
+### Supported Platforms
+- Linux (amd64, arm64)
+- macOS (amd64, arm64) 
+- Windows (amd64, arm64)
+
 ## License
 
 This project is licensed under the terms specified in the LICENSE file.

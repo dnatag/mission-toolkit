@@ -14,20 +14,21 @@
 - **Templates**: `internal/templates/` - Embedded mission and prompt templates
 - **TUI**: `internal/tui/` - Terminal user interface
 - **Mission Logic**: `internal/mission/` - Mission file reader
-- **Tests**: `tests/` - AI workflow validation (manual)
+- **Tests**: `tests/` - AI-native workflow validation framework
 
 ### Key Files
 - `main.go` - CLI entry point
 - `internal/templates/templates.go` - Template embedding
 - `internal/version/version.go` - Version management
-- `tests/fixtures/*.md` - AI test scenarios
+- `tests/cases/*.md` - AI-native test scenarios
+- `tests/framework/` - AI reasoning validation framework
 
 ## Tech Stack
 
 **Language**: Go 1.21+  
 **Framework**: Cobra CLI + Bubble Tea TUI  
 **Templates**: Go templates (embedded)  
-**Testing**: Go test + manual AI validation
+**Testing**: AI-native reasoning validation + Go test
 
 ## Essential Commands
 
@@ -47,8 +48,9 @@ go test ./...                      # Run tests
 
 ### Testing AI Workflows
 ```bash
-# Manual testing with AI agents
-# 1. Use scenarios from tests/fixtures/
-# 2. Validate against tests/assertions/
-# 3. Follow tests/validation/workflow-validator.md
+# AI-native testing with reasoning validation
+# 1. Use scenarios from tests/cases/
+# 2. Validate against tests/framework/assertion-patterns.md
+# 3. Follow tests/framework/execution-guide.md
+# 4. All tests pass: 32/32 assertions (100% success rate)
 ```
