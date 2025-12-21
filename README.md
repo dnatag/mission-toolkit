@@ -9,17 +9,15 @@ Intent-Driven Atomic Development is a minimalist workflow designed to bridge the
 
 We believe that AI coding fails in two extremes:
 
-**🌀 The Vibe Trap (System 1):** You let the AI drive. It moves fast, hallucinates, and paints you into a corner. You feel frustrated.
+**🌀 The Vibe Trap:** You let the AI drive. It moves fast, hallucinates, and paints you into a corner. You feel frustrated.
 
-**📝 The Spec Trap (System 2 Overload):** You write exhaustive documentation before coding. It works, but it alienates you from the codebase. You feel like a contributor, not an owner.
-
-*System 1 and System 2 terminologies are from Daniel Kahneman's "Thinking, Fast and Slow"*
+**📝 The Spec Trap:** You write exhaustive documentation before coding. It works, but it alienates you from the codebase. You feel like a contributor, not an owner.
 
 **✨ Intent-Driven Atomic Development is the Golden Ratio.** It forces a "🤝 Handshake" before every coding task. You don't write the code, but you authorize the architecture and verify the implementation.
 
 ## ⚛️ Why Atomic?
 
-This creates the psychological sweet spot where you maintain ownership while leveraging AI capabilities. The secret is **Tactical System 2** — "slow down the process to speed up the understanding."
+This creates the psychological sweet spot where you maintain ownership while leveraging AI capabilities. The secret is **deliberate pacing** — "slow down the process to speed up the understanding."
 
 We deliberately work only with atomic-sized intents to maintain small scope. This actually slows down the process — you can't tackle massive features in one go. But this constraint gives you better understanding and genuine ownership. When your brain can fully comprehend each small mission, you maintain control instead of becoming a passenger to AI speed.
 
@@ -43,7 +41,7 @@ The Mission Toolkit implements this philosophy through a systematic approach tha
 
 ## 🤝 The Slash Commands
 
-*Note: Use `/` for most AI assistants, `@` for Amazon Q CLI and Kiro CLI*
+*Note: Amazon Q CLI and Kiro CLI don't support inline arguments. Run m.plan or m.clarify without user input, and the AI will prompt for input.*
 
 ### 📝 `/m.plan` - The Planning Handshake
 Converts your intent into a structured mission. You define what, AI proposes how, you authorize.
@@ -250,44 +248,6 @@ $ m version
 CLI: v1.2.3
 Templates: v2.1.0
 ```
-
-### Semantic Versioning Guidelines
-
-Both CLI and templates follow [semantic versioning](https://semver.org/) (MAJOR.MINOR.PATCH):
-
-#### CLI Version Evolution
-
-- **MAJOR** (v2.0.0): Breaking changes to command interface or workflow
-  - Changed command syntax or flags
-  - Removed commands or features
-  - Modified file structure requirements
-
-- **MINOR** (v1.1.0): New features, backward compatible
-  - New commands or subcommands
-  - Enhanced TUI functionality
-  - Additional configuration options
-
-- **PATCH** (v1.0.1): Bug fixes, backward compatible
-  - Command execution fixes
-  - TUI display improvements
-  - Error handling enhancements
-
-#### Template Version Evolution
-
-- **MAJOR** (v2.0.0): Breaking changes to workflow or file structure
-  - Changed mission file format
-  - Modified governance rules
-  - Incompatible prompt structure changes
-
-- **MINOR** (v1.1.0): New features, backward compatible
-  - New AI platform support
-  - Additional prompt templates
-  - Enhanced governance features
-
-- **PATCH** (v1.0.1): Bug fixes and improvements
-  - Prompt text refinements
-  - Template formatting fixes
-  - Documentation updates
 
 ### Independent Evolution Benefits
 
