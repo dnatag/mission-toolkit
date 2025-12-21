@@ -5,7 +5,7 @@
 
 ## 🧠 The Philosophy
 
-Mission Toolkit is a minimalist workflow designed to bridge the gap between "Vibe Coding" (Chaos) and "Spec-Driven Development" (Bureaucracy).
+Intent-Driven Atomic Development is a minimalist workflow designed to bridge the gap between "Vibe Coding" (Chaos) and "Spec-Driven Development" (Bureaucracy).
 
 We believe that AI coding fails in two extremes:
 
@@ -15,21 +15,21 @@ We believe that AI coding fails in two extremes:
 
 *System 1 and System 2 terminologies are from Daniel Kahneman's "Thinking, Fast and Slow"*
 
-**✨ Mission Toolkit is the Golden Ratio.** It forces a "🤝 Handshake" before every coding task. You don't write the code, but you authorize the architecture and verify the implementation.
+**✨ Intent-Driven Atomic Development is the Golden Ratio.** It forces a "🤝 Handshake" before every coding task. You don't write the code, but you authorize the architecture and verify the implementation.
 
-### 🤝 The Handshake Moment
+## ⚛️ Why Atomic?
 
 This creates the psychological sweet spot where you maintain ownership while leveraging AI capabilities. The secret is **Tactical System 2** — "slow down the process to speed up the understanding."
 
-Mission Toolkit speeds up understanding by working only on atomic-sized intents. Large epics get decomposed into manageable pieces where your brain can keep pace with AI speed. Instead of trying to comprehend massive changes all at once, you understand each small mission completely before moving forward. This piecemeal approach lets human cognition stay in sync with AI execution.
+We deliberately work only with atomic-sized intents to maintain small scope. This actually slows down the process — you can't tackle massive features in one go. But this constraint gives you better understanding and genuine ownership. When your brain can fully comprehend each small mission, you maintain control instead of becoming a passenger to AI speed.
 
 ## ⚙️ How It Works
 
-Mission Toolkit implements this philosophy through a systematic approach that converts user intents into structured, executable missions with built-in complexity management and continuous improvement.
+The Mission Toolkit implements this philosophy through a systematic approach that converts user intents into structured, executable missions with built-in complexity management and continuous improvement.
 
 ### 🔄 The Three-Phase Handshake
 
-**1. 📝 Intent Analysis (Human)** - You define what you want, Mission Toolkit categorizes complexity using a 4-track system
+**1. 📝 Intent Analysis (Human)** - You define what you want, the Mission Toolkit categorizes complexity using a 4-track system
 
 **2. 🛠️ Mission Planning (AI + Human)** - AI proposes scope and plan, you authorize the architecture
 
