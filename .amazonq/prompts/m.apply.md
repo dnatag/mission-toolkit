@@ -32,7 +32,7 @@ Before execution, read `.mission/governance.md`.
 - **On Failure**: Change `status: active` to `status: failed` and run `git checkout .`
 
 **Auto-Completion:**
-If user responds with "y", "yes", "complete", or "finish" after successful execution, automatically run @m.complete process.
+If user responds with "y", "yes", "complete", or "finish" after successful execution, automatically execute the full @m.complete workflow (all steps).
 
 **Output Format:**
 
