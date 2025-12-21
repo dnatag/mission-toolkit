@@ -173,6 +173,60 @@ User Intent → [m.clarify] → m.plan → .mission/mission.md → m.apply → V
 
 ## 🚀 Getting Started
 
+### Installation
+
+#### Option 1: Download Pre-built Binaries (Recommended)
+
+Download the latest release for your platform from [GitHub Releases](https://github.com/dnatag/mission-toolkit/releases):
+
+```bash
+# macOS (Intel)
+curl -L https://github.com/dnatag/mission-toolkit/releases/download/v1.0.0/mission-toolkit-darwin-amd64.zip -o m.zip
+unzip m.zip && chmod +x m && sudo mv m /usr/local/bin/
+
+# macOS (Apple Silicon)
+curl -L https://github.com/dnatag/mission-toolkit/releases/download/v1.0.0/mission-toolkit-darwin-arm64.zip -o m.zip
+unzip m.zip && chmod +x m && sudo mv m /usr/local/bin/
+
+# Linux (amd64)
+curl -L https://github.com/dnatag/mission-toolkit/releases/download/v1.0.0/mission-toolkit-linux-amd64.zip -o m.zip
+unzip m.zip && chmod +x m && sudo mv m /usr/local/bin/
+
+# Linux (arm64)
+curl -L https://github.com/dnatag/mission-toolkit/releases/download/v1.0.0/mission-toolkit-linux-arm64.zip -o m.zip
+unzip m.zip && chmod +x m && sudo mv m /usr/local/bin/
+
+# Windows (PowerShell)
+Invoke-WebRequest -Uri https://github.com/dnatag/mission-toolkit/releases/download/v1.0.0/mission-toolkit-windows-amd64.zip -OutFile m.zip
+Expand-Archive m.zip -DestinationPath .
+# Add to PATH manually
+```
+
+#### Option 2: Homebrew (macOS/Linux)
+
+```bash
+brew tap dnatag/mission-toolkit
+brew install mission-toolkit
+```
+
+#### Option 3: Build from Source
+
+```bash
+# Prerequisites: Go 1.21+
+git clone https://github.com/dnatag/mission-toolkit.git
+cd mission-toolkit
+go build -o m main.go
+sudo mv m /usr/local/bin/
+```
+
+### Verify Installation
+
+```bash
+m version
+```
+
+### Quick Start
+
 1. **📁 Initialize Project**
    ```bash
    # Initialize Mission Toolkit project with AI-specific templates
