@@ -21,9 +21,9 @@ func createTestMission(intent, status string) *mission.Mission {
 
 func createTestModel() Model {
 	return Model{
-		selectedIndex: 0,
-		currentPage:   0,
-		itemsPerPage:  5,
+		selectedIndex:  0,
+		currentPage:    0,
+		itemsPerPage:   5,
 		viewportHeight: 20,
 		completedMissions: []*mission.Mission{
 			createTestMission("Test mission 1", "completed"),
@@ -36,7 +36,7 @@ func createTestModel() Model {
 // Test Model initialization
 func TestNewModel(t *testing.T) {
 	model := NewModel()
-	
+
 	assert.Equal(t, 0, model.selectedIndex)
 	assert.Equal(t, 0, model.currentPage)
 	assert.Equal(t, 5, model.itemsPerPage)
@@ -47,10 +47,10 @@ func TestNewModel(t *testing.T) {
 // Test pagination logic
 func TestGetTotalPages(t *testing.T) {
 	tests := []struct {
-		name           string
-		missionsCount  int
-		itemsPerPage   int
-		expectedPages  int
+		name          string
+		missionsCount int
+		itemsPerPage  int
+		expectedPages int
 	}{
 		{"Empty missions", 0, 5, 1},
 		{"Less than page size", 3, 5, 1},
@@ -63,14 +63,14 @@ func TestGetTotalPages(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			model := createTestModel()
 			model.itemsPerPage = tt.itemsPerPage
-			
+
 			// Create missions for test
 			missions := make([]*mission.Mission, tt.missionsCount)
 			for i := 0; i < tt.missionsCount; i++ {
 				missions[i] = createTestMission("Test", "completed")
 			}
 			model.completedMissions = missions
-			
+
 			pages := model.getTotalPages()
 			assert.Equal(t, tt.expectedPages, pages)
 		})
@@ -80,14 +80,14 @@ func TestGetTotalPages(t *testing.T) {
 func TestGetPageSize(t *testing.T) {
 	model := createTestModel()
 	model.itemsPerPage = 5
-	
+
 	// Test with missions less than page size
 	model.completedMissions = []*mission.Mission{
 		createTestMission("Test 1", "completed"),
 		createTestMission("Test 2", "completed"),
 	}
 	assert.Equal(t, 2, model.getPageSize())
-	
+
 	// Test with missions equal to page size
 	model.completedMissions = make([]*mission.Mission, 5)
 	for i := 0; i < 5; i++ {
@@ -99,26 +99,26 @@ func TestGetPageSize(t *testing.T) {
 func TestGetCurrentPageMissions(t *testing.T) {
 	model := createTestModel()
 	model.itemsPerPage = 2
-	
+
 	// Create 5 missions
 	missions := make([]*mission.Mission, 5)
 	for i := 0; i < 5; i++ {
 		missions[i] = createTestMission("Mission "+string(rune('A'+i)), "completed")
 	}
 	model.completedMissions = missions
-	
+
 	// Test first page
 	model.currentPage = 0
 	pageMissions := model.getCurrentPageMissions()
 	assert.Len(t, pageMissions, 2)
 	assert.Equal(t, "Mission A", pageMissions[0].Intent)
-	
+
 	// Test second page
 	model.currentPage = 1
 	pageMissions = model.getCurrentPageMissions()
 	assert.Len(t, pageMissions, 2)
 	assert.Equal(t, "Mission C", pageMissions[0].Intent)
-	
+
 	// Test last page (partial)
 	model.currentPage = 2
 	pageMissions = model.getCurrentPageMissions()
@@ -129,7 +129,7 @@ func TestGetCurrentPageMissions(t *testing.T) {
 // Test search and filtering
 func TestFilterMissions(t *testing.T) {
 	model := createTestModel()
-	
+
 	tests := []struct {
 		name          string
 		query         string
@@ -141,7 +141,7 @@ func TestFilterMissions(t *testing.T) {
 		{"Case insensitive", "SEARCH", 1},
 		{"Partial match", "test", 3},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filtered := model.filterMissions(tt.query)
@@ -153,7 +153,7 @@ func TestFilterMissions(t *testing.T) {
 func TestMatchesFuzzy(t *testing.T) {
 	model := createTestModel()
 	testMission := createTestMission("Add user authentication", "completed")
-	
+
 	tests := []struct {
 		name     string
 		query    string
@@ -168,7 +168,7 @@ func TestMatchesFuzzy(t *testing.T) {
 		{"Type match", "wet", true},
 		{"Track match", "2", true},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := model.matchesFuzzy(testMission, strings.ToLower(tt.query))
@@ -179,12 +179,12 @@ func TestMatchesFuzzy(t *testing.T) {
 
 func TestGetActiveMissions(t *testing.T) {
 	model := createTestModel()
-	
+
 	// Test normal mode
 	model.searchMode = false
 	missions := model.getActiveMissions()
 	assert.Len(t, missions, 3)
-	
+
 	// Test search mode with query
 	model.searchMode = true
 	model.searchQuery = "search"
@@ -193,7 +193,7 @@ func TestGetActiveMissions(t *testing.T) {
 	}
 	missions = model.getActiveMissions()
 	assert.Len(t, missions, 1)
-	
+
 	// Test search mode with empty query
 	model.searchQuery = ""
 	missions = model.getActiveMissions()
@@ -203,15 +203,15 @@ func TestGetActiveMissions(t *testing.T) {
 // Test scroll offset calculations
 func TestGetMaxScrollOffset(t *testing.T) {
 	model := createTestModel()
-	
+
 	// Test with no selected mission
 	model.selectedMission = nil
 	assert.Equal(t, 0, model.getMaxScrollOffset())
-	
+
 	// Test with selected mission
 	model.selectedMission = createTestMission("Test mission with long content", "completed")
 	model.viewportHeight = 10
-	
+
 	// Since we can't easily test the actual content height calculation,
 	// we'll test that it returns a non-negative value
 	offset := model.getMaxScrollOffset()
@@ -231,7 +231,7 @@ func TestTruncate(t *testing.T) {
 		{"Long string", "hello world", 5, "he..."},
 		{"Empty string", "", 5, ""},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := truncate(tt.input, tt.maxLen)
@@ -257,15 +257,15 @@ func TestMin(t *testing.T) {
 // Integration tests for state transitions
 func TestSearchModeToggle(t *testing.T) {
 	model := createTestModel()
-	
+
 	// Initially not in search mode
 	assert.False(t, model.searchMode)
 	assert.Empty(t, model.searchQuery)
-	
+
 	// Test that search functionality works with the model
 	model.searchMode = true
 	model.searchQuery = "test"
-	
+
 	filtered := model.filterMissions("test")
 	assert.Len(t, filtered, 3) // All test missions contain "test"
 }
@@ -273,16 +273,16 @@ func TestSearchModeToggle(t *testing.T) {
 func TestPaginationBoundaries(t *testing.T) {
 	model := createTestModel()
 	model.itemsPerPage = 2
-	
+
 	// Test page boundaries
 	totalPages := model.getTotalPages()
 	require.Greater(t, totalPages, 1)
-	
+
 	// Test first page
 	model.currentPage = 0
 	missions := model.getCurrentPageMissions()
 	assert.Len(t, missions, 2)
-	
+
 	// Test last page
 	model.currentPage = totalPages - 1
 	missions = model.getCurrentPageMissions()

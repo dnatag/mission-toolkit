@@ -44,7 +44,7 @@ func ValidateAIType(aiType string) error {
 // WriteTemplates writes embedded templates to the specified filesystem
 func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
 	prefix := getSlashPrefix(aiType)
-	
+
 	// Write Mission Toolkit templates to .mission directory
 	missionDir := filepath.Join(targetDir, ".mission")
 	if err := fs.MkdirAll(missionDir, 0755); err != nil {
@@ -57,11 +57,11 @@ func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
 		if err != nil {
 			return err
 		}
-		
+
 		// Replace slash command prefix in content
 		contentStr := string(content)
 		contentStr = strings.ReplaceAll(contentStr, "/m.", prefix+"m.")
-		
+
 		if err := afero.WriteFile(fs, filepath.Join(missionDir, file), []byte(contentStr), 0644); err != nil {
 			return err
 		}
@@ -98,11 +98,11 @@ func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
 		if err != nil {
 			return err
 		}
-		
+
 		// Replace slash command prefix in content
 		contentStr := string(content)
 		contentStr = strings.ReplaceAll(contentStr, "/m.", prefix+"m.")
-		
+
 		if err := afero.WriteFile(fs, filepath.Join(promptDir, file), []byte(contentStr), 0644); err != nil {
 			return err
 		}

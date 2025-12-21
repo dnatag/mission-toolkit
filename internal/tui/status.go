@@ -11,29 +11,29 @@ import (
 
 var (
 	titleStyle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#FAFAFA")).
-		Background(lipgloss.Color("#7D56F4")).
-		Padding(0, 1)
+			Bold(true).
+			Foreground(lipgloss.Color("#FAFAFA")).
+			Background(lipgloss.Color("#7D56F4")).
+			Padding(0, 1)
 
 	activeStyle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#04B575"))
+			Bold(true).
+			Foreground(lipgloss.Color("#04B575"))
 
 	completedStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#626262"))
+			Foreground(lipgloss.Color("#626262"))
 
 	failedStyle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#FF5F87"))
+			Bold(true).
+			Foreground(lipgloss.Color("#FF5F87"))
 
 	helpStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#626262"))
+			Foreground(lipgloss.Color("#626262"))
 
 	boxStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#874BFD")).
-		Padding(1, 2)
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#874BFD")).
+			Padding(1, 2)
 )
 
 type Model struct {
@@ -127,7 +127,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		}
-		
+
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
@@ -290,16 +290,16 @@ func (m Model) filterMissions(query string) []*mission.Mission {
 	if query == "" {
 		return []*mission.Mission{} // Return empty slice for empty query, not all missions
 	}
-	
+
 	query = strings.ToLower(query)
 	var filtered []*mission.Mission
-	
+
 	for _, mission := range m.completedMissions {
 		if m.matchesFuzzy(mission, query) {
 			filtered = append(filtered, mission)
 		}
 	}
-	
+
 	return filtered
 }
 
@@ -309,22 +309,22 @@ func (m Model) matchesFuzzy(mission *mission.Mission, query string) bool {
 	if strings.Contains(strings.ToLower(mission.Intent), query) {
 		return true
 	}
-	
+
 	// Check status
 	if strings.Contains(strings.ToLower(mission.Status), query) {
 		return true
 	}
-	
+
 	// Check type
 	if strings.Contains(strings.ToLower(mission.Type), query) {
 		return true
 	}
-	
+
 	// Check track
 	if strings.Contains(strings.ToLower(mission.Track), query) {
 		return true
 	}
-	
+
 	// Check completion date
 	if mission.CompletedAt != nil {
 		dateStr := mission.CompletedAt.Format("2006-01-02")
@@ -332,7 +332,7 @@ func (m Model) matchesFuzzy(mission *mission.Mission, query string) bool {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -352,12 +352,12 @@ func (m Model) getPageSize() int {
 	if totalItems == 0 {
 		return 0
 	}
-	
+
 	start := m.currentPage * m.itemsPerPage
 	if start >= totalItems {
 		return 0
 	}
-	
+
 	end := min(totalItems, start+m.itemsPerPage)
 	return end - start
 }
@@ -369,12 +369,12 @@ func (m Model) getCurrentPageMissions() []*mission.Mission {
 	if totalItems == 0 {
 		return nil
 	}
-	
+
 	start := m.currentPage * m.itemsPerPage
 	if start >= totalItems {
 		return nil
 	}
-	
+
 	end := min(totalItems, start+m.itemsPerPage)
 	return missions[start:end]
 }
@@ -384,24 +384,24 @@ func (m Model) getMaxScrollOffset() int {
 	if m.selectedMission == nil || m.viewportHeight <= 0 {
 		return 0
 	}
-	
+
 	// Calculate total lines in mission details
 	totalLines := 0
 	totalLines += 3 // Status, completed time, empty line
 	totalLines += 1 // Intent line
-	
+
 	if len(m.selectedMission.Scope) > 0 {
 		totalLines += 2 + len(m.selectedMission.Scope) // "Scope:" + scope items
 	}
-	
+
 	if len(m.selectedMission.Plan) > 0 {
 		totalLines += 2 + len(m.selectedMission.Plan) // "Plan:" + plan items
 	}
-	
+
 	if m.selectedMission.Verification != "" {
 		totalLines += 2 // empty line + verification
 	}
-	
+
 	return max(0, totalLines-m.viewportHeight)
 }
 
@@ -422,14 +422,14 @@ func (m Model) renderMissionDetails(mission *mission.Mission) string {
 	}
 
 	var sections []string
-	sections = append(sections, fmt.Sprintf("%s %s (Track %s)", 
-		statusStyle.Render(strings.ToUpper(mission.Status)), 
-		mission.Type, 
+	sections = append(sections, fmt.Sprintf("%s %s (Track %s)",
+		statusStyle.Render(strings.ToUpper(mission.Status)),
+		mission.Type,
 		mission.Track))
 	sections = append(sections, fmt.Sprintf("Completed: %s", timeStr))
 	sections = append(sections, "")
 	sections = append(sections, fmt.Sprintf("Intent: %s", mission.Intent))
-	
+
 	if len(mission.Scope) > 0 {
 		sections = append(sections, "")
 		sections = append(sections, "Scope:")
@@ -457,12 +457,12 @@ func (m Model) renderMissionDetails(mission *mission.Mission) string {
 		// Ensure scroll offset doesn't exceed content
 		maxScroll := max(0, totalLines-m.viewportHeight)
 		scrollOffset := min(m.scrollOffset, maxScroll)
-		
+
 		// Get visible lines
 		start := scrollOffset
 		end := min(totalLines, scrollOffset+m.viewportHeight)
 		visibleSections := sections[start:end]
-		
+
 		// Add scroll indicators
 		var result []string
 		if scrollOffset > 0 {
@@ -472,7 +472,7 @@ func (m Model) renderMissionDetails(mission *mission.Mission) string {
 		if end < totalLines {
 			result = append(result, helpStyle.Render("↓ more below"))
 		}
-		
+
 		return boxStyle.Render(strings.Join(result, "\n"))
 	}
 
@@ -481,7 +481,7 @@ func (m Model) renderMissionDetails(mission *mission.Mission) string {
 
 func (m Model) renderCurrentMission() string {
 	mission := m.currentMission
-	
+
 	var statusStyle lipgloss.Style
 	var nextSteps string
 
@@ -532,18 +532,18 @@ func (m Model) renderCompletedMissions() string {
 		if m.searchQuery == "" {
 			return "Type to search missions..."
 		}
-		
+
 		missions := m.filteredMissions
 		if len(missions) == 0 {
 			return "No missions match your search"
 		}
-		
+
 		// Show search results with pagination
 		pageMissions := m.getCurrentPageMissions()
 		if len(pageMissions) == 0 {
 			return "No missions on this page"
 		}
-		
+
 		var items []string
 		for i, mission := range pageMissions {
 			prefix := "  "
