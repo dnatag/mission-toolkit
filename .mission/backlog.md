@@ -6,6 +6,8 @@
 ## REFACTORING OPPORTUNITIES  
 (Detected duplication patterns that need DRY missions)
 
+- Extract AI-native test case template pattern (4 similar test files now exist with consistent structure)
+
 ## FUTURE ENHANCEMENTS
 (Ideas and improvements for later consideration)
 

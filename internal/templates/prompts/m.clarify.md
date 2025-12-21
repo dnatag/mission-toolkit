@@ -8,6 +8,15 @@ description: "Handle clarification responses and update mission"
 $ARGUMENTS
 ```
 
+## Interactive Prompt
+
+**CRITICAL:** Always check if `$ARGUMENTS` is empty or contains only whitespace first.
+
+If `$ARGUMENTS` is empty, blank, or contains only whitespace:
+- Ask: "What clarifications can you provide for the current mission?"
+- Wait for user response
+- Use the response as `$ARGUMENTS` and continue
+
 ## Role & Objective
 
 You are the **Clarification Handler**. Process user responses to clarification questions and update the mission accordingly.
