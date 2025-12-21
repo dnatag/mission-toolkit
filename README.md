@@ -236,6 +236,66 @@ User Intent → [m.clarify] → m.plan → .mission/mission.md → m.apply → V
 - **🛠️ Technical Debt Management**: Systematic WET→DRY evolution avoids premature abstraction
 - **📈 Scalability**: Handles projects from toy features to enterprise systems through complexity decomposition
 
+## Versioning
+
+Mission Toolkit uses **dual versioning** to enable independent evolution of CLI functionality and embedded templates.
+
+### Version Structure
+
+- **CLI Version**: Tracks command-line tool functionality (`internal/version/version.go`)
+- **Template Version**: Tracks embedded workflow templates (`internal/templates/templates.go`)
+
+```bash
+$ m version
+CLI: v1.2.3
+Templates: v2.1.0
+```
+
+### Semantic Versioning Guidelines
+
+Both CLI and templates follow [semantic versioning](https://semver.org/) (MAJOR.MINOR.PATCH):
+
+#### CLI Version Evolution
+
+- **MAJOR** (v2.0.0): Breaking changes to command interface or workflow
+  - Changed command syntax or flags
+  - Removed commands or features
+  - Modified file structure requirements
+
+- **MINOR** (v1.1.0): New features, backward compatible
+  - New commands or subcommands
+  - Enhanced TUI functionality
+  - Additional configuration options
+
+- **PATCH** (v1.0.1): Bug fixes, backward compatible
+  - Command execution fixes
+  - TUI display improvements
+  - Error handling enhancements
+
+#### Template Version Evolution
+
+- **MAJOR** (v2.0.0): Breaking changes to workflow or file structure
+  - Changed mission file format
+  - Modified governance rules
+  - Incompatible prompt structure changes
+
+- **MINOR** (v1.1.0): New features, backward compatible
+  - New AI platform support
+  - Additional prompt templates
+  - Enhanced governance features
+
+- **PATCH** (v1.0.1): Bug fixes and improvements
+  - Prompt text refinements
+  - Template formatting fixes
+  - Documentation updates
+
+### Independent Evolution Benefits
+
+- **Focused Updates**: CLI bugs don't require template version bumps
+- **Template Innovation**: New AI features can evolve templates independently
+- **Clear Compatibility**: Users understand which components changed
+- **Selective Adoption**: Teams can update CLI or templates as needed
+
 ## License
 
 This project is licensed under the terms specified in the LICENSE file.

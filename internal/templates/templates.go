@@ -9,6 +9,9 @@ import (
 	"github.com/spf13/afero"
 )
 
+// TemplateVersion represents the current version of the embedded templates
+const TemplateVersion = "v1.0.0"
+
 //go:embed mission/*.md
 var missionTemplates embed.FS
 
