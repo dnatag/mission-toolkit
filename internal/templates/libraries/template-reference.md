@@ -1,0 +1,81 @@
+# TEMPLATE REFERENCE GUIDE
+
+## Current Structure
+
+```
+libraries/
+├── displays/           # User output templates
+│   ├── plan-success.md     # ✅ MISSION CREATED
+│   ├── plan-paused.md      # ⏸️ MISSION PAUSED
+│   ├── apply-success.md    # ✅ MISSION EXECUTED
+│   ├── apply-failure.md    # ❌ MISSION FAILED
+│   ├── complete-success.md # 🎉 MISSION COMPLETED
+│   └── error-no-mission.md # ❌ ERROR: No Active Mission
+├── missions/           # Mission file templates
+│   ├── wet.md             # WET mission template
+│   ├── dry.md             # DRY mission template
+│   └── clarification.md   # Clarification mission template
+├── scripts/            # Bash operation templates
+│   ├── create-mission.md   # Create .mission/mission.md
+│   ├── archive-current.md  # Archive to .mission/paused/
+│   ├── archive-completed.md # Archive to .mission/completed/
+│   ├── status-to-active.md # Update mission status
+│   └── validate-planned.md # Check mission status
+├── metrics/            # Metrics templates
+│   ├── completion.md      # Individual mission metrics
+│   └── aggregate.md       # Project-wide metrics
+└── variables/          # Variable calculation rules
+    ├── track-calculation.md # Track complexity logic
+    ├── file-list.md        # File estimation rules
+    └── timestamps.md       # Date/time formatting
+```
+
+## Usage in Prompts
+
+Clear, specific references:
+```markdown
+# In m.plan.md
+**On Success**: Use template `libraries/displays/plan-success.md`
+**Mission Template**: Use `libraries/missions/wet.md`
+**Create Script**: Use `libraries/scripts/create-mission.md`
+
+# In m.apply.md
+**On Success**: Use template `libraries/displays/apply-success.md`
+**On Failure**: Use template `libraries/displays/apply-failure.md`
+**Status Script**: Use `libraries/scripts/status-to-active.md`
+
+# In m.complete.md
+**On Success**: Use template `libraries/displays/complete-success.md`
+**Archive Script**: Use `libraries/scripts/archive-completed.md`
+**Metrics Template**: Use `libraries/metrics/completion.md`
+```
+
+## Variable Standardization
+
+Consistent naming across all templates:
+```
+{{TRACK}}           # 1, 2, 3, 4 (complexity)
+{{MISSION_TYPE}}    # WET, DRY, CLARIFICATION
+{{TIMESTAMP}}       # 2024-01-15-14-30
+{{DURATION}}        # "45 minutes"
+{{FILE_COUNT}}      # 3
+{{MISSION_CONTENT}} # Full mission markdown
+{{MISSION_ID}}      # Track-Type-Timestamp
+```
+
+## Path Consistency
+
+All templates use `.mission/` root path when deployed:
+- Mission files: `.mission/mission.md`
+- Paused missions: `.mission/paused/`
+- Completed missions: `.mission/completed/`
+- Project files: `.mission/backlog.md`, `.mission/metrics.md`
+
+## Benefits
+
+1. **Clear References**: `libraries/displays/plan-success.md` is unambiguous
+2. **Easy Maintenance**: One template per outcome
+3. **Consistent Variables**: Same names across all templates
+4. **Logical Organization**: Grouped by purpose
+5. **LLM-Friendly**: Simple file references instead of complex instructions
+6. **Path Consistency**: All use `.mission/` root for deployment
