@@ -230,7 +230,7 @@ m version
 1. **📁 Initialize Project**
    ```bash
    # Initialize Mission Toolkit project with AI-specific templates
-   m init --ai-type q
+   m init --ai q
    
    # Supported AI types: q, claude, gemini, cursor, codex, kiro
    # Creates .mission/ directory with governance files and prompt templates
@@ -244,6 +244,8 @@ m version
    # Use ↑/↓ to navigate missions, Enter to view details, / to search
    # Shows mission progress and provides clear next steps
    ```
+
+   ![Mission Status TUI](https://github.com/dnatag/mission-toolkit/assets/screenshots/m-status.png)
 
 3. **📝 Plan Your First Mission**
    ```bash
