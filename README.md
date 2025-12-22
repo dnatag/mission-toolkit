@@ -245,7 +245,7 @@ m version
    # Shows mission progress and provides clear next steps
    ```
 
-   ![Mission Status TUI](https://github.com/dnatag/mission-toolkit/assets/screenshots/m-status.png)
+   ![Mission Status TUI](assets/screenshots/m-status.png)
 
 3. **📝 Plan Your First Mission**
    ```bash
