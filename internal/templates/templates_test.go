@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dnatag/mission-toolkit/internal/utils"
 	"github.com/spf13/afero"
 )
 
@@ -301,5 +302,271 @@ func TestWriteLibraryTemplatesUnsupportedAI(t *testing.T) {
 	}
 	if !exists {
 		t.Errorf("Library directory should be created even for unsupported AI types")
+	}
+}
+
+func TestIdempotentInit(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	targetDir := "/test"
+
+	// First init with Q
+	err := WriteTemplates(fs, targetDir, "q")
+	if err != nil {
+		t.Fatalf("First WriteTemplates() error = %v", err)
+	}
+
+	// Add user content to backlog.md
+	backlogPath := filepath.Join(targetDir, ".mission", "backlog.md")
+	existingContent, err := afero.ReadFile(fs, backlogPath)
+	if err != nil {
+		t.Fatalf("Failed to read backlog.md: %v", err)
+	}
+
+	userContent := string(existingContent) + "\n- Test backlog item\n- Another test item"
+	err = afero.WriteFile(fs, backlogPath, []byte(userContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write user content: %v", err)
+	}
+
+	// Add user content to metrics.md
+	metricsPath := filepath.Join(targetDir, ".mission", "metrics.md")
+	existingMetrics, err := afero.ReadFile(fs, metricsPath)
+	if err != nil {
+		t.Fatalf("Failed to read metrics.md: %v", err)
+	}
+
+	userMetrics := strings.ReplaceAll(string(existingMetrics), "Total Missions**: [count]", "Total Missions**: 5")
+	err = afero.WriteFile(fs, metricsPath, []byte(userMetrics), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write user metrics: %v", err)
+	}
+
+	// Second init with Claude (different AI type)
+	err = WriteTemplates(fs, targetDir, "claude")
+	if err != nil {
+		t.Fatalf("Second WriteTemplates() error = %v", err)
+	}
+
+	// Verify user content is preserved in backlog.md
+	finalBacklog, err := afero.ReadFile(fs, backlogPath)
+	if err != nil {
+		t.Fatalf("Failed to read final backlog.md: %v", err)
+	}
+
+	backlogStr := string(finalBacklog)
+	if !strings.Contains(backlogStr, "Test backlog item") {
+		t.Errorf("User backlog content not preserved: %s", backlogStr)
+	}
+	if !strings.Contains(backlogStr, "Another test item") {
+		t.Errorf("User backlog content not preserved: %s", backlogStr)
+	}
+
+	// Verify user content is preserved in metrics.md
+	finalMetrics, err := afero.ReadFile(fs, metricsPath)
+	if err != nil {
+		t.Fatalf("Failed to read final metrics.md: %v", err)
+	}
+
+	metricsStr := string(finalMetrics)
+	if !strings.Contains(metricsStr, "Total Missions**: 5") {
+		t.Errorf("User metrics content not preserved: %s", metricsStr)
+	}
+
+	// Verify AI-specific content was updated (check governance.md for slash prefixes)
+	govPath := filepath.Join(targetDir, ".mission", "governance.md")
+	govContent, err := afero.ReadFile(fs, govPath)
+	if err != nil {
+		t.Fatalf("Failed to read governance.md: %v", err)
+	}
+
+	govStr := string(govContent)
+	if !strings.Contains(govStr, "/m.clarify") {
+		t.Errorf("AI-specific content not updated to Claude format in governance.md: %s", govStr)
+	}
+}
+
+func TestExtractAllSections(t *testing.T) {
+	content := `# Test Document
+
+## SECTION ONE
+- Item 1
+- Item 2
+
+Some text here
+
+## SECTION TWO
+- Different item
+- Another item
+
+## SECTION THREE
+No items here
+`
+
+	sections := extractAllSections(content)
+
+	if len(sections) != 3 {
+		t.Errorf("Expected 3 sections, got %d", len(sections))
+	}
+
+	// Check section content
+	if !strings.Contains(sections["SECTION ONE"], "Item 1") {
+		t.Errorf("SECTION ONE missing expected content")
+	}
+	if !strings.Contains(sections["SECTION ONE"], "Item 2") {
+		t.Errorf("SECTION ONE missing expected content")
+	}
+	if !strings.Contains(sections["SECTION TWO"], "Different item") {
+		t.Errorf("SECTION TWO missing expected content")
+	}
+	if !strings.Contains(sections["SECTION TWO"], "Another item") {
+		t.Errorf("SECTION TWO missing expected content")
+	}
+	if sections["SECTION THREE"] == "" {
+		t.Errorf("SECTION THREE should exist even if empty")
+	}
+}
+
+func TestPreserveUserSections(t *testing.T) {
+	template := `# Template
+
+## SECTION ONE
+Template content 1
+
+## SECTION TWO
+Template content 2
+
+## NEW SECTION
+New template content
+`
+
+	existing := `# Existing
+
+## SECTION ONE
+User content 1
+- User item
+
+## SECTION TWO
+Template content 2
+
+## OLD SECTION
+Old user content
+`
+
+	result := preserveUserSections(template, existing)
+
+	// Should preserve user content in SECTION ONE
+	if !strings.Contains(result, "User content 1") {
+		t.Errorf("User content not preserved in SECTION ONE")
+	}
+	if !strings.Contains(result, "User item") {
+		t.Errorf("User items not preserved in SECTION ONE")
+	}
+
+	// Should keep template content in SECTION TWO (no user changes)
+	if !strings.Contains(result, "Template content 2") {
+		t.Errorf("Template content missing in SECTION TWO")
+	}
+
+	// Should keep new template sections
+	if !strings.Contains(result, "NEW SECTION") {
+		t.Errorf("New template section missing")
+	}
+
+	// Should not include old sections not in template
+	if strings.Contains(result, "OLD SECTION") {
+		t.Errorf("Old section should not be preserved")
+	}
+}
+
+func TestReplaceSection(t *testing.T) {
+	t.Run("with existing user data", func(t *testing.T) {
+		content := `# Document
+
+## SECTION ONE
+Original content
+
+## SECTION TWO
+Keep this content
+`
+
+		newContent := "Replaced content\n- New item"
+		result := replaceSection(content, "SECTION ONE", newContent)
+
+		if !strings.Contains(result, "Replaced content") {
+			t.Errorf("Section content not replaced")
+		}
+		if !strings.Contains(result, "New item") {
+			t.Errorf("New content not added")
+		}
+		if !strings.Contains(result, "Keep this content") {
+			t.Errorf("Other sections should be preserved")
+		}
+		if strings.Contains(result, "Original content") {
+			t.Errorf("Original content should be replaced")
+		}
+	})
+
+	t.Run("with no user data", func(t *testing.T) {
+		content := `# Document
+
+## SECTION ONE
+
+## SECTION TWO
+Keep this content
+`
+
+		newContent := "New content\n- Added item"
+		result := replaceSection(content, "SECTION ONE", newContent)
+
+		if !strings.Contains(result, "New content") {
+			t.Errorf("New content not added to empty section")
+		}
+		if !strings.Contains(result, "Added item") {
+			t.Errorf("New content items not added")
+		}
+		if !strings.Contains(result, "Keep this content") {
+			t.Errorf("Other sections should be preserved")
+		}
+	})
+}
+
+func TestParseSections(t *testing.T) {
+	content := `# Test Document
+
+## SECTION ONE
+- Item 1
+- Item 2
+
+Some text here
+
+## SECTION TWO
+- Different item
+- Another item
+
+## SECTION THREE
+No items here
+
+## OTHER SECTION
+This should not be captured
+`
+
+	result := utils.ParseSections(content)
+
+	if len(result) != 4 {
+		t.Errorf("Expected 4 sections, got %d", len(result))
+	}
+
+	// Check section headers
+	expectedHeaders := []string{"SECTION ONE", "SECTION TWO", "SECTION THREE", "OTHER SECTION"}
+	for i, section := range result {
+		if section.Header != expectedHeaders[i] {
+			t.Errorf("Expected header %s, got %s", expectedHeaders[i], section.Header)
+		}
+	}
+
+	// Check SECTION ONE has content
+	section1 := result[0]
+	if len(section1.Content) == 0 {
+		t.Errorf("Expected content in SECTION ONE, got empty")
 	}
 }

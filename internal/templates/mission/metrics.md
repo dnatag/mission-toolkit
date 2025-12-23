@@ -28,13 +28,18 @@
 
 ## RECENT COMPLETIONS
 (Last 5 missions with change summaries - see `completed/` for full history)
-
 - [YYYY-MM-DD] Track [X] [TYPE]: [Change summary title] ([duration] min)
 - [YYYY-MM-DD] Track [X] [TYPE]: [Change summary title] ([duration] min)
 - [YYYY-MM-DD] Track [X] [TYPE]: [Change summary title] ([duration] min)
 
 ## PROCESS INSIGHTS
-(Key learnings and workflow improvements)
+(High-level workflow improvements - preserved)
 - Template system ensures consistent output across LLM models
 - EXECUTION INSTRUCTIONS prevent LLM bypass of handshake workflow
 - Variable reference system reduces template breakage
+
+## TECHNICAL LEARNINGS
+(Implementation details - rotated/summarized, max 10 entries)
+- [Recent technical patterns and solutions]
+- [Implementation challenges and resolutions]
+- [Code quality observations]

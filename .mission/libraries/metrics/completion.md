@@ -16,6 +16,8 @@
 - **Verification Status**: {{VERIFICATION_STATUS}}
 - **Plan Steps Completed**: {{COMPLETED_STEPS}}/{{TOTAL_STEPS}}
 - **Iterations**: {{ITERATION_COUNT}}
+- **Success Status**: {{SUCCESS_STATUS}}
+- **Failure Reason**: {{FAILURE_REASON}}
 
 ## QUALITY METRICS
 - **Duplication Detected**: {{DUPLICATION_FOUND}}
