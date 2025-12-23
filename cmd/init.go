@@ -46,6 +46,12 @@ Supported AI types: q, claude, gemini, cursor, codex, kiro, opencode`,
 			os.Exit(1)
 		}
 
+		// Write library templates
+		if err := templates.WriteLibraryTemplates(fs, cwd, aiType); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing library templates: %v\n", err)
+			os.Exit(1)
+		}
+
 		fmt.Printf("Mission Toolkit project initialized successfully for AI type: %s\n", aiType)
 	},
 }

@@ -23,7 +23,7 @@ You are the **Clarification Handler**. Process user responses to clarification q
 
 ## Prerequisites
 
-**CRITICAL:** This prompt requires `.mission/mission.md` to exist with `status: clarifying`. If not found, return error: "No mission awaiting clarification. Use @m.plan to create a new mission first."
+**CRITICAL:** This prompt requires `.mission/mission.md` to exist with `status: clarifying`. If not found, use template `.mission/libraries/displays/error-no-mission.md` with message: "No mission awaiting clarification. Use @m.plan to create a new mission first."
 
 ## Execution Steps
 
@@ -42,12 +42,12 @@ After incorporating clarifications, re-analyze using the complexity matrix:
 - **Track 4 Check**: If reassessment results in Track 4, decompose to backlog
 
 ### Step 3: Mission Update
+**CRITICAL**: Use templates from `.mission/libraries/` for consistent output.
+
 **Actions by Final Track:**
 - **TRACK 1**: Convert to direct edit suggestion
-- **TRACK 2-3**: Update `.mission/mission.md` with clarified INTENT, SCOPE, and PLAN
-- **TRACK 4**: Decompose to backlog, ask user to select sub-intent
-
-**Output Format:**
+- **TRACK 2-3**: Use template `.mission/libraries/missions/wet.md` with clarified variables
+- **TRACK 4**: Use template `.mission/libraries/displays/clarify-escalation.md`
 
 **If Track 1:**
 ```
@@ -55,50 +55,15 @@ After incorporating clarifications, re-analyze using the complexity matrix:
 SUGGESTION: Direct edit instead of mission
 ```
 
-**If Track 2-3:**
-```markdown
-# MISSION
+**If Track 2-3**: Use template `.mission/libraries/missions/wet.md` with variables:
+- {{TRACK}} = 2 or 3 (reassessed)
+- {{REFINED_INTENT}} = Updated intent incorporating clarifications
+- {{FILE_LIST}} = Final file paths based on clarifications
+- {{PLAN_STEPS}} = Steps with clarified details
+- {{VERIFICATION_COMMAND}} = Shell command incorporating clarified requirements
 
-type: WET
-track: 2 | 3
-iteration: 1
-status: planned
+**If Track 4**: Use template `.mission/libraries/displays/clarify-escalation.md` with variables:
+- {{BACKLOG_ITEMS}} = Decomposed sub-intents
 
-## INTENT
-(Updated intent incorporating clarifications)
-
-## SCOPE
-(Final file paths based on clarifications)
-
-## PLAN
-- [ ] (Step 1 with clarified details)
-- [ ] (Step 2 with clarified details)
-- [ ] Note: Allow duplication for initial implementation
-
-## VERIFICATION
-(Shell command incorporating clarified requirements)
-```
-
-**If Track 4:**
-```
-🔄 TRACK ESCALATION: Clarifications revealed Epic complexity
-- Added decomposed sub-intents to .mission/backlog.md
-- Please select one sub-intent to implement first
-```
-
-**Final Step - Updated Mission Display:**
-After updating `.mission/mission.md`, display the complete updated mission:
-
-```
-✅ MISSION CLARIFIED: .mission/mission.md
-- All clarifications incorporated
-- Mission ready for execution
-
-📋 UPDATED MISSION:
-[Display the complete updated mission content]
-
-🚀 NEXT STEPS:
-• Execute as planned: @m.apply
-• Further clarification needed: Ask specific questions
-• Modify approach: Provide additional requirements
-```
+**Final Step**: Use template `.mission/libraries/displays/clarify-success.md` with variables:
+- {{MISSION_CONTENT}} = Complete updated mission content

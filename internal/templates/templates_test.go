@@ -198,3 +198,108 @@ func TestSlashPrefixReplacement(t *testing.T) {
 		})
 	}
 }
+
+func TestWriteLibraryTemplates(t *testing.T) {
+	tests := []struct {
+		name      string
+		aiType    string
+		targetDir string
+		prefix    string
+	}{
+		{"Amazon Q library templates", "q", "/test", "@"},
+		{"Kiro library templates", "kiro", "/test", "@"},
+		{"Claude library templates", "claude", "/test", "/"},
+		{"Gemini library templates", "gemini", "/test", "/"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+
+			err := WriteLibraryTemplates(fs, tt.targetDir, tt.aiType)
+			if err != nil {
+				t.Fatalf("WriteLibraryTemplates() error = %v", err)
+			}
+
+			// Check that .mission/libraries directory exists
+			libraryDir := filepath.Join(tt.targetDir, ".mission", "libraries")
+			exists, err := afero.DirExists(fs, libraryDir)
+			if err != nil {
+				t.Fatalf("Error checking library directory: %v", err)
+			}
+			if !exists {
+				t.Errorf("Library directory %s does not exist", libraryDir)
+			}
+
+			// Check for expected subdirectories
+			expectedDirs := []string{"displays", "missions", "scripts", "metrics", "variables"}
+			for _, dir := range expectedDirs {
+				dirPath := filepath.Join(libraryDir, dir)
+				exists, err := afero.DirExists(fs, dirPath)
+				if err != nil {
+					t.Errorf("Error checking directory %s: %v", dirPath, err)
+				}
+				if !exists {
+					t.Errorf("Expected directory %s does not exist", dirPath)
+				}
+			}
+
+			// Check for specific template files and prefix replacement
+			testFiles := []string{
+				"displays/plan-success.md",
+				"missions/wet.md",
+				"scripts/create-mission.md",
+			}
+
+			for _, file := range testFiles {
+				filePath := filepath.Join(libraryDir, file)
+				exists, err := afero.Exists(fs, filePath)
+				if err != nil {
+					t.Errorf("Error checking file %s: %v", filePath, err)
+					continue
+				}
+				if !exists {
+					t.Errorf("Expected file %s does not exist", filePath)
+					continue
+				}
+
+				// Verify prefix replacement
+				content, err := afero.ReadFile(fs, filePath)
+				if err != nil {
+					t.Errorf("Error reading file %s: %v", filePath, err)
+					continue
+				}
+
+				contentStr := string(content)
+				expectedPattern := tt.prefix + "m.apply"
+				if strings.Contains(contentStr, "/m.apply") && tt.prefix == "@" {
+					t.Errorf("File %s still contains '/m.apply' instead of '@m.apply'", filePath)
+				}
+				if strings.Contains(contentStr, expectedPattern) || strings.Contains(contentStr, tt.prefix+"m.") {
+					// Good - contains expected prefix
+				} else if strings.Contains(contentStr, "m.apply") {
+					// File might not contain slash commands, which is okay
+				}
+			}
+		})
+	}
+}
+
+func TestWriteLibraryTemplatesUnsupportedAI(t *testing.T) {
+	fs := afero.NewMemMapFs()
+
+	err := WriteLibraryTemplates(fs, "/test", "unsupported")
+	if err != nil {
+		t.Errorf("WriteLibraryTemplates should not fail for unsupported AI type, got: %v", err)
+	}
+
+	// Should still create the directory structure
+	libraryDir := "/test/.mission/libraries"
+	exists, err := afero.DirExists(fs, libraryDir)
+	if err != nil {
+		t.Fatalf("Error checking library directory: %v", err)
+	}
+	if !exists {
+		t.Errorf("Library directory should be created even for unsupported AI types")
+	}
+}

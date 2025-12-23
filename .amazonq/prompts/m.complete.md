@@ -4,7 +4,7 @@ description: "Complete current mission and update project tracking"
 
 ## Prerequisites
 
-**CRITICAL:** This prompt requires `.mission/mission.md` to exist. If `.mission/mission.md` is not found, return error: "No active mission found. Use @m.plan to create a new mission first."
+**CRITICAL:** This prompt requires `.mission/mission.md` to exist. If `.mission/mission.md` is not found, use template `.mission/libraries/displays/error-no-mission.md`.
 
 ## Role & Objective
 
@@ -21,56 +21,41 @@ Before generating output, read `.mission/governance.md`.
 4. **Scope Validation**: Ensure all SCOPE files were properly modified
 
 ### Step 2: Mission Completion and Archival
+**CRITICAL**: Use scripts from `.mission/libraries/scripts/` for file operations.
+
 1. **Update Mission**: Change `status: active` to `status: completed` and add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ`
-2. **Archive Mission**: Move `.mission/mission.md` to `.mission/completed/YYYY-MM-DD-HH-MM-mission.md`
-3. **Create Metrics**: Generate `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` with detailed data
-4. **Clean Up**: Remove `.mission/mission.md` after successful archiving
+2. **Archive Mission**: Use script `.mission/libraries/scripts/archive-completed.md` with variables:
+   - {{METRICS_CONTENT}} = Generated metrics content
+3. **Clean Up**: Remove `.mission/mission.md` after successful archiving
 
 ### Step 3: Project Tracking Updates
 1. **Update Summary**: Update `.mission/metrics.md` by refreshing all aggregate statistics and adding new completion to RECENT COMPLETIONS
 2. **Update Backlog**: Search `.mission/backlog.md` for matching intent, mark as completed with timestamp
 
-**Output Format:**
+**CRITICAL**: Use templates from `.mission/libraries/` for consistent output.
 
-```markdown
-# MISSION COMPLETED
+**Success**: Use template `.mission/libraries/displays/complete-success.md` with variables:
+- {{MISSION_ID}} = Track-Type-Timestamp
+- {{DURATION}} = Estimated time (e.g., "45 minutes")
+- {{FILE_COUNT}} = Number of files modified
+- {{TRACK}} = Mission track
+- {{MISSION_TYPE}} = WET/DRY
+- {{VERIFICATION_STATUS}} = PASSED/FAILED/SKIPPED
+- {{COMPLETED_STEPS}} = Number of completed steps
+- {{TOTAL_STEPS}} = Total number of steps
+- {{QUALITY_SCORE}} = Calculated quality percentage
+- {{TIMESTAMP}} = Archive timestamp
 
-**Timestamp**: YYYY-MM-DD HH:MM:SS
-**Mission Type**: WET | DRY
-**Track**: 1 | 2 | 3 | 4
-**Files Modified**: [count]
-**Duration**: [estimated time]
-
-## CHANGE SUMMARY
-[Copy the complete change summary from @m.apply execution]
-
-Title: [Brief description]
-
-Description (max 4 bullet points):
-- [Implementation detail] → [reasoning for this choice]
-- [Key files changed] → [why these files were necessary]
-- [Technical approach taken] → [rationale behind the decision]
-- [Additional changes made] → [why these were needed]
-
-## OUTCOMES
-- [ ] All PLAN items completed
-- [ ] VERIFICATION passed
-- [ ] Files properly modified
-- [ ] Backlog updated (matching items marked as ✅ COMPLETED YYYY-MM-DD)
-
-## PATTERNS DETECTED
-(List any duplication patterns for future DRY missions)
-
-## NEXT STEPS
-(Suggested follow-up missions or backlog items to prioritize)
-
-## METRICS CREATED
-- **Detailed Metrics**: `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` (includes change summary)
-- **Summary Updated**: `.mission/metrics.md` aggregate statistics refreshed
-- **Historical Preservation**: All mission data preserved with timestamps
-```
-
-🚀 WHAT'S NEXT:
-• Start new mission: @m.plan "your next intent"
-• Review metrics: Check .mission/metrics.md
-• [Suggested follow-up missions or backlog items to prioritize]
+**Metrics Template**: Use `.mission/libraries/metrics/completion.md` with variables:
+- {{MISSION_ID}} = Track-Type-Timestamp
+- {{COMPLETION_DATE}} = YYYY-MM-DD HH:MM:SS
+- {{DURATION_MINUTES}} = Numeric duration
+- {{FILES_MODIFIED}} = Actual file count
+- {{LINES_ADDED}} = Lines of code added
+- {{LINES_REMOVED}} = Lines of code removed
+- {{DUPLICATION_FOUND}} = Yes/No
+- {{SECURITY_ISSUES}} = None/List of issues
+- {{PERFORMANCE_IMPACT}} = Minimal/Moderate/High
+- {{PATTERNS_FOUND}} = List of identified patterns
+- {{REFACTORING_OPPORTUNITIES}} = List of opportunities
+- {{NEXT_MISSIONS}} = Suggested follow-ups

@@ -28,7 +28,7 @@ You are a Senior Software Architect operating under Mission Toolkit principles.
 2. **Scope-Matched Testing**: Test coverage matches mission complexity
 3. **Verification-First Planning**: Define verification before implementation
 
-**Mission Structure**: INTENT, SCOPE, PLAN, VERIFICATION required
+**Mission Structure**: INTENT, SCOPE, PLAN, VERIFICATION, EXECUTION INSTRUCTIONS required
 
 ## WORKFLOW
 **plan** → **[clarify]** → **apply** → **complete**
@@ -38,7 +38,15 @@ You are a Senior Software Architect operating under Mission Toolkit principles.
 - Error Recovery: `git checkout .` + smaller mission
 - Pattern Detection: Track duplication for DRY missions (extract abstractions after 3+ similar implementations)
 
+## TEMPLATE SYSTEM
+- All outputs use templates from `libraries/` for consistency
+- Mission templates: `libraries/missions/wet.md`, `libraries/missions/dry.md`, `libraries/missions/clarification.md`
+- Display templates: `libraries/displays/[command]-[outcome].md`
+- Script templates: `libraries/scripts/[operation].md`
+- Variable reference: `libraries/variables-reference.md`
+
 ## SAFETY
 - Validate file paths within project
 - Safe VERIFICATION commands only
 - Stop on validation failures
+- EXECUTION INSTRUCTIONS prevent LLM bypass of handshake workflow

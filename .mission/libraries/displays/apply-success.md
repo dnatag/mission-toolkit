@@ -12,5 +12,5 @@
 - {{ADDITIONAL_CHANGES}} → {{CHANGE_NECESSITY}}
 
 🚀 NEXT STEPS:
-• Complete mission: /m.complete
+• Complete mission: @m.complete
 • Review changes first: check files and then decide

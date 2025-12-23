@@ -3,6 +3,7 @@ package templates
 import (
 	"embed"
 	"fmt"
+	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -17,6 +18,9 @@ var missionTemplates embed.FS
 
 //go:embed prompts/*.md
 var promptTemplates embed.FS
+
+//go:embed libraries/**/*.md
+var libraryTemplates embed.FS
 
 // SupportedAITypes lists all supported AI types
 var SupportedAITypes = []string{"q", "claude", "gemini", "cursor", "codex", "kiro", "opencode"}
@@ -109,4 +113,57 @@ func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
 	}
 
 	return nil
+}
+
+// WriteLibraryTemplates writes embedded library templates to .mission/libraries
+func WriteLibraryTemplates(fs afero.Fs, targetDir string, aiType string) error {
+	prefix := getSlashPrefix(aiType)
+	
+	libraryDir := filepath.Join(targetDir, ".mission", "libraries")
+	if err := fs.MkdirAll(libraryDir, 0755); err != nil {
+		return err
+	}
+
+	// Walk through all library template files
+	return fs_walkDir(libraryTemplates, "libraries", func(path string, content []byte) error {
+		// Skip the root "libraries" directory
+		if path == "libraries" {
+			return nil
+		}
+		
+		// Get relative path from libraries/
+		relPath := strings.TrimPrefix(path, "libraries/")
+		targetPath := filepath.Join(libraryDir, relPath)
+		
+		// Create directory if needed
+		if err := fs.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
+			return err
+		}
+		
+		// Replace slash command prefix in content
+		contentStr := string(content)
+		contentStr = strings.ReplaceAll(contentStr, "/m.", prefix+"m.")
+		
+		return afero.WriteFile(fs, targetPath, []byte(contentStr), 0644)
+	})
+}
+
+// fs_walkDir walks through embedded filesystem
+func fs_walkDir(fsys embed.FS, root string, fn func(path string, content []byte) error) error {
+	return fs.WalkDir(fsys, root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		
+		if d.IsDir() {
+			return nil
+		}
+		
+		content, err := fsys.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		
+		return fn(path, content)
+	})
 }

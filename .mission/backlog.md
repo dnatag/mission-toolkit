@@ -1,7 +1,7 @@
 # MISSION TOOLKIT BACKLOG
 
 ## DECOMPOSED INTENTS
-(Sub-intents from complex requests that need separate missions)
+(Sub-intents from Track 4 Epic requests that need separate missions)
 
 ## REFACTORING OPPORTUNITIES  
 (Detected duplication patterns that need DRY missions)
@@ -14,4 +14,11 @@
 ---
 
 **Format for completed items:**
-- ✅ COMPLETED 2024-01-15: [Original intent description]
+- ✅ COMPLETED [YYYY-MM-DD]: [Original intent description]
+
+**Format for refactoring opportunities:**
+- [ ] Extract [pattern name] from [file list] (detected: [YYYY-MM-DD])
+
+**Format for decomposed intents:**
+- [ ] [Sub-intent 1] (from Epic: [original request])
+- [ ] [Sub-intent 2] (from Epic: [original request])

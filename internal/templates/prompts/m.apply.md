@@ -29,11 +29,8 @@ Before execution, read `.mission/governance.md`.
 3. **Run Verification**: Execute the VERIFICATION command
 
 ### Step 3: Status Handling
-- **On Success**: Keep `status: active`, offer auto-completion
+- **On Success**: Keep `status: active`, use success template
 - **On Failure**: Change `status: active` to `status: failed` and run `git checkout .`
-
-**Auto-Completion:**
-If user responds with "y", "yes", "complete", or "finish" after successful execution, automatically execute the full /m.complete workflow (all steps).
 
 **CRITICAL**: Use templates from `.mission/libraries/` for consistent output.
 
