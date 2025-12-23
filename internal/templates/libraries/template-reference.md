@@ -10,6 +10,7 @@ libraries/
 │   ├── apply-success.md    # ✅ MISSION EXECUTED
 │   ├── apply-failure.md    # ❌ MISSION FAILED
 │   ├── complete-success.md # 🎉 MISSION COMPLETED
+│   ├── complete-failure.md # ❌ MISSION FAILED (ARCHIVED)
 │   └── error-no-mission.md # ❌ ERROR: No Active Mission
 ├── missions/           # Mission file templates
 │   ├── wet.md             # WET mission template
@@ -46,6 +47,7 @@ Clear, specific references:
 
 # In m.complete.md
 **On Success**: Use template `libraries/displays/complete-success.md`
+**On Failure**: Use template `libraries/displays/complete-failure.md`
 **Archive Script**: Use `libraries/scripts/archive-completed.md`
 **Metrics Template**: Use `libraries/metrics/completion.md`
 ```

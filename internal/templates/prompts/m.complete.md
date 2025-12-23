@@ -14,27 +14,38 @@ You are the **Completor**. Finalize the current mission and update project track
 
 Before generating output, read `.mission/governance.md`.
 
-### Step 1: Mission Validation
-1. **Status Check**: Ensure mission has `status: active` (not failed)
-2. **Completion Check**: Verify all PLAN items in `.mission/mission.md` are completed
-3. **Verification Status**: Confirm VERIFICATION command was run successfully
-4. **Scope Validation**: Ensure all SCOPE files were properly modified
+### Step 1: Mission Status Check
+1. **Status Check**: Check mission status (`active`, `failed`, or other)
+2. **Route by Status**: 
+   - `status: active` → Success completion workflow
+   - `status: failed` → Failure completion workflow
+   - Other status → Error (use error template)
 
-### Step 2: Mission Completion and Archival
-**CRITICAL**: Use scripts from `.mission/libraries/scripts/` for file operations.
+### Step 2A: Success Completion Workflow
+**For `status: active` missions:**
 
-1. **Update Mission**: Change `status: active` to `status: completed` and add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ`
-2. **Archive Mission**: Use script `.mission/libraries/scripts/archive-completed.md` with variables:
-   - {{METRICS_CONTENT}} = Generated metrics content
-3. **Clean Up**: Remove `.mission/mission.md` after successful archiving
+1. **Validation**: Verify all PLAN items completed and VERIFICATION passed
+2. **Update Mission**: Change `status: active` to `status: completed` and add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ`
+3. **Archive Mission**: Use script `.mission/libraries/scripts/archive-completed.md`
+4. **Clean Up**: Remove `.mission/mission.md` after archiving
+
+### Step 2B: Failure Completion Workflow
+**For `status: failed` missions:**
+
+1. **Extract Failure Info**: Determine failure reason and completed steps
+2. **Update Mission**: Change `status: failed` to `status: completed` and add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ` and `failure_reason: [reason]`
+3. **Archive Mission**: Use script `.mission/libraries/scripts/archive-completed.md`
+4. **Clean Up**: Remove `.mission/mission.md` after archiving
 
 ### Step 3: Project Tracking Updates
-1. **Update Summary**: Update `.mission/metrics.md` by refreshing all aggregate statistics and adding new completion to RECENT COMPLETIONS
-2. **Update Backlog**: Search `.mission/backlog.md` for matching intent, mark as completed with timestamp
+**For both success and failure:**
+
+1. **Update Summary**: Update `.mission/metrics.md` aggregate statistics and RECENT COMPLETIONS
+2. **Update Backlog**: Mark intent as completed (success) or add retry suggestion (failure)
 
 **CRITICAL**: Use templates from `.mission/libraries/` for consistent output.
 
-**Success**: Use template `.mission/libraries/displays/complete-success.md` with variables:
+**Success Completion**: Use template `.mission/libraries/displays/complete-success.md` with variables:
 - {{MISSION_ID}} = Track-Type-Timestamp
 - {{DURATION}} = Estimated time (e.g., "45 minutes")
 - {{FILE_COUNT}} = Number of files modified
@@ -44,6 +55,17 @@ Before generating output, read `.mission/governance.md`.
 - {{COMPLETED_STEPS}} = Number of completed steps
 - {{TOTAL_STEPS}} = Total number of steps
 - {{QUALITY_SCORE}} = Calculated quality percentage
+- {{TIMESTAMP}} = Archive timestamp
+
+**Failure Completion**: Use template `.mission/libraries/displays/complete-failure.md` with variables:
+- {{MISSION_ID}} = Track-Type-Timestamp
+- {{DURATION}} = Estimated time (e.g., "45 minutes")
+- {{FAILURE_REASON}} = Reason for failure
+- {{TRACK}} = Mission track
+- {{MISSION_TYPE}} = WET/DRY
+- {{COMPLETED_STEPS}} = Number of completed steps
+- {{TOTAL_STEPS}} = Total number of steps
+- {{FILE_COUNT}} = Number of files in scope
 - {{TIMESTAMP}} = Archive timestamp
 
 **Metrics Template**: Use `.mission/libraries/metrics/completion.md` with variables:
@@ -59,3 +81,5 @@ Before generating output, read `.mission/governance.md`.
 - {{PATTERNS_FOUND}} = List of identified patterns
 - {{REFACTORING_OPPORTUNITIES}} = List of opportunities
 - {{NEXT_MISSIONS}} = Suggested follow-ups
+- {{FAILURE_REASON}} = Reason for failure (for failed missions)
+- {{SUCCESS_STATUS}} = "SUCCESS" or "FAILED"

@@ -48,6 +48,8 @@
 {{LINES_ADDED}}         # 127 (lines of code added)
 {{LINES_REMOVED}}       # 23 (lines of code removed)
 {{ITERATION_COUNT}}     # 1, 2, 3... (mission iteration)
+{{SUCCESS_STATUS}}      # "SUCCESS" or "FAILED"
+{{FAILURE_REASON}}      # Reason for failure (if failed)
 ```
 
 ### Learning Variables
@@ -114,6 +116,8 @@ QUALITY_SCORE="[percentage]"
 FILES_MODIFIED="[actual count]"
 LINES_ADDED="[actual count]"
 LINES_REMOVED="[actual count]"
+SUCCESS_STATUS="[SUCCESS|FAILED]"
+FAILURE_REASON="[reason if failed]"
 ```
 
 ## DEFAULT VALUES FOR MISSING VARIABLES
@@ -129,6 +133,8 @@ LINES_REMOVED="[actual count]"
 {{PATTERNS_FOUND}} → "None identified"
 {{REFACTORING_OPPORTUNITIES}} → "None identified"
 {{NEXT_MISSIONS}} → "None suggested"
+{{SUCCESS_STATUS}} → "SUCCESS"
+{{FAILURE_REASON}} → "Not applicable"
 ```
 
 ## CRITICAL NOTES
