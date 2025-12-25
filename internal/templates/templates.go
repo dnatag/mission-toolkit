@@ -10,7 +10,7 @@ import (
 )
 
 // TemplateVersion represents the current version of the embedded templates
-const TemplateVersion = "v1.0.0"
+const TemplateVersion = "v1.1.0"
 
 //go:embed mission/*.md
 var missionTemplates embed.FS

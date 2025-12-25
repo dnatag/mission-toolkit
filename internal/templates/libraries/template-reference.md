@@ -7,6 +7,9 @@ libraries/
 ├── displays/           # User output templates
 │   ├── plan-success.md     # ✅ MISSION CREATED
 │   ├── plan-paused.md      # ⏸️ MISSION PAUSED
+│   ├── plan-clarification.md # ❓ CLARIFICATION NEEDED
+│   ├── plan-epic.md        # 📋 EPIC DECOMPOSED
+│   ├── plan-atomic.md      # ⚛️ ATOMIC TASK DETECTED
 │   ├── apply-success.md    # ✅ MISSION EXECUTED
 │   ├── apply-failure.md    # ❌ MISSION FAILED
 │   ├── complete-success.md # 🎉 MISSION COMPLETED
@@ -37,6 +40,9 @@ Clear, specific references:
 ```markdown
 # In m.plan.md
 **On Success**: Use template `libraries/displays/plan-success.md`
+**On Clarification**: Use template `libraries/displays/plan-clarification.md`
+**On Epic**: Use template `libraries/displays/plan-epic.md`
+**On Atomic**: Use template `libraries/displays/plan-atomic.md`
 **Mission Template**: Use `libraries/missions/wet.md`
 **Create Script**: Use `libraries/scripts/create-mission.md`
 

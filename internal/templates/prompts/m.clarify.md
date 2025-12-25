@@ -1,53 +1,69 @@
 ---
-description: "Handle clarification responses and update mission"
+description: "Handle clarification workflow and update mission"
 ---
-
-## User Input
-
-```text
-$ARGUMENTS
-```
-
-## Interactive Prompt
-
-**CRITICAL:** Always check if `$ARGUMENTS` is empty or contains only whitespace first.
-
-If `$ARGUMENTS` is empty, blank, or contains only whitespace:
-- Ask: "What clarifications can you provide for the current mission?"
-- Wait for user response
-- Use the response as `$ARGUMENTS` and continue
 
 ## Role & Objective
 
-You are the **Clarification Handler**. Process user responses to clarification questions and update the mission accordingly.
+You are the **Clarification Handler**. Load clarification questions from the current mission and guide the user through providing answers.
 
 ## Prerequisites
 
-**CRITICAL:** This prompt requires `.mission/mission.md` to exist with `status: clarifying`. If not found, use template `.mission/libraries/displays/error-no-mission.md` with message: "No mission awaiting clarification. Use /m.plan to create a new mission first."
+**CRITICAL:** This prompt requires `.mission/mission.md` to exist with `status: clarifying`. If not found, use template `.mission/libraries/displays/error-no-mission.md`.
 
 ## Execution Steps
 
 Before processing, read `.mission/governance.md` and current `.mission/mission.md`.
 
-### Step 1: Clarification Processing
-1. **Parse Responses**: Extract answers from `$ARGUMENTS` for each NEED_CLARIFICATION item
+### Step 1: Load and Display Questions
+1. **Load Mission**: Read `.mission/mission.md`
+2. **Extract Questions**: Parse NEED_CLARIFICATION section
+3. **Display to User**: Show numbered list of questions
+4. **Request Answers**: Ask user to provide responses
+
+**Display Format:**
+```
+🤔 CLARIFICATION NEEDED
+
+Please provide answers to these questions:
+
+1. [Question 1]
+2. [Question 2]
+3. [Question 3]
+
+Provide your answers in the same numbered format.
+```
+
+**Log Step 1**: Append to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.clarify 1: Load and Display Questions | [questions loaded, displayed to user]"
+
+### Step 2: Process User Responses
+1. **Parse Answers**: Extract numbered responses from user input
 2. **Update Intent**: Refine INTENT section based on clarifications
 3. **Reassess Complexity**: Re-evaluate track based on new information
 4. **Finalize Scope**: Convert PROVISIONAL_SCOPE to final SCOPE with clarified details
 
-### Step 2: Track Reassessment
+**Log Step 2**: Append to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.clarify 2: Process User Responses | [responses parsed, intent updated]"
+
+### Step 3: Track Reassessment
 After incorporating clarifications, re-analyze using the complexity matrix:
 - **Base Complexity**: Count implementation files (excluding tests)
 - **Domain Multipliers**: Apply +1 track for high-risk, complex, performance-critical, or security domains
 - **Track 4 Check**: If reassessment results in Track 4, decompose to backlog
 
-### Step 3: Mission Update
+**Log Step 3**: Append to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.clarify 3: Track Reassessment | [final track, complexity reasoning]"
+
+### Step 4: Update Mission
 **CRITICAL**: Use templates from `.mission/libraries/` for consistent output.
 
 **Actions by Final Track:**
 - **TRACK 1**: Convert to direct edit suggestion
 - **TRACK 2-3**: Use template `.mission/libraries/missions/wet.md` with clarified variables
 - **TRACK 4**: Use template `.mission/libraries/displays/clarify-escalation.md`
+
+**Log Step 4**: Append to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.clarify 4: Mission Update | [final mission state, next action]"
 
 **If Track 1:**
 ```

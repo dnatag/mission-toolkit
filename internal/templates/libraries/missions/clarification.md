@@ -1,5 +1,6 @@
 # MISSION
 
+id: {{MISSION_ID}}
 type: CLARIFICATION
 track: TBD
 iteration: 1

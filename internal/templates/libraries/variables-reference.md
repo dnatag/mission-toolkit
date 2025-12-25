@@ -21,6 +21,7 @@
 {{DURATION}}            # "45 minutes" or "1 hour 15 minutes"
 {{COMPLETION_DATE}}     # "2024-01-15 14:30:00"
 {{DURATION_MINUTES}}    # 45 (numeric)
+{{NEXT_STEP}}           # Next action for user (e.g., "/m.apply to execute this mission")
 ```
 
 ### Change Summary Variables
@@ -73,6 +74,16 @@
 {{INITIAL_INTENT}}      # Original user input
 {{CLARIFICATION_QUESTIONS}} # List of questions needing answers
 {{ESTIMATED_FILES}}     # Provisional file list
+```
+
+### Epic Variables
+```
+{{SUB_INTENTS}}         # Formatted list of decomposed sub-intents
+```
+
+### Atomic Task Variables
+```
+{{SUGGESTED_EDIT}}      # Direct edit suggestion for atomic tasks
 ```
 
 ## INITIALIZATION REQUIREMENTS

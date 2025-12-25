@@ -23,14 +23,23 @@ Before execution, read `.mission/governance.md`.
 2. **Update Status**: Use script `.mission/libraries/scripts/status-to-active.md` to change status to `active`
 3. **Scope Check**: Verify all SCOPE files exist and are accessible
 
+**Log Step 1**: Append to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.apply 1: Pre-execution Validation | [brief outcome]"
+
 ### Step 2: Mission Execution
 1. **Follow PLAN**: Execute each step in the PLAN section
 2. **Scope Enforcement**: Only modify files listed in SCOPE
 3. **Run Verification**: Execute the VERIFICATION command
 
+**Log Step 2**: Append to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.apply 2: Mission Execution | [files modified, verification result]"
+
 ### Step 3: Status Handling
 - **On Success**: Keep `status: active`, use success template
 - **On Failure**: Change `status: active` to `status: failed` and run `git checkout .`
+
+**Log Step 3**: Append to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.apply 3: Status Handling | [final outcome]"
 
 **CRITICAL**: Use templates from `.mission/libraries/` for consistent output.
 
