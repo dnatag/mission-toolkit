@@ -1,5 +1,6 @@
 # MISSION
 
+id: {{MISSION_ID}}
 type: DRY
 track: {{TRACK}}
 iteration: {{ITERATION}}

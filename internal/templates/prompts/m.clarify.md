@@ -14,6 +14,8 @@ You are the **Clarification Handler**. Load clarification questions from the cur
 
 Before processing, read `.mission/governance.md` and current `.mission/mission.md`.
 
+**MUST LOG:** Use file read tool to check if `.mission/execution.log` exists. If file doesn't exist, use file read tool to load template `libraries/scripts/init-execution-log.md`, then use file write tool to create the log file.
+
 ### Step 1: Load and Display Questions
 1. **Load Mission**: Read `.mission/mission.md`
 2. **Extract Questions**: Parse NEED_CLARIFICATION section
@@ -33,7 +35,7 @@ Please provide answers to these questions:
 Provide your answers in the same numbered format.
 ```
 
-**Log Step 1**: Append to `.mission/execution.log` using template `libraries/logs/execution.md`:
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
 - {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.clarify 1: Load and Display Questions | [questions loaded, displayed to user]"
 
 ### Step 2: Process User Responses
@@ -42,7 +44,7 @@ Provide your answers in the same numbered format.
 3. **Reassess Complexity**: Re-evaluate track based on new information
 4. **Finalize Scope**: Convert PROVISIONAL_SCOPE to final SCOPE with clarified details
 
-**Log Step 2**: Append to `.mission/execution.log` using template `libraries/logs/execution.md`:
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
 - {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.clarify 2: Process User Responses | [responses parsed, intent updated]"
 
 ### Step 3: Track Reassessment
@@ -51,7 +53,7 @@ After incorporating clarifications, re-analyze using the complexity matrix:
 - **Domain Multipliers**: Apply +1 track for high-risk, complex, performance-critical, or security domains
 - **Track 4 Check**: If reassessment results in Track 4, decompose to backlog
 
-**Log Step 3**: Append to `.mission/execution.log` using template `libraries/logs/execution.md`:
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
 - {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.clarify 3: Track Reassessment | [final track, complexity reasoning]"
 
 ### Step 4: Update Mission
@@ -62,8 +64,8 @@ After incorporating clarifications, re-analyze using the complexity matrix:
 - **TRACK 2-3**: Use template `.mission/libraries/missions/wet.md` with clarified variables
 - **TRACK 4**: Use template `.mission/libraries/displays/clarify-escalation.md`
 
-**Log Step 4**: Append to `.mission/execution.log` using template `libraries/logs/execution.md`:
-- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.clarify 4: Mission Update | [final mission state, next action]"
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.clarify 4: Update Mission | [final mission state, next action]"
 
 **If Track 1:**
 ```

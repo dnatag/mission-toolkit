@@ -14,6 +14,8 @@ You are the **Completor**. Finalize the current mission and update project track
 
 Before generating output, read `.mission/governance.md`.
 
+**MUST LOG:** Use file read tool to check if `.mission/execution.log` exists. If file doesn't exist, use file read tool to load template `libraries/scripts/init-execution-log.md`, then use file write tool to create the log file.
+
 ### Step 1: Mission Status Check
 1. **Status Check**: Check mission status (`active`, `failed`, or other)
 2. **Route by Status**: 
@@ -21,13 +23,19 @@ Before generating output, read `.mission/governance.md`.
    - `status: failed` → Failure completion workflow
    - Other status → Error (use error template)
 
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.complete 1: Mission Status Check | [status found, workflow selected]"
+
 ### Step 2A: Success Completion Workflow
 **For `status: active` missions:**
 
 1. **Validation**: Verify all PLAN items completed and VERIFICATION passed
 2. **Update Mission**: Change `status: active` to `status: completed` and add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ`
-3. **Archive Mission**: Use script `.mission/libraries/scripts/archive-completed.md`
+3. **Archive Mission**: Use script `.mission/libraries/scripts/archive-completed.md` (includes execution log)
 4. **Clean Up**: Remove `.mission/mission.md` after archiving
+
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.complete 2A: Success Completion | [validation result, archived to location]"
 
 ### Step 2B: Failure Completion Workflow
 **For `status: failed` missions:**
@@ -37,11 +45,21 @@ Before generating output, read `.mission/governance.md`.
 3. **Archive Mission**: Use script `.mission/libraries/scripts/archive-completed.md`
 4. **Clean Up**: Remove `.mission/mission.md` after archiving
 
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.complete 2B: Failure Completion | [failure reason, archived to location]"
+
 ### Step 3: Project Tracking Updates
 **For both success and failure:**
 
 1. **Update Summary**: Update `.mission/metrics.md` aggregate statistics and RECENT COMPLETIONS
-2. **Update Backlog**: Mark intent as completed (success) or add retry suggestion (failure)
+2. **Update Backlog**: Check `.mission/backlog.md` for matching intent and mark as completed if found
+
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "SUCCESS | m.complete 3: Project Tracking | Updated metrics.md, marked backlog item completed" (or appropriate actual values)
+
+### Step 4: Archive Execution Log
+1. **Copy Log**: Copy `.mission/execution.log` to `.mission/completed/{{MISSION_ID}}-execution.log`
+2. **Clean Up**: Remove `.mission/execution.log` after archiving
 
 **CRITICAL**: Use templates from `.mission/libraries/` for consistent output.
 

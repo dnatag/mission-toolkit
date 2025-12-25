@@ -35,6 +35,10 @@ You are the **Planner**. Convert the user's raw intent into a formal `.mission/m
 
 Before generating output, read `.mission/governance.md`.
 
+**MISSION ID GENERATION:** Generate unique mission ID using format: `YYYYMMDDHHMMSS-` + 4-digit random number (e.g., `20240115143045-1234`). Use this ID throughout the mission lifecycle.
+
+**MUST LOG:** Use file read tool to check if `.mission/execution.log` exists. If file doesn't exist, use file read tool to load template `libraries/scripts/init-execution-log.md`, then use file write tool to create the log file.
+
 ## State Transition Matrix
 
 **CRITICAL**: Follow this exact flow. Each scenario has ONE outcome.
@@ -85,13 +89,33 @@ Before generating output, read `.mission/governance.md`.
    ```
 3. **Handle Response**: 
    - **A**: STOP EXECUTION. Return "Please run: /m.complete first, then retry /m.plan"
-  - **Log**: {{LOG_ENTRY}} = "STOPPED | m.plan 1: Mission State & Clarification Check | User chose to complete existing mission first"
+   - **Log**: {{LOG_ENTRY}} = "STOPPED | m.plan 1: Mission State & Clarification Check | User chose to complete existing mission first"
    - **B**: Archive current mission, output "✅ Step 1: Archived existing mission", CONTINUE to Step 1b
    - **C**: Overwrite warning, output "✅ Step 1: Will overwrite existing mission", CONTINUE to Step 1b
 4. **If no existing mission**: Output "✅ Step 1: No existing mission found", CONTINUE to Step 1b
 
 **Clarification Analysis:**
 Scan `$ARGUMENTS` for ambiguous requirements that need clarification:
+
+### Bug/Issue Reports
+• **Vague Problem**: "bug", "issue", "broken", "doesn't work" without specific symptoms
+• **Missing Reproduction**: No steps to reproduce the problem
+• **No Expected Behavior**: What should happen vs. what actually happens
+• **Examples**: "Fix display bug", "API is broken", "Login doesn't work"
+
+### Feature Requests  
+• **Ambiguous Scope**: "improve", "enhance", "make better" without specifics
+• **Missing Requirements**: No acceptance criteria or success definition
+• **Unclear Integration**: How it connects to existing functionality
+• **Examples**: "Make UI better", "Add user management", "Improve performance"
+
+### Technical Tasks
+• **Unspecified Technology**: Framework, library, or approach not defined
+• **Missing Context**: Why this change is needed
+• **Unclear Dependencies**: What other systems are affected
+• **Examples**: "Add authentication", "Refactor code", "Update database"
+
+### General Requirements
 - **Technology Stack**: Unspecified frameworks, databases, or libraries
 - **Business Logic**: Unclear validation rules, data relationships, or workflows
 - **Integration Points**: External APIs, services, or data sources without details
@@ -106,7 +130,7 @@ Scan `$ARGUMENTS` for ambiguous requirements that need clarification:
 
 **If no clarifications needed**: CONTINUE to Step 2.
 
-**Log Step 1**: Append to `.mission/execution.log` using template `libraries/logs/execution.md`:
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
 - {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.plan 1: Mission State & Clarification Check | [mission state, clarification result]"
 
 ### Step 2: Intent Analysis & Complexity Assessment
@@ -175,7 +199,7 @@ Analyze REFINED_INTENT using base complexity + domain multipliers:
 **Duplication Analysis:**
 Scan REFINED_INTENT for keywords suggesting similar existing functionality. If detected, add refactoring opportunity to `.mission/backlog.md`.
 
-**Log Step 2**: Append to `.mission/execution.log` using template `libraries/logs/execution.md`:
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
 - {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.plan 2: Intent Analysis & Complexity Assessment | [track assigned, mission type, reasoning]"
 
 ### Step 3: Security & Scope Validation
@@ -199,7 +223,7 @@ Before outputting, ensure:
 
 **Output**: "✅ Step 3 Complete: SCOPE=[N files] + PLAN=[N steps] + VERIFICATION='[command]'", CONTINUE to Step 4
 
-**Log Step 3**: Append to `.mission/execution.log` using template `libraries/logs/execution.md`:
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
 - {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.plan 3: Security & Scope Validation | [scope validated, plan created, verification defined]"
 
 ### Step 4: Generate Mission
@@ -233,5 +257,5 @@ Before outputting, ensure:
 - {{FILE_COUNT}} = Number of files in scope
 - {{NEXT_STEP}} = "/m.apply to execute this mission"
 
-**Log Step 4**: Append to `.mission/execution.log` using template `libraries/logs/execution.md`:
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
 - {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.plan 4: Generate Mission | [mission created, track/type, files in scope]"

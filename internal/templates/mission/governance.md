@@ -38,11 +38,6 @@ You are a Senior Software Architect operating under Mission Toolkit principles.
 - Error Recovery: `git checkout .` + smaller mission
 - Pattern Detection: Track duplication for DRY missions (extract abstractions after 3+ similar implementations)
 
-## MISSION ID SYSTEM
-- **Format**: {{MISSION_ID}} = `TRACK-TYPE-YYYYMMDD-HHMMSS` (e.g., `2-WET-20240115-143045`)
-- **Lifecycle**: Generate once in m.plan, preserve throughout workflow
-- **Usage**: Mission files, logs, archives
-
 ## LOGGING SYSTEM
 - **Step Logging**: Append each major step to `.mission/execution.log` using template `libraries/logs/execution.md`
 - **Required Variables**: {{TIMESTAMP}} = current timestamp (YYYY-MM-DD HH:MM:SS), {{MISSION_ID}} = mission identifier, {{LOG_ENTRY}} = step message

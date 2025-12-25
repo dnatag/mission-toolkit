@@ -1,5 +1,6 @@
 # MISSION
 
+id: {{MISSION_ID}}
 type: WET
 track: {{TRACK}}
 iteration: 1
