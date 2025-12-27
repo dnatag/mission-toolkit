@@ -35,6 +35,31 @@ Analyze refined intent to determine track complexity and mission type.
 - **Multipliers**: +1 for each domain risk
 - **Final Track**: min(score, 3)
 
+## Edge Case Handling
+- **File vs Line Conflict**: If file count suggests Track 2 but line count suggests Track 3, use higher track
+- **Borderline Cases**: If assessment falls between tracks, consider implementation complexity over file count
+- **Unknown Scope**: If file count cannot be estimated, default to Track 2 and note uncertainty
+
+## Output Format
+**Required Output:**
+```
+TRACK: [1-4]
+CONFIDENCE: [High/Medium/Low]
+REASONING: [Base complexity + domain multipliers + edge cases]
+REASSESS_TRIGGERS: [Conditions that would change this assessment]
+```
+
+**Confidence Levels:**
+- **High**: Clear file count, obvious domain classification
+- **Medium**: Estimated file count, some domain ambiguity  
+- **Low**: Vague requirements, multiple possible interpretations
+
+**Reassessment Triggers:**
+- New technical requirements discovered
+- Scope significantly expanded or reduced
+- Domain risk factors change (security, performance, compliance)
+- File count estimates proven wrong during implementation
+
 ## Examples
 - "Add missing item to array" (0 new files, 1 line) = Track 1
 - "Add user CRUD" (3 new files, ~50 lines) = Track 2

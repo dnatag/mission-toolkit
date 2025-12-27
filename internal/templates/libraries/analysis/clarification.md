@@ -31,9 +31,29 @@ Scan user intent for ambiguous requirements that need clarification before missi
 - **Security Requirements**: Authentication, authorization, or data protection specifics
 
 ## Decision Logic
-1. Scan for vague keywords → Generate specific questions
-2. Check for missing technical details → Request specifications  
-3. Validate completeness → Proceed or clarify
+1. **Step 1**: Identify category (Bug/Feature/Technical/General)
+2. **Step 2**: Check for missing details in that category
+3. **Step 3**: Generate specific questions for gaps found
+4. **Step 4**: If no gaps, proceed to complexity analysis
+
+## Context Preservation
+When generating clarification questions:
+- **Maintain Intent**: Reference user's original goal in questions
+- **Build Context**: Each question should help refine the mission scope
+- **Avoid Scope Creep**: Focus only on details needed for current intent
 
 ## Output Format
 If clarifications needed, generate numbered questions for each ambiguous area identified.
+
+**Question Quality Standards:**
+- Each question must be specific and actionable
+- Avoid yes/no questions - ask for concrete details
+- Prioritize questions by impact: critical details first, nice-to-have details last
+- Preserve user's original intent while seeking clarification
+
+**Example Output:**
+```
+1. [CRITICAL] What specific error message appears when the login fails?
+2. [IMPORTANT] Which browsers have you tested this issue on?
+3. [HELPFUL] What user role should have access to this feature?
+```

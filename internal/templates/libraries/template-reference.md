@@ -4,6 +4,9 @@
 
 ```
 libraries/
+├── analysis/           # Analysis guidance templates
+│   ├── clarification.md    # Clarification analysis criteria
+│   └── complexity.md       # Complexity assessment rules
 ├── displays/           # User output templates
 │   ├── plan-success.md     # ✅ MISSION CREATED
 │   ├── plan-paused.md      # ⏸️ MISSION PAUSED
@@ -24,7 +27,8 @@ libraries/
 │   ├── archive-current.md  # Archive to .mission/paused/
 │   ├── archive-completed.md # Archive to .mission/completed/
 │   ├── status-to-active.md # Update mission status
-│   └── validate-planned.md # Check mission status
+│   ├── validate-planned.md # Check mission status
+│   └── init-execution-log.md # Initialize execution log
 ├── metrics/            # Metrics templates
 │   ├── completion.md      # Individual mission metrics
 │   └── aggregate.md       # Project-wide metrics
@@ -39,12 +43,20 @@ libraries/
 Clear, specific references:
 ```markdown
 # In m.plan.md
+**Clarification Analysis**: Use `libraries/analysis/clarification.md`
+**Complexity Analysis**: Use `libraries/analysis/complexity.md`
 **On Success**: Use template `libraries/displays/plan-success.md`
 **On Clarification**: Use template `libraries/displays/plan-clarification.md`
 **On Epic**: Use template `libraries/displays/plan-epic.md`
 **On Atomic**: Use template `libraries/displays/plan-atomic.md`
 **Mission Template**: Use `libraries/missions/wet.md`
 **Create Script**: Use `libraries/scripts/create-mission.md`
+**Log Initialization**: Use `libraries/scripts/init-execution-log.md`
+
+# In m.clarify.md
+**Complexity Reassessment**: Use `libraries/analysis/complexity.md`
+**Mission Update**: Use `libraries/missions/wet.md` or `libraries/missions/dry.md`
+**Success Display**: Use `libraries/displays/clarify-success.md`
 
 # In m.apply.md
 **On Success**: Use template `libraries/displays/apply-success.md`
