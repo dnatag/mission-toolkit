@@ -95,32 +95,7 @@ Before generating output, read `.mission/governance.md`.
 4. **If no existing mission**: Output "✅ Step 1: No existing mission found", CONTINUE to Step 1b
 
 **Clarification Analysis:**
-Scan `$ARGUMENTS` for ambiguous requirements that need clarification:
-
-### Bug/Issue Reports
-• **Vague Problem**: "bug", "issue", "broken", "doesn't work" without specific symptoms
-• **Missing Reproduction**: No steps to reproduce the problem
-• **No Expected Behavior**: What should happen vs. what actually happens
-• **Examples**: "Fix display bug", "API is broken", "Login doesn't work"
-
-### Feature Requests  
-• **Ambiguous Scope**: "improve", "enhance", "make better" without specifics
-• **Missing Requirements**: No acceptance criteria or success definition
-• **Unclear Integration**: How it connects to existing functionality
-• **Examples**: "Make UI better", "Add user management", "Improve performance"
-
-### Technical Tasks
-• **Unspecified Technology**: Framework, library, or approach not defined
-• **Missing Context**: Why this change is needed
-• **Unclear Dependencies**: What other systems are affected
-• **Examples**: "Add authentication", "Refactor code", "Update database"
-
-### General Requirements
-- **Technology Stack**: Unspecified frameworks, databases, or libraries
-- **Business Logic**: Unclear validation rules, data relationships, or workflows
-- **Integration Points**: External APIs, services, or data sources without details
-- **Performance Requirements**: Unspecified response times, throughput, or scalability needs
-- **Security Requirements**: Authentication, authorization, or data protection specifics
+Use file read tool to load template `libraries/analysis/clarification.md` to scan `$ARGUMENTS` for ambiguous requirements that need clarification.
 
 **If clarifications needed**:
 1. **Create Mission**: Use template `.mission/libraries/missions/clarification.md` to create `.mission/mission.md`
@@ -142,45 +117,13 @@ Scan `$ARGUMENTS` for ambiguous requirements that need clarification:
 2. **Update**: Set REFINED_INTENT = the refined intent for all subsequent analysis
 
 **Complexity Analysis:**
-Analyze REFINED_INTENT using base complexity + domain multipliers:
+Use file read tool to load template `libraries/analysis/complexity.md` to analyze REFINED_INTENT using base complexity + domain multipliers.
 
 **Mission Type Detection:**
 1. **DRY Mission**: User explicitly requests refactoring existing duplication
    - Keywords: "Extract", "Refactor", "DRY", "consolidate", "eliminate duplication"
    - Examples: "Extract common validation logic", "Refactor duplicate API patterns"
 2. **WET Mission**: All other feature development requests
-
-**Base Complexity (by implementation scope):**
-
-| **TRACK 1 (Atomic)** | **TRACK 2 (Standard)** | **TRACK 3 (Robust)** | **TRACK 4 (Epic)** |
-|---|---|---|---|
-| Single line/function changes | Single feature implementation | Cross-cutting concerns | Multiple systems |
-| 0 new implementation files | 1-5 new implementation files | 6-9 new implementation files | 10+ new implementation files |
-| 1-5 lines of code changed | 10-100 lines of code changed | 100-500 lines of code changed | 500+ lines of code changed |
-| "Fix typo", "Add to array", "Rename var" | "Add endpoint", "Create component" | "Add authentication", "Refactor for security" | "Build payment system", "Rewrite architecture" |
-
-**Domain Multipliers (+1 track, max Track 3):**
-- **High-risk integrations**: Payment processing, financial transactions, authentication systems
-- **Complex algorithms**: ML models, cryptography, real-time optimization
-- **Performance-critical**: Sub-second response requirements, high-throughput systems
-- **Regulatory/Security**: GDPR, SOX, PCI compliance, security-sensitive features
-
-**Examples:**
-- "Add missing item to array" (0 new files, 1 line) = Track 1
-- "Fix typo in variable name" (0 new files, 1 line) = Track 1
-- "Add user CRUD" (3 new files, ~50 lines) = Track 2
-- "Add payment processing" (2 new files, ~30 lines + payment API) = Track 3
-- "Add database logging" (2 new files, ~40 lines + database) = Track 2 (not high-risk)
-- "Optimize search algorithm" (1 new file, ~200 lines + complex algorithm) = Track 3
-
-**Assessment Rule**: Take the higher track from either file count or line count metrics.
-
-**Note**: Test files don't count toward complexity - they're expected for proper development.
-
-**Use Cases:**
-- **TRACK 2**: Normal feature development (API endpoints, UI components, business logic)
-- **TRACK 3**: Security-sensitive, performance-critical, or cross-cutting refactoring
-- **TRACK 4**: Only for truly massive requests spanning multiple domains
 
 **Actions by Track:**
 - **TRACK 1**: STOP EXECUTION. Use template `.mission/libraries/displays/plan-atomic.md` with:
