@@ -32,7 +32,7 @@ Please provide answers to these questions:
 2. [Question 2]
 3. [Question 3]
 
-Provide your answers in the same numbered format.
+Provide your answers - you can reference questions by number or respond in any clear format.
 ```
 
 **MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:

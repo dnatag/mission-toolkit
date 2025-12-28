@@ -238,7 +238,7 @@ func (m Model) View() string {
 	if m.currentMission != nil {
 		sections = append(sections, m.renderCurrentMission())
 	} else {
-		sections = append(sections, "No active mission found")
+		sections = append(sections, m.renderNoMission())
 	}
 
 	sections = append(sections, "")
@@ -512,6 +512,19 @@ func (m Model) renderCurrentMission() string {
 		mission.Track,
 		mission.Intent,
 		nextSteps,
+	)
+
+	return boxStyle.Render(content)
+}
+
+func (m Model) renderNoMission() string {
+	noMissionStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#626262"))
+
+	content := fmt.Sprintf("%s\n\n%s",
+		noMissionStyle.Render("NO ACTIVE MISSION"),
+		"Use 'm.plan' to start with your intent",
 	)
 
 	return boxStyle.Render(content)

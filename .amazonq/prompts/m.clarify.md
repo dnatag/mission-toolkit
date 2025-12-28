@@ -32,7 +32,7 @@ Please provide answers to these questions:
 2. [Question 2]
 3. [Question 3]
 
-Provide your answers in the same numbered format.
+Provide your answers - you can reference questions by number or respond in any clear format.
 ```
 
 **MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
@@ -48,7 +48,7 @@ Provide your answers in the same numbered format.
 - {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.clarify 2: Process User Responses | [responses parsed, intent updated]"
 
 ### Step 3: Track Reassessment
-After incorporating clarifications, re-analyze using the complexity matrix:
+Use file read tool to load template `libraries/analysis/complexity.md` to re-analyze using the complexity matrix:
 - **Base Complexity**: Count implementation files (excluding tests)
 - **Domain Multipliers**: Apply +1 track for high-risk, complex, performance-critical, or security domains
 - **Track 4 Check**: If reassessment results in Track 4, decompose to backlog

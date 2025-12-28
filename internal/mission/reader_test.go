@@ -204,3 +204,127 @@ Current test mission`
 		t.Errorf("Expected Intent 'Current test mission', got '%s'", mission.Intent)
 	}
 }
+
+func TestGetEffectiveTime(t *testing.T) {
+	// Test with CompletedAt available
+	completedTime, _ := time.Parse(time.RFC3339, "2025-12-18T10:20:00.000-05:00")
+	mission1 := &Mission{
+		CompletedAt: &completedTime,
+		FilePath:    ".mission/completed/2025-12-18-10-20-mission.md",
+	}
+	
+	effectiveTime := getEffectiveTime(mission1)
+	if effectiveTime == nil || !effectiveTime.Equal(completedTime) {
+		t.Errorf("Expected CompletedAt time, got %v", effectiveTime)
+	}
+	
+	// Test with filename fallback
+	mission2 := &Mission{
+		CompletedAt: nil,
+		FilePath:    ".mission/completed/2025-12-20-22-31-mission.md",
+	}
+	
+	effectiveTime = getEffectiveTime(mission2)
+	expectedTime, _ := time.Parse("2006-01-02-15-04", "2025-12-20-22-31")
+	if effectiveTime == nil || !effectiveTime.Equal(expectedTime) {
+		t.Errorf("Expected filename time %v, got %v", expectedTime, effectiveTime)
+	}
+	
+	// Test with invalid filename
+	mission3 := &Mission{
+		CompletedAt: nil,
+		FilePath:    ".mission/completed/invalid-filename.md",
+	}
+	
+	effectiveTime = getEffectiveTime(mission3)
+	if effectiveTime != nil {
+		t.Errorf("Expected nil for invalid filename, got %v", effectiveTime)
+	}
+}
+
+func TestSortingWithMixedTimestamps(t *testing.T) {
+	// Create temporary directory structure
+	tmpDir, err := os.MkdirTemp("", "test-mission-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Change to temp directory
+	oldWd, _ := os.Getwd()
+	defer os.Chdir(oldWd)
+	os.Chdir(tmpDir)
+
+	// Create .mission/completed directory
+	completedDir := ".mission/completed"
+	if err := os.MkdirAll(completedDir, 0755); err != nil {
+		t.Fatalf("Failed to create completed dir: %v", err)
+	}
+
+	// Create missions with mixed timestamp scenarios
+	// Mission with CompletedAt (newest)
+	mission1Content := `# MISSION
+type: WET
+track: 2
+status: completed
+completed_at: 2025-12-25T10:00:00.000-05:00
+
+## INTENT
+Mission with CompletedAt`
+
+	// Mission without CompletedAt but valid filename (middle)
+	mission2Content := `# MISSION
+type: WET
+track: 2
+status: completed
+
+## INTENT
+Mission with filename only`
+
+	// Mission with invalid filename format (should go to end)
+	mission3Content := `# MISSION
+type: WET
+track: 2
+status: completed
+
+## INTENT
+Mission with invalid filename`
+
+	// Write mission files
+	mission1Path := filepath.Join(completedDir, "2025-12-25-10-00-mission.md")
+	mission2Path := filepath.Join(completedDir, "2025-12-20-22-31-mission.md")
+	mission3Path := filepath.Join(completedDir, "invalid-format-mission.md")
+
+	if err := os.WriteFile(mission1Path, []byte(mission1Content), 0644); err != nil {
+		t.Fatalf("Failed to write mission1: %v", err)
+	}
+	if err := os.WriteFile(mission2Path, []byte(mission2Content), 0644); err != nil {
+		t.Fatalf("Failed to write mission2: %v", err)
+	}
+	if err := os.WriteFile(mission3Path, []byte(mission3Content), 0644); err != nil {
+		t.Fatalf("Failed to write mission3: %v", err)
+	}
+
+	// Test reading and sorting
+	missions, err := ReadCompletedMissions()
+	if err != nil {
+		t.Fatalf("Failed to read completed missions: %v", err)
+	}
+
+	if len(missions) != 3 {
+		t.Errorf("Expected 3 missions, got %d", len(missions))
+	}
+
+	// Verify sorting order: CompletedAt first, filename second, invalid last
+	if len(missions) >= 3 {
+		if missions[0].Intent != "Mission with CompletedAt" {
+			t.Errorf("Expected CompletedAt mission first, got '%s'", missions[0].Intent)
+		}
+		if missions[1].Intent != "Mission with filename only" {
+			t.Errorf("Expected filename mission second, got '%s'", missions[1].Intent)
+		}
+		if missions[2].Intent != "Mission with invalid filename" {
+			t.Errorf("Expected invalid filename mission last, got '%s'", missions[2].Intent)
+		}
+	}
+}
