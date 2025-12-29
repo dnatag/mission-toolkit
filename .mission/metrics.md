@@ -3,22 +3,22 @@
 *Detailed metrics with change summaries stored in `completed/` with timestamps*
 
 ## AGGREGATE STATISTICS
-- **Total Missions**: 42 completed
-- **Success Rate**: 100% (42/42 successful)
+- **Total Missions**: 43 completed
+- **Success Rate**: 100% (43/43 successful)
 - **Average Duration**: ~5 minutes
 - **Template System**: Active (libraries/ templates)
 
 ## TRACK DISTRIBUTION
 - **TRACK 1**: 0 atomic tasks (bypassed missions)
-- **TRACK 2**: 36 missions, avg duration: ~5 minutes
-- **TRACK 3**: 9 missions, avg duration: ~6 minutes
+- **TRACK 2**: 41 missions, avg duration: ~5 minutes
+- **TRACK 3**: 2 missions, avg duration: ~6 minutes
 - **TRACK 4**: 0 epic decompositions
 
 ## WET-DRY EVOLUTION
-- **WET Missions**: 37
-- **DRY Missions**: 1 (1 failed, 1 successful)
-- **Refactoring Success Rate**: 50% (AI-native approach successful)
-- **Patterns Extracted**: 8
+- **WET Missions**: 41
+- **DRY Missions**: 2 (0 failed, 2 successful)
+- **Refactoring Success Rate**: 100% (AI-native approach successful)
+- **Patterns Extracted**: 12
 
 ## QUALITY METRICS
 - **Verification Success Rate**: 100%
@@ -28,28 +28,30 @@
 
 ## RECENT COMPLETIONS
 (Last 5 missions with change summaries - see `completed/` for full history)
+- 2025-12-28 Track 2 WET: Fix metrics update process to automatically refresh PROCESS INSIGHTS and TECHNICAL LEARNINGS sections - updated completion template and metrics.md with current data (112 min)
+- 2025-12-28 Track 2 WET: Reduce supported AI types to core set - removed gemini, cursor, and codex support from all files (9 min)
+- 2025-12-28 Track 2 DRY: Consolidate dual versioning system into single unified version - eliminated version duplication across CLI and templates (6 min)
 - 2025-12-28 Track 2 WET: Fix chronological sorting issue in TUI status historical list - added filename-based fallback sorting with unit tests (12 min)
 - 2025-12-28 Track 2 WET: Fix mission file loading issue in TUI status interface - added validation for empty/invalid mission files (10 min)
-- 2025-12-28 Track 2 WET: Display default no-mission message in TUI status interface - added renderNoMission() method with styled display (75 min)
-- 2025-12-23 Track 2 WET: Refactor WriteTemplates user data preservation - simplified section preservation approach (12 min)
-- 2025-12-23 Track 2 WET: Card List Merging Function - deterministic merge algorithm with KeyValue deduplication (19 min)
 
 ## PROCESS INSIGHTS
 (High-level workflow improvements - preserved)
 - Strong preference for Track 2 (Standard) missions indicates good scope planning
 - 100% success rate shows effective mission planning and execution
-- No DRY missions yet - pattern detection working as intended (WET-first approach)
+- DRY missions emerging - 2 completed with 100% success rate (pattern detection working)
 - Average 5-minute execution time suggests appropriate atomic scope sizing
+- Template system evolution shows consistent output across different AI models
+- Configuration reduction pattern simplifies maintenance by focusing on active features
 
 ## TECHNICAL LEARNINGS
 (Implementation details - rotated/summarized, max 10 entries)
-- Go map iteration is non-deterministic - maintain explicit ordering for deterministic tests
+- Configuration reduction pattern simplifies maintenance by focusing on actively used features
+- Version consolidation pattern eliminates duplication across CLI and template components
+- Filename-based fallback sorting provides robust chronological ordering when timestamps missing
+- Defensive validation pattern filters invalid files without breaking entire system operations
 - Template system ensures consistent output across LLM models
 - EXECUTION INSTRUCTIONS prevent LLM bypass of handshake workflow
 - Variable reference system reduces template breakage
 - Generic filtering (2+ brackets) more robust than specific pattern matching
-- Preserve format instructions after --- separator for template structure
 - Section replacement better than content appending for idempotent behavior
 - Test-agnostic implementation prevents brittleness and works for real-world usage
-- Direct child iteration more reliable than ast.Walk for structured markdown parsing
-- Goldmark provides clean AST structure for building specialized parsers

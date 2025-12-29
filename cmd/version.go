@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/dnatag/mission-toolkit/internal/templates"
 	"github.com/dnatag/mission-toolkit/internal/version"
 	"github.com/spf13/cobra"
 )
@@ -14,8 +13,7 @@ var versionCmd = &cobra.Command{
 	Short: "Show version information",
 	Long:  `Display the current version of the Mission Toolkit CLI and embedded templates.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("CLI: %s\n", version.CLIVersion)
-		fmt.Printf("Templates: %s\n", templates.TemplateVersion)
+		fmt.Printf("Version: %s\n", version.Version)
 	},
 }
 

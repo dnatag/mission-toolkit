@@ -232,7 +232,7 @@ m version
    # Initialize Mission Toolkit project with AI-specific templates
    m init --ai q
    
-   # Supported AI types: q, claude, gemini, cursor, codex, kiro
+   # Supported AI types: q, claude, kiro, opencode
    # Creates .mission/ directory with governance files and prompt templates
    ```
 
@@ -292,25 +292,23 @@ m version
 
 ## Versioning
 
-Mission Toolkit uses **dual versioning** to enable independent evolution of CLI functionality and embedded templates.
+Mission Toolkit uses **unified versioning** for both CLI functionality and embedded templates.
 
 ### Version Structure
 
-- **CLI Version**: Tracks command-line tool functionality (`internal/version/version.go`)
-- **Template Version**: Tracks embedded workflow templates (`internal/templates/templates.go`)
+- **Version**: Tracks both command-line tool functionality and embedded workflow templates (`internal/version/version.go`)
 
 ```bash
 $ m version
-CLI: v1.2.3
-Templates: v2.1.0
+Version: v1.1.0
 ```
 
-### Independent Evolution Benefits
+### Unified Versioning Benefits
 
-- **Focused Updates**: CLI bugs don't require template version bumps
-- **Template Innovation**: New AI features can evolve templates independently
-- **Clear Compatibility**: Users understand which components changed
-- **Selective Adoption**: Teams can update CLI or templates as needed
+- **Simplified Releases**: Single version number for all components
+- **Clear Compatibility**: Users know exactly which version they're running
+- **Streamlined Updates**: All components evolve together
+- **Reduced Complexity**: No need to track separate CLI and template versions
 
 ## Release Process
 

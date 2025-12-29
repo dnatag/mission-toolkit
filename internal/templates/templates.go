@@ -9,9 +9,6 @@ import (
 	"github.com/spf13/afero"
 )
 
-// TemplateVersion represents the current version of the embedded templates
-const TemplateVersion = "v1.1.0"
-
 //go:embed mission/*.md
 var missionTemplates embed.FS
 
@@ -22,7 +19,7 @@ var promptTemplates embed.FS
 var libraryTemplates embed.FS
 
 // SupportedAITypes lists all supported AI types
-var SupportedAITypes = []string{"q", "claude", "gemini", "cursor", "codex", "kiro", "opencode"}
+var SupportedAITypes = []string{"q", "claude", "kiro", "opencode"}
 
 // getSlashPrefix returns the appropriate slash command prefix for the AI type
 func getSlashPrefix(aiType string) string {
@@ -86,9 +83,6 @@ func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
 	aiDirs := map[string]string{
 		"q":        ".amazonq/prompts",
 		"claude":   ".claude/commands",
-		"gemini":   ".gemini/commands",
-		"cursor":   ".cursor/commands",
-		"codex":    ".codex/commands",
 		"kiro":     ".kiro/prompts",
 		"opencode": ".opencode/command",
 	}

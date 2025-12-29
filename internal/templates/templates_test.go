@@ -47,12 +47,6 @@ func generateExpectedFiles(aiType, targetDir string, promptFiles []string) []str
 		promptDir = ".amazonq/prompts"
 	case "claude":
 		promptDir = ".claude/commands"
-	case "gemini":
-		promptDir = ".gemini/commands"
-	case "cursor":
-		promptDir = ".cursor/commands"
-	case "codex":
-		promptDir = ".codex/commands"
 	case "kiro":
 		promptDir = ".kiro/prompts"
 	case "opencode":
@@ -84,9 +78,6 @@ func TestWriteTemplates(t *testing.T) {
 	}{
 		{"Amazon Q templates", "q", "/test"},
 		{"Claude templates", "claude", "/test"},
-		{"Gemini templates", "gemini", "/test"},
-		{"Cursor templates", "cursor", "/test"},
-		{"Codex templates", "codex", "/test"},
 		{"Kiro templates", "kiro", "/test"},
 		{"OpenCode templates", "opencode", "/test"},
 	}
@@ -148,9 +139,6 @@ func TestGetSlashPrefix(t *testing.T) {
 		{"q", "@"},
 		{"kiro", "@"},
 		{"claude", "/"},
-		{"gemini", "/"},
-		{"cursor", "/"},
-		{"codex", "/"},
 		{"opencode", "/"},
 	}
 
@@ -210,7 +198,6 @@ func TestWriteLibraryTemplates(t *testing.T) {
 		{"Amazon Q library templates", "q", "/test", "@"},
 		{"Kiro library templates", "kiro", "/test", "@"},
 		{"Claude library templates", "claude", "/test", "/"},
-		{"Gemini library templates", "gemini", "/test", "/"},
 	}
 
 	for _, tt := range tests {

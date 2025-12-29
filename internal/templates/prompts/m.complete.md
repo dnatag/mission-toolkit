@@ -51,11 +51,12 @@ Before generating output, read `.mission/governance.md`.
 ### Step 3: Project Tracking Updates
 **For both success and failure:**
 
-1. **Update Summary**: Update `.mission/metrics.md` aggregate statistics and RECENT COMPLETIONS
+1. **Update Summary**: Update `.mission/metrics.md` aggregate statistics using template `.mission/libraries/metrics/aggregate.md` and RECENT COMPLETIONS
 2. **Update Backlog**: Check `.mission/backlog.md` for matching intent and mark as completed if found
+3. **Refresh Insights**: Update PROCESS INSIGHTS and TECHNICAL LEARNINGS sections in `.mission/metrics.md` with current mission data
 
 **MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
-- {{LOG_ENTRY}} = "SUCCESS | m.complete 3: Project Tracking | Updated metrics.md, marked backlog item completed" (or appropriate actual values)
+- {{LOG_ENTRY}} = "SUCCESS | m.complete 3: Project Tracking | Updated metrics.md, refreshed insights, marked backlog item completed" (or appropriate actual values)
 
 ### Step 4: Archive Execution Log
 1. **Copy Log**: Copy `.mission/execution.log` to `.mission/completed/{{MISSION_ID}}-execution.log`
