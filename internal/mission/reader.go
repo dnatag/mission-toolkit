@@ -59,7 +59,7 @@ func ReadCompletedMissions() ([]*Mission, error) {
 	sort.Slice(missions, func(i, j int) bool {
 		timeI := getEffectiveTime(missions[i])
 		timeJ := getEffectiveTime(missions[j])
-		
+
 		// If both times are nil, maintain stable order
 		if timeI == nil && timeJ == nil {
 			return false
@@ -71,7 +71,7 @@ func ReadCompletedMissions() ([]*Mission, error) {
 		if timeJ == nil {
 			return true
 		}
-		
+
 		return timeI.After(*timeJ)
 	})
 
@@ -85,7 +85,7 @@ func getEffectiveTime(mission *Mission) *time.Time {
 	if mission.CompletedAt != nil {
 		return mission.CompletedAt
 	}
-	
+
 	// Try to parse time from filename (format: YYYY-MM-DD-HH-MM-mission.md)
 	filename := filepath.Base(mission.FilePath)
 	if len(filename) >= 16 && strings.HasSuffix(filename, "-mission.md") {
@@ -94,7 +94,7 @@ func getEffectiveTime(mission *Mission) *time.Time {
 			return &t
 		}
 	}
-	
+
 	// Return nil if both methods fail (will be sorted to end)
 	return nil
 }

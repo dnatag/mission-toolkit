@@ -212,30 +212,30 @@ func TestGetEffectiveTime(t *testing.T) {
 		CompletedAt: &completedTime,
 		FilePath:    ".mission/completed/2025-12-18-10-20-mission.md",
 	}
-	
+
 	effectiveTime := getEffectiveTime(mission1)
 	if effectiveTime == nil || !effectiveTime.Equal(completedTime) {
 		t.Errorf("Expected CompletedAt time, got %v", effectiveTime)
 	}
-	
+
 	// Test with filename fallback
 	mission2 := &Mission{
 		CompletedAt: nil,
 		FilePath:    ".mission/completed/2025-12-20-22-31-mission.md",
 	}
-	
+
 	effectiveTime = getEffectiveTime(mission2)
 	expectedTime, _ := time.Parse("2006-01-02-15-04", "2025-12-20-22-31")
 	if effectiveTime == nil || !effectiveTime.Equal(expectedTime) {
 		t.Errorf("Expected filename time %v, got %v", expectedTime, effectiveTime)
 	}
-	
+
 	// Test with invalid filename
 	mission3 := &Mission{
 		CompletedAt: nil,
 		FilePath:    ".mission/completed/invalid-filename.md",
 	}
-	
+
 	effectiveTime = getEffectiveTime(mission3)
 	if effectiveTime != nil {
 		t.Errorf("Expected nil for invalid filename, got %v", effectiveTime)

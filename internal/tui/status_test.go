@@ -49,7 +49,7 @@ func TestNewModel(t *testing.T) {
 func TestInit(t *testing.T) {
 	model := NewModel()
 	cmd := model.Init()
-	
+
 	// Init should return a batch command
 	assert.NotNil(t, cmd)
 }
@@ -57,10 +57,10 @@ func TestInit(t *testing.T) {
 // Test Update function with different message types
 func TestUpdate_WindowSizeMsg(t *testing.T) {
 	model := createTestModel()
-	
+
 	msg := tea.WindowSizeMsg{Width: 100, Height: 50}
 	updatedModel, cmd := model.Update(msg)
-	
+
 	m := updatedModel.(Model)
 	assert.Equal(t, 100, m.width)
 	assert.Equal(t, 50, m.height)
@@ -71,19 +71,19 @@ func TestUpdate_WindowSizeMsg(t *testing.T) {
 func TestUpdate_CurrentMissionMsg(t *testing.T) {
 	model := createTestModel()
 	testMission := createTestMission("Current mission", "active")
-	
+
 	// Test successful mission load
 	msg := currentMissionMsg{mission: testMission, err: nil}
 	updatedModel, cmd := model.Update(msg)
-	
+
 	m := updatedModel.(Model)
 	assert.Equal(t, testMission, m.currentMission)
 	assert.Nil(t, cmd)
-	
+
 	// Test error case
 	msg = currentMissionMsg{mission: nil, err: assert.AnError}
 	updatedModel, cmd = model.Update(msg)
-	
+
 	m = updatedModel.(Model)
 	assert.Nil(t, m.currentMission)
 	assert.Nil(t, cmd)
@@ -95,19 +95,19 @@ func TestUpdate_CompletedMissionsMsg(t *testing.T) {
 		createTestMission("Mission 1", "completed"),
 		createTestMission("Mission 2", "completed"),
 	}
-	
+
 	// Test successful missions load
 	msg := completedMissionsMsg{missions: testMissions, err: nil}
 	updatedModel, cmd := model.Update(msg)
-	
+
 	m := updatedModel.(Model)
 	assert.Equal(t, testMissions, m.completedMissions)
 	assert.Nil(t, cmd)
-	
+
 	// Test error case
 	msg = completedMissionsMsg{missions: nil, err: assert.AnError}
 	updatedModel, cmd = model.Update(msg)
-	
+
 	m = updatedModel.(Model)
 	assert.NotEqual(t, testMissions, m.completedMissions) // Should keep original
 	assert.Nil(t, cmd)
@@ -116,11 +116,11 @@ func TestUpdate_CompletedMissionsMsg(t *testing.T) {
 func TestUpdate_KeyMsg_SearchMode(t *testing.T) {
 	model := createTestModel()
 	model.searchMode = true
-	
+
 	// Test adding character to search query
 	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'t'}}
 	updatedModel, cmd := model.Update(msg)
-	
+
 	m := updatedModel.(Model)
 	assert.Equal(t, "t", m.searchQuery)
 	assert.Equal(t, 0, m.selectedIndex)
@@ -130,19 +130,19 @@ func TestUpdate_KeyMsg_SearchMode(t *testing.T) {
 
 func TestUpdate_KeyMsg_Navigation(t *testing.T) {
 	model := createTestModel()
-	
+
 	tests := []struct {
-		name        string
-		key         string
-		expectQuit  bool
-		expectCmd   bool
+		name       string
+		key        string
+		expectQuit bool
+		expectCmd  bool
 	}{
 		{"quit with q", "q", true, false},
 		{"quit with ctrl+c", "ctrl+c", true, false},
 		{"reload with r", "r", false, true},
 		{"search with /", "/", false, false},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var msg tea.KeyMsg
@@ -151,9 +151,9 @@ func TestUpdate_KeyMsg_Navigation(t *testing.T) {
 			} else {
 				msg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(tt.key)}
 			}
-			
+
 			updatedModel, cmd := model.Update(msg)
-			
+
 			if tt.expectQuit {
 				// Check if cmd is tea.Quit function
 				assert.NotNil(t, cmd)
@@ -173,10 +173,10 @@ func TestUpdate_KeyMsg_Escape(t *testing.T) {
 	model := createTestModel()
 	model.selectedMission = createTestMission("Selected", "completed")
 	model.scrollOffset = 5
-	
+
 	msg := tea.KeyMsg{Type: tea.KeyEsc}
 	updatedModel, cmd := model.Update(msg)
-	
+
 	m := updatedModel.(Model)
 	assert.Nil(t, m.selectedMission)
 	assert.Equal(t, 0, m.scrollOffset)
@@ -188,9 +188,9 @@ func TestView(t *testing.T) {
 	model := createTestModel()
 	model.width = 80
 	model.height = 24
-	
+
 	view := model.View()
-	
+
 	// View should contain basic elements
 	assert.Contains(t, view, "Mission Toolkit Status")
 	assert.NotEmpty(t, view)
@@ -201,9 +201,9 @@ func TestView_WithCurrentMission(t *testing.T) {
 	model.currentMission = createTestMission("Active mission", "active")
 	model.width = 80
 	model.height = 24
-	
+
 	view := model.View()
-	
+
 	assert.Contains(t, view, "ACTIVE")
 	assert.Contains(t, view, "Active mission")
 }
@@ -214,9 +214,9 @@ func TestView_SearchMode(t *testing.T) {
 	model.searchQuery = "test"
 	model.width = 80
 	model.height = 24
-	
+
 	view := model.View()
-	
+
 	assert.Contains(t, view, "Search:")
 	assert.Contains(t, view, "test")
 }
@@ -434,12 +434,12 @@ func TestMin(t *testing.T) {
 // Test message types
 func TestCurrentMissionMsg(t *testing.T) {
 	mission := createTestMission("Test", "active")
-	
+
 	// Test successful message
 	msg := currentMissionMsg{mission: mission, err: nil}
 	assert.Equal(t, mission, msg.mission)
 	assert.Nil(t, msg.err)
-	
+
 	// Test error message
 	msg = currentMissionMsg{mission: nil, err: assert.AnError}
 	assert.Nil(t, msg.mission)
@@ -448,12 +448,12 @@ func TestCurrentMissionMsg(t *testing.T) {
 
 func TestCompletedMissionsMsg(t *testing.T) {
 	missions := []*mission.Mission{createTestMission("Test", "completed")}
-	
+
 	// Test successful message
 	msg := completedMissionsMsg{missions: missions, err: nil}
 	assert.Equal(t, missions, msg.missions)
 	assert.Nil(t, msg.err)
-	
+
 	// Test error message
 	msg = completedMissionsMsg{missions: nil, err: assert.AnError}
 	assert.Nil(t, msg.missions)
