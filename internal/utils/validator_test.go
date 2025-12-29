@@ -25,7 +25,7 @@ func TestValidateTemplate(t *testing.T) {
 			name:           "validate metrics template",
 			templatePath:   "../../internal/templates/mission/metrics.md",
 			expectValid:    true,
-			expectSections: 7, // All ## sections including TECHNICAL LEARNINGS
+			expectSections: 8, // AGGREGATE STATISTICS, TRACK DISTRIBUTION, WET-DRY EVOLUTION, QUALITY METRICS, RECENT COMPLETIONS, PROCESS INSIGHTS, TECHNICAL LEARNINGS, RECOMMENDATIONS
 			expectUnparsed: 2, // title + description
 		},
 	}
