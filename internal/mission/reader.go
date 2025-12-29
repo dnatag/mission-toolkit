@@ -47,19 +47,70 @@ func ReadCompletedMissions() ([]*Mission, error) {
 			if err != nil {
 				continue // Skip invalid files
 			}
+			// Validate mission has required fields
+			if mission.Intent == "" || mission.Type == "" {
+				continue // Skip missions with missing required fields
+			}
 			missions = append(missions, mission)
 		}
 	}
 
 	// Sort by completion time (newest first)
 	sort.Slice(missions, func(i, j int) bool {
-		if missions[i].CompletedAt == nil || missions[j].CompletedAt == nil {
+		timeI := getEffectiveTime(missions[i])
+		timeJ := getEffectiveTime(missions[j])
+
+		// If both times are nil, maintain stable order
+		if timeI == nil && timeJ == nil {
 			return false
 		}
-		return missions[i].CompletedAt.After(*missions[j].CompletedAt)
+		// Nil times go to the end
+		if timeI == nil {
+			return false
+		}
+		if timeJ == nil {
+			return true
+		}
+
+		return timeI.After(*timeJ)
 	})
 
 	return missions, nil
+}
+
+// getEffectiveTime returns the effective time for sorting, using CompletedAt if available,
+// otherwise parsing from filename, or nil if both fail
+func getEffectiveTime(mission *Mission) *time.Time {
+	// Use CompletedAt if available
+	if mission.CompletedAt != nil {
+		return mission.CompletedAt
+	}
+
+	// Try to parse time from filename
+	filename := filepath.Base(mission.FilePath)
+
+	// Format 1: YYYY-MM-DD-HH-MM-mission.md (existing format)
+	if len(filename) >= 16 && strings.HasSuffix(filename, "-mission.md") {
+		timeStr := filename[:16] // Extract YYYY-MM-DD-HH-MM
+		if t, err := time.Parse("2006-01-02-15-04", timeStr); err == nil {
+			return &t
+		}
+	}
+
+	// Format 2: YYYYMMDDHHMMSS-SSSS-mission.md (new format)
+	if len(filename) >= 19 && strings.HasSuffix(filename, "-mission.md") {
+		// Check if it matches the new format pattern
+		parts := strings.Split(filename, "-")
+		if len(parts) >= 3 && len(parts[0]) == 14 && len(parts[1]) == 4 {
+			timeStr := parts[0] // Extract YYYYMMDDHHMMSS
+			if t, err := time.Parse("20060102150405", timeStr); err == nil {
+				return &t
+			}
+		}
+	}
+
+	// Return nil if both methods fail (will be sorted to end)
+	return nil
 }
 
 // readMissionFile parses a mission.md file

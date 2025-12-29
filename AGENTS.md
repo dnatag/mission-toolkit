@@ -28,7 +28,8 @@
 **Language**: Go 1.21+  
 **Framework**: Cobra CLI + Bubble Tea TUI  
 **Templates**: Go templates (embedded)  
-**Testing**: AI-native reasoning validation + Go test
+**Testing**: AI-native reasoning validation + Go test  
+**Development**: TDD (Test-Driven Development)
 
 ## Essential Commands
 
@@ -44,13 +45,4 @@ go test ./...                      # Run tests
 ./bin/m init --ai-type q           # Initialize project
 ./bin/m status                     # Show mission status
 ./bin/m version                    # Show version
-```
-
-### Testing AI Workflows
-```bash
-# AI-native testing with reasoning validation
-# 1. Use scenarios from tests/cases/
-# 2. Validate against tests/framework/assertion-patterns.md
-# 3. Follow tests/framework/execution-guide.md
-# 4. All tests pass: 32/32 assertions (100% success rate)
 ```

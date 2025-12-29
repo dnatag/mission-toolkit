@@ -1,4 +1,4 @@
 package version
 
-// CLIVersion represents the current version of the Mission Toolkit CLI
-const CLIVersion = "v1.0.0"
+// Version represents the current version of the Mission Toolkit
+const Version = "v1.1.0"

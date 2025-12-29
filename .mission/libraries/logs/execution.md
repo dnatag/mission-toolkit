@@ -1,0 +1,1 @@
+[{{TIMESTAMP}}] {{MISSION_ID}} - {{LOG_ENTRY}}

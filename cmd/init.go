@@ -22,7 +22,7 @@ var initCmd = &cobra.Command{
 for the specified AI assistant type. Creates .mission/ directory with governance files
 and AI-specific prompt templates.
 
-Supported AI types: q, claude, gemini, cursor, codex, kiro, opencode`,
+Supported AI types: q, claude, kiro, opencode`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Validate AI type
 		if err := templates.ValidateAIType(aiType); err != nil {
@@ -46,6 +46,12 @@ Supported AI types: q, claude, gemini, cursor, codex, kiro, opencode`,
 			os.Exit(1)
 		}
 
+		// Write library templates
+		if err := templates.WriteLibraryTemplates(fs, cwd, aiType); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing library templates: %v\n", err)
+			os.Exit(1)
+		}
+
 		fmt.Printf("Mission Toolkit project initialized successfully for AI type: %s\n", aiType)
 	},
 }
@@ -54,6 +60,6 @@ func init() {
 	rootCmd.AddCommand(initCmd)
 
 	// Add --ai flag
-	initCmd.Flags().StringVar(&aiType, "ai", "", "AI assistant type (required). Supported: q, claude, gemini, cursor, codex, kiro")
+	initCmd.Flags().StringVar(&aiType, "ai", "", "AI assistant type (required). Supported: q, claude, kiro, opencode")
 	initCmd.MarkFlagRequired("ai")
 }

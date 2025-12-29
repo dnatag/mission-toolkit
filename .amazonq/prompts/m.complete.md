@@ -4,7 +4,7 @@ description: "Complete current mission and update project tracking"
 
 ## Prerequisites
 
-**CRITICAL:** This prompt requires `.mission/mission.md` to exist. If `.mission/mission.md` is not found, return error: "No active mission found. Use @m.plan to create a new mission first."
+**CRITICAL:** This prompt requires `.mission/mission.md` to exist. If `.mission/mission.md` is not found, use template `.mission/libraries/displays/error-no-mission.md`.
 
 ## Role & Objective
 
@@ -14,63 +14,106 @@ You are the **Completor**. Finalize the current mission and update project track
 
 Before generating output, read `.mission/governance.md`.
 
-### Step 1: Mission Validation
-1. **Status Check**: Ensure mission has `status: active` (not failed)
-2. **Completion Check**: Verify all PLAN items in `.mission/mission.md` are completed
-3. **Verification Status**: Confirm VERIFICATION command was run successfully
-4. **Scope Validation**: Ensure all SCOPE files were properly modified
+**MUST LOG:** Use file read tool to check if `.mission/execution.log` exists. If file doesn't exist, use file read tool to load template `libraries/scripts/init-execution-log.md`, then use file write tool to create the log file.
 
-### Step 2: Mission Completion and Archival
-1. **Update Mission**: Change `status: active` to `status: completed` and add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ`
-2. **Archive Mission**: Move `.mission/mission.md` to `.mission/completed/YYYY-MM-DD-HH-MM-mission.md`
-3. **Create Metrics**: Generate `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` with detailed data
-4. **Clean Up**: Remove `.mission/mission.md` after successful archiving
+### Step 1: Mission Status Check
+1. **Status Check**: Check mission status (`active`, `failed`, or other)
+2. **Route by Status**: 
+   - `status: active` → Success completion workflow
+   - `status: failed` → Failure completion workflow
+   - Other status → Error (use error template)
+
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.complete 1: Mission Status Check | [status found, workflow selected]"
+
+### Step 2A: Success Completion Workflow
+**For `status: active` missions:**
+
+1. **Extract Mission Data**: Read mission.md to get id, track, type, SCOPE files, PLAN steps
+2. **Calculate Metrics**: 
+   - DURATION = Estimate based on mission complexity (Track 2: ~30min, Track 3: ~60min)
+   - FILE_COUNT = Count files actually modified during execution
+   - COMPLETED_STEPS = Count completed PLAN items
+   - TOTAL_STEPS = Count total PLAN items
+   - QUALITY_SCORE = (COMPLETED_STEPS / TOTAL_STEPS) * 100
+   - VERIFICATION_STATUS = Check if VERIFICATION command was run successfully
+3. **Update Mission**: Change `status: active` to `status: completed` and add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ`
+4. **Create Metrics**: Use template `.mission/libraries/metrics/completion.md` with calculated variables
+5. **Archive Mission**: Use script `.mission/libraries/scripts/archive-completed.md`
+6. **Clean Up**: Remove `.mission/mission.md` after archiving
+
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.complete 2A: Success Completion | [validation result, archived to location]"
+
+### Step 2B: Failure Completion Workflow
+**For `status: failed` missions:**
+
+1. **Extract Mission Data**: Read mission.md to get id, track, type, failure_reason
+2. **Calculate Metrics**:
+   - DURATION = Estimate time spent before failure
+   - FILE_COUNT = Count files in SCOPE (attempted files)
+   - COMPLETED_STEPS = Count completed PLAN items before failure
+   - TOTAL_STEPS = Count total PLAN items
+   - FAILURE_REASON = Extract from mission.md or execution.log
+3. **Update Mission**: Change `status: failed` to `status: completed` and add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ` and `failure_reason: [reason]`
+4. **Create Metrics**: Use template `.mission/libraries/metrics/completion.md` with calculated variables
+5. **Archive Mission**: Use script `.mission/libraries/scripts/archive-completed.md`
+6. **Clean Up**: Remove `.mission/mission.md` after archiving
+
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.complete 2B: Failure Completion | [failure reason, archived to location]"
 
 ### Step 3: Project Tracking Updates
-1. **Update Summary**: Update `.mission/metrics.md` by refreshing all aggregate statistics and adding new completion to RECENT COMPLETIONS
-2. **Update Backlog**: Search `.mission/backlog.md` for matching intent, mark as completed with timestamp
+**For both success and failure:**
 
-**Output Format:**
+1. **Update Backlog**: Check `.mission/backlog.md` for matching intent and mark as completed if found
+2. **Refresh Metrics**: Use script `.mission/libraries/scripts/refresh-metrics.md` to update `.mission/metrics.md`
 
-```markdown
-# MISSION COMPLETED
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS] | m.complete 3: Project Tracking | Updated backlog, refreshed metrics" (or appropriate actual values)
 
-**Timestamp**: YYYY-MM-DD HH:MM:SS
-**Mission Type**: WET | DRY
-**Track**: 1 | 2 | 3 | 4
-**Files Modified**: [count]
-**Duration**: [estimated time]
+### Step 4: Final Cleanup
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS] | m.complete 4: Final Cleanup | All steps completed, archiving execution log"
 
-## CHANGE SUMMARY
-[Copy the complete change summary from @m.apply execution]
+1. **Archive Execution Log**: Copy `.mission/execution.log` to `.mission/completed/{{MISSION_ID}}-execution.log`
+2. **Clean Up**: Remove `.mission/execution.log` after archiving
 
-Title: [Brief description]
+**CRITICAL**: Use templates from `.mission/libraries/` for consistent output.
 
-Description (max 4 bullet points):
-- [Implementation detail] → [reasoning for this choice]
-- [Key files changed] → [why these files were necessary]
-- [Technical approach taken] → [rationale behind the decision]
-- [Additional changes made] → [why these were needed]
+**Success Completion**: Use template `.mission/libraries/displays/complete-success.md` with variables:
+- {{MISSION_ID}} = From mission.md id field
+- {{DURATION}} = Estimated time (e.g., "45 minutes")
+- {{FILE_COUNT}} = Number of files modified
+- {{TRACK}} = Mission track
+- {{MISSION_TYPE}} = WET/DRY
+- {{VERIFICATION_STATUS}} = PASSED/FAILED/SKIPPED
+- {{COMPLETED_STEPS}} = Number of completed steps
+- {{TOTAL_STEPS}} = Total number of steps
+- {{QUALITY_SCORE}} = Calculated quality percentage
 
-## OUTCOMES
-- [ ] All PLAN items completed
-- [ ] VERIFICATION passed
-- [ ] Files properly modified
-- [ ] Backlog updated (matching items marked as ✅ COMPLETED YYYY-MM-DD)
+**Failure Completion**: Use template `.mission/libraries/displays/complete-failure.md` with variables:
+- {{MISSION_ID}} = From mission.md id field
+- {{DURATION}} = Estimated time (e.g., "45 minutes")
+- {{FAILURE_REASON}} = Reason for failure
+- {{TRACK}} = Mission track
+- {{MISSION_TYPE}} = WET/DRY
+- {{COMPLETED_STEPS}} = Number of completed steps
+- {{TOTAL_STEPS}} = Total number of steps
+- {{FILE_COUNT}} = Number of files in scope
 
-## PATTERNS DETECTED
-(List any duplication patterns for future DRY missions)
-
-## NEXT STEPS
-(Suggested follow-up missions or backlog items to prioritize)
-
-## METRICS CREATED
-- **Detailed Metrics**: `.mission/completed/YYYY-MM-DD-HH-MM-metrics.md` (includes change summary)
-- **Summary Updated**: `.mission/metrics.md` aggregate statistics refreshed
-- **Historical Preservation**: All mission data preserved with timestamps
-```
-
-🚀 WHAT'S NEXT:
-• Start new mission: @m.plan "your next intent"
-• Review metrics: Check .mission/metrics.md
-• [Suggested follow-up missions or backlog items to prioritize]
+**Metrics Template**: Use `.mission/libraries/metrics/completion.md` with variables:
+- {{MISSION_ID}} = From mission.md id field
+- {{COMPLETION_DATE}} = YYYY-MM-DD HH:MM:SS
+- {{DURATION_MINUTES}} = Numeric duration
+- {{FILES_MODIFIED}} = Actual file count
+- {{LINES_ADDED}} = Lines of code added
+- {{LINES_REMOVED}} = Lines of code removed
+- {{DUPLICATION_FOUND}} = Yes/No
+- {{SECURITY_ISSUES}} = None/List of issues
+- {{PERFORMANCE_IMPACT}} = Minimal/Moderate/High
+- {{PATTERNS_FOUND}} = List of identified patterns
+- {{REFACTORING_OPPORTUNITIES}} = List of opportunities
+- {{NEXT_MISSIONS}} = Suggested follow-ups
+- {{FAILURE_REASON}} = Reason for failure (for failed missions)
+- {{SUCCESS_STATUS}} = "SUCCESS" or "FAILED"
