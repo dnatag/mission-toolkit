@@ -86,12 +86,26 @@ func getEffectiveTime(mission *Mission) *time.Time {
 		return mission.CompletedAt
 	}
 
-	// Try to parse time from filename (format: YYYY-MM-DD-HH-MM-mission.md)
+	// Try to parse time from filename
 	filename := filepath.Base(mission.FilePath)
+
+	// Format 1: YYYY-MM-DD-HH-MM-mission.md (existing format)
 	if len(filename) >= 16 && strings.HasSuffix(filename, "-mission.md") {
 		timeStr := filename[:16] // Extract YYYY-MM-DD-HH-MM
 		if t, err := time.Parse("2006-01-02-15-04", timeStr); err == nil {
 			return &t
+		}
+	}
+
+	// Format 2: YYYYMMDDHHMMSS-SSSS-mission.md (new format)
+	if len(filename) >= 19 && strings.HasSuffix(filename, "-mission.md") {
+		// Check if it matches the new format pattern
+		parts := strings.Split(filename, "-")
+		if len(parts) >= 3 && len(parts[0]) == 14 && len(parts[1]) == 4 {
+			timeStr := parts[0] // Extract YYYYMMDDHHMMSS
+			if t, err := time.Parse("20060102150405", timeStr); err == nil {
+				return &t
+			}
 		}
 	}
 

@@ -29,10 +29,18 @@ Before generating output, read `.mission/governance.md`.
 ### Step 2A: Success Completion Workflow
 **For `status: active` missions:**
 
-1. **Validation**: Verify all PLAN items completed and VERIFICATION passed
-2. **Update Mission**: Change `status: active` to `status: completed` and add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ`
-3. **Archive Mission**: Use script `.mission/libraries/scripts/archive-completed.md` (includes execution log)
-4. **Clean Up**: Remove `.mission/mission.md` after archiving
+1. **Extract Mission Data**: Read mission.md to get id, track, type, SCOPE files, PLAN steps
+2. **Calculate Metrics**: 
+   - DURATION = Estimate based on mission complexity (Track 2: ~30min, Track 3: ~60min)
+   - FILE_COUNT = Count files actually modified during execution
+   - COMPLETED_STEPS = Count completed PLAN items
+   - TOTAL_STEPS = Count total PLAN items
+   - QUALITY_SCORE = (COMPLETED_STEPS / TOTAL_STEPS) * 100
+   - VERIFICATION_STATUS = Check if VERIFICATION command was run successfully
+3. **Update Mission**: Change `status: active` to `status: completed` and add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ`
+4. **Create Metrics**: Use template `.mission/libraries/metrics/completion.md` with calculated variables
+5. **Archive Mission**: Use script `.mission/libraries/scripts/archive-completed.md`
+6. **Clean Up**: Remove `.mission/mission.md` after archiving
 
 **MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
 - {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.complete 2A: Success Completion | [validation result, archived to location]"
@@ -40,10 +48,17 @@ Before generating output, read `.mission/governance.md`.
 ### Step 2B: Failure Completion Workflow
 **For `status: failed` missions:**
 
-1. **Extract Failure Info**: Determine failure reason and completed steps
-2. **Update Mission**: Change `status: failed` to `status: completed` and add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ` and `failure_reason: [reason]`
-3. **Archive Mission**: Use script `.mission/libraries/scripts/archive-completed.md`
-4. **Clean Up**: Remove `.mission/mission.md` after archiving
+1. **Extract Mission Data**: Read mission.md to get id, track, type, failure_reason
+2. **Calculate Metrics**:
+   - DURATION = Estimate time spent before failure
+   - FILE_COUNT = Count files in SCOPE (attempted files)
+   - COMPLETED_STEPS = Count completed PLAN items before failure
+   - TOTAL_STEPS = Count total PLAN items
+   - FAILURE_REASON = Extract from mission.md or execution.log
+3. **Update Mission**: Change `status: failed` to `status: completed` and add `completed_at: YYYY-MM-DDTHH:MM:SS.sssZ` and `failure_reason: [reason]`
+4. **Create Metrics**: Use template `.mission/libraries/metrics/completion.md` with calculated variables
+5. **Archive Mission**: Use script `.mission/libraries/scripts/archive-completed.md`
+6. **Clean Up**: Remove `.mission/mission.md` after archiving
 
 **MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
 - {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.complete 2B: Failure Completion | [failure reason, archived to location]"
@@ -55,10 +70,13 @@ Before generating output, read `.mission/governance.md`.
 2. **Refresh Metrics**: Use script `.mission/libraries/scripts/refresh-metrics.md` to update `.mission/metrics.md`
 
 **MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
-- {{LOG_ENTRY}} = "SUCCESS | m.complete 3: Project Tracking | Updated backlog, refreshed metrics" (or appropriate actual values)
+- {{LOG_ENTRY}} = "[SUCCESS] | m.complete 3: Project Tracking | Updated backlog, refreshed metrics" (or appropriate actual values)
 
-### Step 4: Archive Execution Log
-1. **Copy Log**: Copy `.mission/execution.log` to `.mission/completed/{{MISSION_ID}}-execution.log`
+### Step 4: Final Cleanup
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS] | m.complete 4: Final Cleanup | All steps completed, archiving execution log"
+
+1. **Archive Execution Log**: Copy `.mission/execution.log` to `.mission/completed/{{MISSION_ID}}-execution.log`
 2. **Clean Up**: Remove `.mission/execution.log` after archiving
 
 **CRITICAL**: Use templates from `.mission/libraries/` for consistent output.
@@ -73,7 +91,6 @@ Before generating output, read `.mission/governance.md`.
 - {{COMPLETED_STEPS}} = Number of completed steps
 - {{TOTAL_STEPS}} = Total number of steps
 - {{QUALITY_SCORE}} = Calculated quality percentage
-- {{TIMESTAMP}} = Archive timestamp
 
 **Failure Completion**: Use template `.mission/libraries/displays/complete-failure.md` with variables:
 - {{MISSION_ID}} = From mission.md id field
@@ -84,7 +101,6 @@ Before generating output, read `.mission/governance.md`.
 - {{COMPLETED_STEPS}} = Number of completed steps
 - {{TOTAL_STEPS}} = Total number of steps
 - {{FILE_COUNT}} = Number of files in scope
-- {{TIMESTAMP}} = Archive timestamp
 
 **Metrics Template**: Use `.mission/libraries/metrics/completion.md` with variables:
 - {{MISSION_ID}} = From mission.md id field

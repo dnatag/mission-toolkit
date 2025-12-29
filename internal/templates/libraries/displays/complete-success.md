@@ -9,8 +9,9 @@
 - Quality score: {{QUALITY_SCORE}}
 
 📁 ARCHIVED:
-- Mission: .mission/completed/{{TIMESTAMP}}-mission.md
-- Metrics: .mission/completed/{{TIMESTAMP}}-metrics.md
+- Mission: .mission/completed/{{MISSION_ID}}-mission.md
+- Metrics: .mission/completed/{{MISSION_ID}}-metrics.md
+- Execution log: .mission/completed/{{MISSION_ID}}-execution.log
 
 🚀 NEXT STEPS:
 • Plan new mission: /m.plan
