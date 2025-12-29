@@ -79,6 +79,28 @@
 ### Epic Variables
 ```
 {{SUB_INTENTS}}         # Formatted list of decomposed sub-intents
+{{BACKLOG_ITEMS}}       # Formatted list for backlog display
+```
+
+### Logging Variables
+```
+{{LOG_ENTRY}}           # Formatted log entry for execution.log
+{{TIMESTAMP}}           # Current timestamp (YYYY-MM-DD HH:MM:SS)
+{{MISSION_ID}}          # Mission identifier for logging
+```
+
+### Metrics Refresh Variables
+```
+{{TOTAL_MISSIONS}}      # Count of completed missions
+{{SUCCESS_RATE}}        # Percentage of successful missions
+{{AVG_DURATION}}        # Average mission duration in minutes
+{{TRACK_1_COUNT}}       # Count of Track 1 missions
+{{TRACK_2_COUNT}}       # Count of Track 2 missions
+{{TRACK_3_COUNT}}       # Count of Track 3 missions
+{{TRACK_4_COUNT}}       # Count of Track 4 missions
+{{WET_TO_DRY_RATIO}}    # Ratio of WET to DRY missions
+{{COMMON_PATTERNS}}     # Most frequent patterns identified
+{{BOTTLENECKS}}         # Most common failure points
 ```
 
 ### Atomic Task Variables
@@ -129,6 +151,21 @@ LINES_ADDED="[actual count]"
 LINES_REMOVED="[actual count]"
 SUCCESS_STATUS="[SUCCESS|FAILED]"
 FAILURE_REASON="[reason if failed]"
+LOG_ENTRY="[formatted log entry]"
+```
+
+### Required for Metrics Refresh
+```bash
+TOTAL_MISSIONS="[count]"
+SUCCESS_RATE="[percentage]"
+AVG_DURATION="[minutes]"
+TRACK_1_COUNT="[count]"
+TRACK_2_COUNT="[count]"
+TRACK_3_COUNT="[count]"
+TRACK_4_COUNT="[count]"
+WET_TO_DRY_RATIO="[ratio]"
+COMMON_PATTERNS="[list]"
+BOTTLENECKS="[list]"
 ```
 
 ## DEFAULT VALUES FOR MISSING VARIABLES

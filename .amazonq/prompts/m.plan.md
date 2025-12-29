@@ -35,7 +35,7 @@ You are the **Planner**. Convert the user's raw intent into a formal `.mission/m
 
 Before generating output, read `.mission/governance.md`.
 
-**MISSION ID GENERATION:** Generate unique mission ID using format: `YYYYMMDDHHMMSS-` + 4-digit random number (e.g., `20240115143045-7892`). Use this {{MISSION_ID}} throughout the mission lifecycle.
+**MISSION ID GENERATION:** Generate unique mission ID using format: `YYYYMMDDHHMMSS-SSSS` where SSSS = last 4 digits of current milliseconds (e.g., `20240115143045-2847`). **CRITICAL: Use current timestamp milliseconds for each m.plan execution.** Use this {{MISSION_ID}} throughout the mission lifecycle.
 
 **MUST LOG:** Use file read tool to check if `.mission/execution.log` exists. If file doesn't exist, use file read tool to load template `libraries/scripts/init-execution-log.md`, then use file write tool to create the log file.
 

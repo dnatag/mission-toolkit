@@ -8,34 +8,40 @@ libraries/
 │   ├── clarification.md    # Clarification analysis criteria
 │   └── complexity.md       # Complexity assessment rules
 ├── displays/           # User output templates
-│   ├── plan-success.md     # ✅ MISSION CREATED
-│   ├── plan-paused.md      # ⏸️ MISSION PAUSED
+│   ├── apply-failure.md    # ❌ MISSION FAILED
+│   ├── apply-success.md    # ✅ MISSION EXECUTED
+│   ├── clarify-escalation.md # 🔄 TRACK ESCALATION
+│   ├── clarify-success.md  # ✅ CLARIFICATION COMPLETE
+│   ├── complete-failure.md # ❌ MISSION FAILED (ARCHIVED)
+│   ├── complete-success.md # 🎉 MISSION COMPLETED
+│   ├── error-no-mission.md # ❌ ERROR: No Active Mission
+│   ├── plan-atomic.md      # ⚛️ ATOMIC TASK DETECTED
 │   ├── plan-clarification.md # ❓ CLARIFICATION NEEDED
 │   ├── plan-epic.md        # 📋 EPIC DECOMPOSED
-│   ├── plan-atomic.md      # ⚛️ ATOMIC TASK DETECTED
-│   ├── apply-success.md    # ✅ MISSION EXECUTED
-│   ├── apply-failure.md    # ❌ MISSION FAILED
-│   ├── complete-success.md # 🎉 MISSION COMPLETED
-│   ├── complete-failure.md # ❌ MISSION FAILED (ARCHIVED)
-│   └── error-no-mission.md # ❌ ERROR: No Active Mission
-├── missions/           # Mission file templates
-│   ├── wet.md             # WET mission template
-│   ├── dry.md             # DRY mission template
-│   └── clarification.md   # Clarification mission template
-├── scripts/            # Bash operation templates
-│   ├── create-mission.md   # Create .mission/mission.md
-│   ├── archive-current.md  # Archive to .mission/paused/
-│   ├── archive-completed.md # Archive to .mission/completed/
-│   ├── status-to-active.md # Update mission status
-│   ├── validate-planned.md # Check mission status
-│   └── init-execution-log.md # Initialize execution log
+│   ├── plan-paused.md      # ⏸️ MISSION PAUSED
+│   └── plan-success.md     # ✅ MISSION CREATED
+├── logs/               # Execution logging templates
+│   └── execution.md        # Log entry format
 ├── metrics/            # Metrics templates
-│   ├── completion.md      # Individual mission metrics
-│   └── aggregate.md       # Project-wide metrics
+│   ├── aggregate.md        # Project-wide metrics
+│   ├── completion.md       # Individual mission metrics
+│   └── insights.md         # Process insights format
+├── missions/           # Mission file templates
+│   ├── clarification.md    # Clarification mission template
+│   ├── dry.md             # DRY mission template
+│   └── wet.md             # WET mission template
+├── scripts/            # Operation templates
+│   ├── archive-completed.md # Archive to .mission/completed/
+│   ├── archive-current.md  # Archive to .mission/paused/
+│   ├── create-mission.md   # Create .mission/mission.md
+│   ├── init-execution-log.md # Initialize execution log
+│   ├── refresh-metrics.md  # Update metrics.md
+│   ├── status-to-active.md # Update mission status
+│   └── validate-planned.md # Check mission status
 └── variables/          # Variable calculation rules
-    ├── track-calculation.md # Track complexity logic
     ├── file-list.md        # File estimation rules
-    └── timestamps.md       # Date/time formatting
+    ├── timestamps.md       # Date/time formatting
+    └── track-calculation.md # Track complexity logic
 ```
 
 ## Usage in Prompts
@@ -57,17 +63,22 @@ Clear, specific references:
 **Complexity Reassessment**: Use `libraries/analysis/complexity.md`
 **Mission Update**: Use `libraries/missions/wet.md` or `libraries/missions/dry.md`
 **Success Display**: Use `libraries/displays/clarify-success.md`
+**Track 4 Escalation**: Use `libraries/displays/clarify-escalation.md`
 
 # In m.apply.md
 **On Success**: Use template `libraries/displays/apply-success.md`
 **On Failure**: Use template `libraries/displays/apply-failure.md`
 **Status Script**: Use `libraries/scripts/status-to-active.md`
+**Validation Script**: Use `libraries/scripts/validate-planned.md`
+**Logging**: Use `libraries/logs/execution.md`
 
 # In m.complete.md
 **On Success**: Use template `libraries/displays/complete-success.md`
 **On Failure**: Use template `libraries/displays/complete-failure.md`
 **Archive Script**: Use `libraries/scripts/archive-completed.md`
+**Metrics Refresh**: Use `libraries/scripts/refresh-metrics.md`
 **Metrics Template**: Use `libraries/metrics/completion.md`
+**Logging**: Use `libraries/logs/execution.md`
 ```
 
 ## Variable Standardization

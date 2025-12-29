@@ -51,12 +51,11 @@ Before generating output, read `.mission/governance.md`.
 ### Step 3: Project Tracking Updates
 **For both success and failure:**
 
-1. **Update Summary**: Update `.mission/metrics.md` aggregate statistics using template `.mission/libraries/metrics/aggregate.md` and RECENT COMPLETIONS
-2. **Update Backlog**: Check `.mission/backlog.md` for matching intent and mark as completed if found
-3. **Refresh Insights**: Update PROCESS INSIGHTS and TECHNICAL LEARNINGS sections in `.mission/metrics.md` with current mission data
+1. **Update Backlog**: Check `.mission/backlog.md` for matching intent and mark as completed if found
+2. **Refresh Metrics**: Use script `.mission/libraries/scripts/refresh-metrics.md` to update `.mission/metrics.md`
 
 **MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
-- {{LOG_ENTRY}} = "SUCCESS | m.complete 3: Project Tracking | Updated metrics.md, refreshed insights, marked backlog item completed" (or appropriate actual values)
+- {{LOG_ENTRY}} = "SUCCESS | m.complete 3: Project Tracking | Updated backlog, refreshed metrics" (or appropriate actual values)
 
 ### Step 4: Archive Execution Log
 1. **Copy Log**: Copy `.mission/execution.log` to `.mission/completed/{{MISSION_ID}}-execution.log`
@@ -65,7 +64,7 @@ Before generating output, read `.mission/governance.md`.
 **CRITICAL**: Use templates from `.mission/libraries/` for consistent output.
 
 **Success Completion**: Use template `.mission/libraries/displays/complete-success.md` with variables:
-- {{MISSION_ID}} = Track-Type-Timestamp
+- {{MISSION_ID}} = From mission.md id field
 - {{DURATION}} = Estimated time (e.g., "45 minutes")
 - {{FILE_COUNT}} = Number of files modified
 - {{TRACK}} = Mission track
@@ -77,7 +76,7 @@ Before generating output, read `.mission/governance.md`.
 - {{TIMESTAMP}} = Archive timestamp
 
 **Failure Completion**: Use template `.mission/libraries/displays/complete-failure.md` with variables:
-- {{MISSION_ID}} = Track-Type-Timestamp
+- {{MISSION_ID}} = From mission.md id field
 - {{DURATION}} = Estimated time (e.g., "45 minutes")
 - {{FAILURE_REASON}} = Reason for failure
 - {{TRACK}} = Mission track
@@ -88,7 +87,7 @@ Before generating output, read `.mission/governance.md`.
 - {{TIMESTAMP}} = Archive timestamp
 
 **Metrics Template**: Use `.mission/libraries/metrics/completion.md` with variables:
-- {{MISSION_ID}} = Track-Type-Timestamp
+- {{MISSION_ID}} = From mission.md id field
 - {{COMPLETION_DATE}} = YYYY-MM-DD HH:MM:SS
 - {{DURATION_MINUTES}} = Numeric duration
 - {{FILES_MODIFIED}} = Actual file count
