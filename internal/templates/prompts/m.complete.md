@@ -67,10 +67,14 @@ Before generating output, read `.mission/governance.md`.
 **For both success and failure:**
 
 1. **Update Backlog**: Check `.mission/backlog.md` for matching intent and mark as completed if found
+
+**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.complete 3A: Update Backlog | [backlog updated or no matching intent found]"
+
 2. **Refresh Metrics**: Use script `.mission/libraries/scripts/refresh-metrics.md` to update `.mission/metrics.md`
 
 **MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
-- {{LOG_ENTRY}} = "[SUCCESS] | m.complete 3: Project Tracking | Updated backlog, refreshed metrics" (or appropriate actual values)
+- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.complete 3B: Refresh Metrics | [metrics updated with aggregate data]"
 
 ### Step 4: Final Cleanup
 **MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:

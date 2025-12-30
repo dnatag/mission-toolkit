@@ -3,6 +3,7 @@ package templates
 import (
 	"embed"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -15,7 +16,7 @@ var missionTemplates embed.FS
 //go:embed prompts/*.md
 var promptTemplates embed.FS
 
-//go:embed libraries/**/*.md
+//go:embed libraries/**/*.md libraries/**/*.sh
 var libraryTemplates embed.FS
 
 // SupportedAITypes lists all supported AI types
@@ -208,7 +209,14 @@ func WriteLibraryTemplates(fs afero.Fs, targetDir string, aiType string) error {
 		}
 
 		contentStr := strings.ReplaceAll(string(content), "/m.", prefix+"m.")
-		return afero.WriteFile(fs, targetPath, []byte(contentStr), 0644)
+
+		// Set executable permissions for .sh files
+		fileMode := os.FileMode(0644)
+		if strings.HasSuffix(relPath, ".sh") {
+			fileMode = 0755
+		}
+
+		return afero.WriteFile(fs, targetPath, []byte(contentStr), fileMode)
 	})
 }
 

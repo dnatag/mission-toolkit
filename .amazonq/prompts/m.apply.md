@@ -21,8 +21,8 @@ Before execution, read `.mission/governance.md`.
 **MUST LOG:** Use file read tool to check if `.mission/execution.log` exists. If file doesn't exist, use file read tool to load template `libraries/scripts/init-execution-log.md`, then use file write tool to create the log file.
 
 ### Step 1: Pre-execution Validation
-1. **Validate Mission**: Use script `.mission/libraries/scripts/validate-planned.md` to ensure mission has `status: planned`
-2. **Update Status**: Use script `.mission/libraries/scripts/status-to-active.md` to change status to `active`
+1. **Validate Mission**: Execute script `.mission/libraries/scripts/validate-planned.sh`
+2. **Update Status**: Execute script `.mission/libraries/scripts/status-to-active.sh`
 3. **Scope Check**: Verify all SCOPE files exist and are accessible
 
 **MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:

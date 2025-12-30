@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Archive existing mission to paused directory
 if [ -f ".mission/mission.md" ]; then
   mkdir -p .mission/paused
