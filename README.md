@@ -205,23 +205,23 @@ Download the latest release for your platform from [GitHub Releases](https://git
 
 ```bash
 # macOS (Intel)
-curl -L https://github.com/dnatag/mission-toolkit/releases/download/v1.0.0/mission-toolkit-darwin-amd64.zip -o m.zip
+curl -L https://github.com/dnatag/mission-toolkit/releases/download/v1.1.1/mission-toolkit_Darwin_x86_64.zip -o m.zip
 unzip m.zip && chmod +x m && sudo mv m /usr/local/bin/
 
 # macOS (Apple Silicon)
-curl -L https://github.com/dnatag/mission-toolkit/releases/download/v1.0.0/mission-toolkit-darwin-arm64.zip -o m.zip
+curl -L https://github.com/dnatag/mission-toolkit/releases/download/v1.1.1/mission-toolkit_Darwin_arm64.zip -o m.zip
 unzip m.zip && chmod +x m && sudo mv m /usr/local/bin/
 
 # Linux (amd64)
-curl -L https://github.com/dnatag/mission-toolkit/releases/download/v1.0.0/mission-toolkit-linux-amd64.zip -o m.zip
+curl -L https://github.com/dnatag/mission-toolkit/releases/download/v1.1.1/mission-toolkit_Linux_x86_64.zip -o m.zip
 unzip m.zip && chmod +x m && sudo mv m /usr/local/bin/
 
 # Linux (arm64)
-curl -L https://github.com/dnatag/mission-toolkit/releases/download/v1.0.0/mission-toolkit-linux-arm64.zip -o m.zip
+curl -L https://github.com/dnatag/mission-toolkit/releases/download/v1.1.1/mission-toolkit_Linux_arm64.zip -o m.zip
 unzip m.zip && chmod +x m && sudo mv m /usr/local/bin/
 
 # Windows (PowerShell)
-Invoke-WebRequest -Uri https://github.com/dnatag/mission-toolkit/releases/download/v1.0.0/mission-toolkit-windows-amd64.zip -OutFile m.zip
+Invoke-WebRequest -Uri https://github.com/dnatag/mission-toolkit/releases/download/v1.1.1/mission-toolkit_Windows_x86_64.zip -OutFile m.zip
 Expand-Archive m.zip -DestinationPath .
 # Add to PATH manually
 ```
