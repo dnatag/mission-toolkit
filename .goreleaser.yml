@@ -58,3 +58,9 @@ release:
   draft: false
   prerelease: auto
   name_template: "{{.ProjectName}} v{{.Version}}"
+
+brews:
+  - name: mission-toolkit
+    repository:
+      owner: dnatag
+      name: homebrew-mission-toolkit
