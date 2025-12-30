@@ -9,11 +9,11 @@ Intent-Driven Atomic Development is a minimalist workflow designed to bridge the
 
 We believe that AI coding fails in two extremes:
 
-**🌀 The Vibe Trap:** You let the AI drive. It moves fast, hallucinates, and paints you into a corner. You feel frustrated.
+**🌀 The Vibe Trap:** You let the AI drive. It moves fast, generates massive code changes beyond human comprehension, and paints you into a corner. You feel frustrated and alienated from your own codebase.
 
-**📝 The Spec Trap:** You write exhaustive documentation before coding. It works, but it alienates you from the codebase. You feel like a contributor, not an owner.
+**📝 The Spec Trap:** You write exhaustive documentation before coding. AI generates large implementations that work, but the sheer volume alienates you from the codebase. You feel like a contributor, not an owner.
 
-**✨ Intent-Driven Atomic Development is the Golden Ratio.** It forces a "🤝 Handshake" before every coding task. You don't write the code, but you authorize the architecture and verify the implementation.
+**✨ Intent-Driven Atomic Development is the Golden Ratio.** It forces a "🤝 Handshake" before every coding task and keeps changes within human comprehension limits. You don't write the code, but you authorize the architecture and verify the implementation.
 
 ## ⚛️ Why Atomic?
 
@@ -41,7 +41,9 @@ The Mission Toolkit implements this philosophy through a systematic approach tha
 
 ## 🤝 The Slash Commands
 
-*Note: Amazon Q CLI and Kiro CLI don't support inline arguments. Run m.plan or m.clarify without user input, and the AI will prompt for input.*
+*Note: Amazon Q CLI and Kiro CLI differences:*
+- *Use '@' commands instead of '/' (e.g., @m.plan, @m.clarify, @m.apply, @m.complete)*
+- *Inline arguments are ignored - the AI will prompt for input*
 
 ### 📝 `/m.plan` - The Planning Handshake
 Converts your intent into a structured mission. You define what, AI proposes how, you authorize.
@@ -62,7 +64,7 @@ Refines vague or complex intents before planning. Helps break down ambiguous req
 
 ```bash
 # Example usage
-/m.clarify "Make the app better"
+/m.clarify
 ```
 
 **Features:**
@@ -107,11 +109,27 @@ Captures what was accomplished and learned. Builds organizational memory for fut
 ├── backlog.md            # Future work and refactoring opportunities
 ├── metrics.md            # Aggregate performance statistics
 ├── mission.md            # Current active mission (auto-generated)
-└── completed/            # Archived missions and detailed metrics
-    ├── YYYY-MM-DD-HH-MM-mission.md
-    └── YYYY-MM-DD-HH-MM-metrics.md
+├── execution.log         # Current mission execution log
+├── completed/            # Archived missions and detailed metrics
+│   ├── MISSION-ID-mission.md
+│   ├── MISSION-ID-metrics.md
+│   └── MISSION-ID-execution.log
+├── paused/               # Temporarily paused missions
+│   └── TIMESTAMP-mission.md
+└── libraries/            # Template system (embedded)
+    ├── analysis/         # Analysis guidance templates
+    ├── displays/         # User output templates
+    ├── logs/             # Execution logging templates
+    ├── metrics/          # Metrics templates
+    ├── missions/         # Mission file templates
+    ├── scripts/          # Operation templates
+    └── variables/        # Variable calculation rules
 
-prompts/
+# AI-specific prompt directories:
+.amazonq/prompts/         # Amazon Q prompts
+.claude/commands/         # Claude commands
+.kiro/prompts/           # Kiro prompts
+.opencode/command/       # OpenCode commands
 ├── m.clarify.md        # Clarification prompt for vague intents
 ├── m.plan.md           # Planning prompt and complexity matrix
 ├── m.apply.md          # Execution prompt and safety checks
@@ -166,10 +184,16 @@ User Intent → [m.clarify] → m.plan → .mission/mission.md → m.apply → V
 - Epic decomposition into manageable sub-missions
 - Progressive disclosure of complexity
 
-### 4. Continuous Improvement
+### 4. Template-Driven Consistency
+- Embedded template system ensures consistent outputs
+- Standardized variable system across all operations
+- LLM-agnostic design works with any AI assistant
+
+### 5. Continuous Improvement
 - Detailed metrics collection and analysis
 - Pattern detection for process optimization
 - Historical data preservation for trend analysis
+- Execution logging for debugging and learning
 
 ## 🚀 Getting Started
 
@@ -245,8 +269,6 @@ m version
    # Shows mission progress and provides clear next steps
    ```
 
-   ![Mission Status TUI](assets/screenshots/m-status.png)
-
 3. **📝 Plan Your First Mission**
    ```bash
    /m.plan "Your development intent here"
@@ -262,13 +284,42 @@ m version
    /m.complete
    ```
 
+## Template System Features
+
+### Embedded Templates
+- **Analysis Templates**: Clarification and complexity assessment guidance
+- **Display Templates**: Consistent user output for all command outcomes
+- **Mission Templates**: WET, DRY, and clarification mission structures
+- **Script Templates**: Standardized operations for status updates and archival
+- **Metrics Templates**: Individual mission and aggregate project metrics
+- **Logging Templates**: Execution step tracking and debugging
+
+### Variable Standardization
+- Consistent naming across all templates ({{TRACK}}, {{MISSION_TYPE}}, etc.)
+- Type-safe variable handling (numeric vs string)
+- Default values for missing variables
+- Cross-template variable dependencies
+
+### AI-Agnostic Design
+- Automatic slash prefix adaptation (@m.plan vs /m.plan)
+- AI-specific directory structure (Amazon Q, Claude, Kiro, OpenCode)
+- Template deployment to appropriate AI prompt directories
+- Unified versioning for CLI and templates
+
 ## Observability Features
+
+### Execution Logging
+- Step-by-step mission execution tracking
+- Timestamped log entries with success/failure status
+- Archived logs with completed missions
+- Debugging support for failed missions
 
 ### Metrics Tracking
 - Mission duration and complexity correlation
 - Track distribution and success rates
 - WET→DRY evolution effectiveness
 - Verification success/failure patterns
+- Template system usage analytics
 
 ### Pattern Detection
 - Automatic duplication identification
@@ -277,7 +328,7 @@ m version
 - Process bottleneck identification
 
 ### Historical Analysis
-- Timestamped mission archives
+- Timestamped mission archives with full context
 - Performance trend analysis
 - Process evolution tracking
 - Evidence-based improvements
@@ -289,26 +340,19 @@ m version
 - **✅ Quality Assurance**: Mandatory verification and scope constraints prevent the "Vibe Trap" chaos
 - **🛠️ Technical Debt Management**: Systematic WET→DRY evolution avoids premature abstraction
 - **📈 Scalability**: Handles projects from toy features to enterprise systems through complexity decomposition
+- **🔧 Template Consistency**: Embedded template system ensures reliable, predictable outputs across all AI assistants
+- **📊 Full Observability**: Execution logging and metrics provide complete visibility into mission progress and outcomes
+- **🔄 AI-Agnostic**: Works seamlessly with Amazon Q, Claude, Kiro, OpenCode, and other AI assistants
 
 ## Versioning
 
-Mission Toolkit uses **unified versioning** for both CLI functionality and embedded templates.
-
-### Version Structure
-
-- **Version**: Tracks both command-line tool functionality and embedded workflow templates (`internal/version/version.go`)
-
 ```bash
-$ m version
-Version: v1.1.0
+# Check current version
+m version
+
+# Update version (for maintainers)
+./scripts/sync-version.sh v1.0.0
 ```
-
-### Unified Versioning Benefits
-
-- **Simplified Releases**: Single version number for all components
-- **Clear Compatibility**: Users know exactly which version they're running
-- **Streamlined Updates**: All components evolve together
-- **Reduced Complexity**: No need to track separate CLI and template versions
 
 ## Release Process
 

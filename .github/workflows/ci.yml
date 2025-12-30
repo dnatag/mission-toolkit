@@ -44,3 +44,47 @@ jobs:
     
     - name: Build binary
       run: go build -o bin/m main.go
+
+  sync-version:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: test
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.25'
+    
+    - name: Extract version from Go code
+      id: get-version
+      run: |
+        VERSION=$(grep 'const Version = ' internal/version/version.go | sed 's/.*"\(.*\)".*/\1/')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Current version: $VERSION"
+    
+    - name: Run version sync
+      run: |
+        chmod +x scripts/sync-version.sh
+        ./scripts/sync-version.sh ${{ steps.get-version.outputs.version }}
+    
+    - name: Check for changes
+      id: check-changes
+      run: |
+        if git diff --quiet; then
+          echo "changes=false" >> $GITHUB_OUTPUT
+        else
+          echo "changes=true" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Commit version sync
+      if: steps.check-changes.outputs.changes == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "chore: sync version ${{ steps.get-version.outputs.version }}"
+        git push
