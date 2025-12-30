@@ -64,3 +64,4 @@ brews:
     repository:
       owner: dnatag
       name: homebrew-mission-toolkit
+    directory: Formula
