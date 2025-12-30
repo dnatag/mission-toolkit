@@ -2,6 +2,7 @@ package templates
 
 import (
 	"io/fs"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -270,6 +271,75 @@ func TestWriteLibraryTemplates(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestWriteLibraryTemplatesShellFiles(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	targetDir := "/test"
+
+	err := WriteLibraryTemplates(fs, targetDir, "q")
+	if err != nil {
+		t.Fatalf("WriteLibraryTemplates() error = %v", err)
+	}
+
+	// Walk through the library directory to find .sh files
+	libraryDir := filepath.Join(targetDir, ".mission", "libraries")
+
+	var shFiles []string
+	err = afero.Walk(fs, libraryDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if strings.HasSuffix(path, ".sh") {
+			shFiles = append(shFiles, path)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("Error walking library directory: %v", err)
+	}
+
+	// Verify .sh files have executable permissions
+	for _, shFile := range shFiles {
+		info, err := fs.Stat(shFile)
+		if err != nil {
+			t.Errorf("Error getting file info for %s: %v", shFile, err)
+			continue
+		}
+
+		mode := info.Mode()
+		if mode.Perm() != 0755 {
+			t.Errorf("Shell file %s has permissions %o, expected 0755", shFile, mode.Perm())
+		}
+	}
+
+	// Verify .md files still have regular permissions
+	var mdFiles []string
+	err = afero.Walk(fs, libraryDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if strings.HasSuffix(path, ".md") {
+			mdFiles = append(mdFiles, path)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("Error walking library directory for .md files: %v", err)
+	}
+
+	for _, mdFile := range mdFiles {
+		info, err := fs.Stat(mdFile)
+		if err != nil {
+			t.Errorf("Error getting file info for %s: %v", mdFile, err)
+			continue
+		}
+
+		mode := info.Mode()
+		if mode.Perm() != 0644 {
+			t.Errorf("Markdown file %s has permissions %o, expected 0644", mdFile, mode.Perm())
+		}
 	}
 }
 

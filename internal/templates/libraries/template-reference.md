@@ -30,14 +30,14 @@ libraries/
 │   ├── clarification.md    # Clarification mission template
 │   ├── dry.md             # DRY mission template
 │   └── wet.md             # WET mission template
-├── scripts/            # Operation templates
-│   ├── archive-completed.md # Archive to .mission/completed/
-│   ├── archive-current.md  # Archive to .mission/paused/
-│   ├── create-mission.md   # Create .mission/mission.md
-│   ├── init-execution-log.md # Initialize execution log
-│   ├── refresh-metrics.md  # Update metrics.md
-│   ├── status-to-active.md # Update mission status
-│   └── validate-planned.md # Check mission status
+├── scripts/            # Operation templates and executable scripts
+│   ├── archive-completed.md # Archive to .mission/completed/ (template)
+│   ├── archive-current.sh  # Archive to .mission/paused/ (executable)
+│   ├── create-mission.md   # Create .mission/mission.md (template)
+│   ├── init-execution-log.md # Initialize execution log (template)
+│   ├── refresh-metrics.md  # Update metrics.md (template)
+│   ├── status-to-active.sh # Update mission status (executable)
+│   └── validate-planned.sh # Check mission status (executable)
 └── variables/          # Variable calculation rules
     ├── file-list.md        # File estimation rules
     ├── timestamps.md       # Date/time formatting
@@ -51,6 +51,7 @@ Clear, specific references:
 # In m.plan.md
 **Clarification Analysis**: Use `libraries/analysis/clarification.md`
 **Complexity Analysis**: Use `libraries/analysis/complexity.md`
+**Archive Current**: Execute `libraries/scripts/archive-current.sh`
 **On Success**: Use template `libraries/displays/plan-success.md`
 **On Clarification**: Use template `libraries/displays/plan-clarification.md`
 **On Epic**: Use template `libraries/displays/plan-epic.md`
@@ -68,8 +69,8 @@ Clear, specific references:
 # In m.apply.md
 **On Success**: Use template `libraries/displays/apply-success.md`
 **On Failure**: Use template `libraries/displays/apply-failure.md`
-**Status Script**: Use `libraries/scripts/status-to-active.md`
-**Validation Script**: Use `libraries/scripts/validate-planned.md`
+**Status Script**: Execute `libraries/scripts/status-to-active.sh`
+**Validation Script**: Execute `libraries/scripts/validate-planned.sh`
 **Logging**: Use `libraries/logs/execution.md`
 
 # In m.complete.md

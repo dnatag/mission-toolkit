@@ -1,6 +1,8 @@
+#!/bin/bash
+
 # Check if mission exists and has correct status
 if [ ! -f ".mission/mission.md" ]; then
-  echo "❌ No active mission found. Use /m.plan to create a new mission first."
+  echo "❌ No active mission found. Use @m.plan to create a new mission first."
   exit 1
 fi
 

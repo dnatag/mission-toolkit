@@ -3,19 +3,19 @@
 *Detailed metrics with change summaries stored in `completed/` with timestamps*
 
 ## AGGREGATE STATISTICS
-- **Total Missions**: 46 completed
-- **Success Rate**: 100% (46/46 successful)
+- **Total Missions**: 47 completed
+- **Success Rate**: 100% (47/47 successful)
 - **Average Duration**: ~5 minutes
 - **Template System**: Active (libraries/ templates)
 
 ## TRACK DISTRIBUTION
 - **TRACK 1**: 0 atomic tasks (bypassed missions)
-- **TRACK 2**: 44 missions, avg duration: ~5 minutes
+- **TRACK 2**: 45 missions, avg duration: ~5 minutes
 - **TRACK 3**: 2 missions, avg duration: ~6 minutes
 - **TRACK 4**: 0 epic decompositions
 
 ## WET-DRY EVOLUTION
-- **WET Missions**: 43
+- **WET Missions**: 44
 - **DRY Missions**: 2 (0 failed, 2 successful)
 - **Refactoring Success Rate**: 100% (AI-native approach successful)
 - **Patterns Extracted**: 12
@@ -28,11 +28,11 @@
 
 ## RECENT COMPLETIONS
 (Last 5 missions with change summaries - see `completed/` for full history)
+- 2025-12-30 Track 2 WET: Extend library template loading to support both .md and .sh file extensions, with .sh files made executable - enhanced template system to handle shell scripts with proper permissions (30 min)
 - 2025-12-29 Track 2 WET: Fix TUI loading failure for new timestamp format missions - corrected mission file format inconsistency preventing TUI display (15 min)
 - 2025-12-29 Track 2 WET: Support dual timestamp formats in mission file reader - enhanced parsing to handle both YYYY-MM-DD-HH-MM and YYYYMMDDHHMMSS-SSSS formats (30 min)
 - 2025-12-29 Track 2 WET: Increase Go test coverage for internal/ packages - added version tests and enhanced TUI coverage from 20.6% to 51.5% (13 min)
 - 2025-12-28 Track 2 WET: Fix metrics update process to automatically refresh PROCESS INSIGHTS and TECHNICAL LEARNINGS sections - updated completion template and metrics.md with current data (112 min)
-- 2025-12-28 Track 2 WET: Reduce supported AI types to core set - removed gemini, cursor, and codex support from all files (9 min)
 
 ## PROCESS INSIGHTS
 (High-level workflow improvements - preserved)

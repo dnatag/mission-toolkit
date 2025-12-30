@@ -90,7 +90,7 @@ Before generating output, read `.mission/governance.md`.
 3. **Handle Response**: 
    - **A**: STOP EXECUTION. Return "Please run: @m.complete first, then retry @m.plan"
    - **Log**: {{LOG_ENTRY}} = "STOPPED | m.plan 1: Mission State & Clarification Check | User chose to complete existing mission first"
-   - **B**: Archive current mission, output "✅ Step 1: Archived existing mission", CONTINUE to Step 1b
+   - **B**: Execute script `.mission/libraries/scripts/archive-current.sh`, output "✅ Step 1: Archived existing mission", CONTINUE to Step 1b
    - **C**: Overwrite warning, output "✅ Step 1: Will overwrite existing mission", CONTINUE to Step 1b
 4. **If no existing mission**: Output "✅ Step 1: No existing mission found", CONTINUE to Step 1b
 
