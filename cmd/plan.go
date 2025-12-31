@@ -21,22 +21,22 @@ var planCheckCmd = &cobra.Command{
 	Short: "Check mission state and cleanup stale artifacts",
 	Long:  `Check mission state, generate mission ID, and cleanup stale artifacts.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		idService := mission.NewIDService(afero.NewOsFs(), ".mission")
+		validationService := mission.NewValidationService(afero.NewOsFs(), ".mission")
 
-		// Cleanup stale ID first
-		if err := idService.CleanupStaleID(); err != nil {
-			fmt.Printf("Warning: Failed to cleanup stale ID: %v\n", err)
-		}
-
-		// Get or create mission ID
-		missionID, err := idService.GetOrCreateID()
+		status, err := validationService.CheckMissionState()
 		if err != nil {
-			fmt.Printf("Error: Failed to get mission ID: %v\n", err)
+			fmt.Printf("Error: %v\n", err)
 			return
 		}
 
-		fmt.Printf("Mission ID: %s\n", missionID)
-		fmt.Printf("Status: Ready for planning\n")
+		// Output JSON for AI consumption
+		jsonOutput, err := status.ToJSON()
+		if err != nil {
+			fmt.Printf("Error formatting output: %v\n", err)
+			return
+		}
+
+		fmt.Println(jsonOutput)
 	},
 }
 
