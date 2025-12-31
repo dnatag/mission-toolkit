@@ -1,5 +1,14 @@
-.idea/
-.amazonq/cli-todo-lists/
-# m
+# Binaries
 bin/
 m
+
+# IDEs
+.idea/
+.vscode/
+
+# AI & Mission Runtime
+.amazonq/
+.mission/
+
+# Documentation Extras (Private/Pro features)
+docs/extra/
