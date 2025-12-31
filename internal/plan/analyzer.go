@@ -25,12 +25,37 @@ func (a *Analyzer) AnalyzePlan(fs afero.Fs, planFile string) (*ComplexityResult,
 	if err != nil {
 		return nil, fmt.Errorf("failed to load plan spec: %w", err)
 	}
+
+	// Populate file action annotations if not already present
+	if len(spec.Files) == 0 && len(spec.Scope) > 0 {
+		spec.Files = a.detectFileActions(fs, spec.Scope)
+	}
+
 	return a.complexity.AnalyzeComplexity(spec)
 }
 
 // AnalyzePlanFromSpec performs analysis on an existing PlanSpec
 func (a *Analyzer) AnalyzePlanFromSpec(spec *PlanSpec) (*ComplexityResult, error) {
 	return a.complexity.AnalyzeComplexity(spec)
+}
+
+// detectFileActions analyzes file paths to determine if they should be modified or created
+func (a *Analyzer) detectFileActions(fs afero.Fs, filePaths []string) []FileSpec {
+	files := make([]FileSpec, 0, len(filePaths))
+
+	for _, filePath := range filePaths {
+		action := FileActionCreate
+		if exists, _ := afero.Exists(fs, filePath); exists {
+			action = FileActionModify
+		}
+
+		files = append(files, FileSpec{
+			Path:   filePath,
+			Action: action,
+		})
+	}
+
+	return files
 }
 
 // FormatResult converts analysis result to JSON

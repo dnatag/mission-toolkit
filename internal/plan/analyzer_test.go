@@ -28,6 +28,33 @@ func TestAnalyzer_AnalyzePlan(t *testing.T) {
 	}
 }
 
+func TestAnalyzer_DetectFileActions(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	analyzer := NewAnalyzer(fs, "test-mission")
+
+	// Create an existing file
+	if err := afero.WriteFile(fs, "existing.go", []byte("package main"), 0644); err != nil {
+		t.Fatalf("Failed to create existing file: %v", err)
+	}
+
+	filePaths := []string{"existing.go", "new.go"}
+	result := analyzer.detectFileActions(fs, filePaths)
+
+	if len(result) != 2 {
+		t.Fatalf("Expected 2 file specs, got %d", len(result))
+	}
+
+	// Check existing file is marked for modification
+	if result[0].Path != "existing.go" || result[0].Action != FileActionModify {
+		t.Errorf("Expected existing.go to be marked for modify, got %s:%s", result[0].Path, result[0].Action)
+	}
+
+	// Check new file is marked for creation
+	if result[1].Path != "new.go" || result[1].Action != FileActionCreate {
+		t.Errorf("Expected new.go to be marked for create, got %s:%s", result[1].Path, result[1].Action)
+	}
+}
+
 func TestFormatResult(t *testing.T) {
 	result := &ComplexityResult{
 		Track: 2, Confidence: "High", Reasoning: "2 files = Track 2", Recommendation: "proceed",

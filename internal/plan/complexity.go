@@ -49,11 +49,12 @@ func NewComplexityEngine(fs afero.Fs, missionID string) *ComplexityEngine {
 
 // AnalyzeComplexity calculates track complexity for a plan spec
 func (e *ComplexityEngine) AnalyzeComplexity(spec *PlanSpec) (*ComplexityResult, error) {
-	implFiles := countImplementationFiles(spec.Scope)
+	allFiles := spec.GetScopeFiles()
+	implFiles := countImplementationFiles(allFiles)
 	baseTrack := calculateBaseTrack(implFiles)
 	multipliers := calculateDomainMultipliers(spec.Domain)
 	finalTrack := calculateFinalTrack(baseTrack, multipliers)
-	testGaps := detectTestGaps(spec.Scope)
+	testGaps := detectTestGaps(allFiles)
 
 	e.log.LogStep("INFO", "complexity-result",
 		fmt.Sprintf("Track %d (files:%d, base:%d, mult:%d)", finalTrack, implFiles, baseTrack, multipliers))
