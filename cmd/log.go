@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/dnatag/mission-toolkit/internal/logger"
+	"github.com/dnatag/mission-toolkit/internal/mission"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
 
@@ -16,15 +18,14 @@ var logCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		level, _ := cmd.Flags().GetString("level")
 		step, _ := cmd.Flags().GetString("step")
-		missionIDFlag, _ := cmd.Flags().GetString("mission-id")
 		message := args[0]
 
-		// Get mission ID - use flag if provided, otherwise auto-detect
-		var missionID string
-		if missionIDFlag != "" {
-			missionID = missionIDFlag
-		} else {
-			missionID = logger.GetMissionID()
+		// Get mission ID from centralized service
+		idService := mission.NewIDService(afero.NewOsFs(), ".mission")
+		missionID, err := idService.GetCurrentID()
+		if err != nil {
+			fmt.Printf("Warning: Could not get mission ID: %v\n", err)
+			missionID = "unknown"
 		}
 
 		// Create logger
@@ -43,5 +44,4 @@ func init() {
 	// Add flags
 	logCmd.Flags().StringP("level", "l", "INFO", "Log level (DEBUG, INFO, WARN, ERROR, SUCCESS)")
 	logCmd.Flags().StringP("step", "s", "General", "Mission step name")
-	logCmd.Flags().StringP("mission-id", "m", "", "Mission ID (auto-detected if not provided)")
 }
