@@ -1,0 +1,60 @@
+package logger
+
+import (
+	"testing"
+)
+
+func TestNew(t *testing.T) {
+	missionID := "test-mission-123"
+	logger := New(missionID)
+
+	if logger == nil {
+		t.Error("Logger should not be nil")
+	}
+
+	if logger.missionID != missionID {
+		t.Errorf("Expected mission ID %s, got %s", missionID, logger.missionID)
+	}
+}
+
+func TestLogStep(t *testing.T) {
+	missionID := "test-mission-123"
+	logger := New(missionID)
+
+	// Test different log levels
+	testCases := []struct {
+		level   string
+		step    string
+		message string
+	}{
+		{"SUCCESS", "Test Step", "Test message"},
+		{"ERROR", "Error Step", "Error message"},
+		{"WARN", "Warning Step", "Warning message"},
+		{"DEBUG", "Debug Step", "Debug message"},
+		{"INFO", "Info Step", "Info message"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.level, func(t *testing.T) {
+			// This test just ensures no panic occurs
+			logger.LogStep(tc.level, tc.step, tc.message)
+		})
+	}
+}
+
+func TestSuccessAndFailed(t *testing.T) {
+	missionID := "test-mission-123"
+	logger := New(missionID)
+
+	// Test convenience methods
+	logger.Success("Test Step", "Success message")
+	logger.Failed("Test Step", "Failure message")
+}
+
+func TestGetMissionID(t *testing.T) {
+	missionID := GetMissionID()
+
+	if missionID == "" {
+		t.Error("Mission ID should not be empty")
+	}
+}
