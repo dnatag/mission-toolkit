@@ -1,85 +1,120 @@
-# High-Level Design: Refactoring `m.plan` to CLI-Driven Architecture
+# High-Level Design: Refactoring `m.plan` to CLI-Driven Toolbox Architecture
 
 ## 1. Problem Statement
 The current `m.plan` workflow relies entirely on a "Simulated State Machine" within the LLM prompt. This leads to:
 - **Non-deterministic behavior**: AI agents occasionally skip steps or ignore rules.
 - **Fragile logic**: Complex branching (Track 1 vs 4) is handled probabilistically.
 - **Inconsistent output**: The generated `mission.md` file sometimes deviates from the required format.
+- **Black Box Execution**: Hard to debug which part of the planning process failed.
+- **Missing Tests**: AI often forgets to include test files in the scope.
+- **Non-Idiomatic Code**: AI drifts from project-specific coding standards.
+- **Fragmented Logging**: AI and CLI logs might diverge in format.
 
 ## 2. Proposed Solution
-Transition from a **Prompt-Driven** architecture to a **CLI-Driven** architecture (Option 3).
-- **AI Role**: Analyst & Estimator. It understands intent and estimates scope.
-- **CLI Role**: Enforcer & Generator. It calculates complexity (Tracks), validates inputs, and writes the physical files.
+Transition to a **"Thick Client, Thin Agent"** architecture (Toolbox Approach).
+- **AI Role**: Orchestrator. It analyzes intent, identifies scope, and calls specific CLI tools to validate its assumptions before committing.
+- **CLI Role**: Logic Engine. It provides discrete subcommands for analysis, validation, generation, and logging.
 
-## 3. Architecture Overview
+## 3. Responsibility Assignment
 
-### 3.1 New Workflow
-1.  **User Intent**: User runs `/m.plan "Refactor login"`
-2.  **AI Analysis**: AI reads the prompt, analyzes the request, and estimates affected files.
-3.  **CLI Execution**: AI invokes the new `m plan create` command with structured flags.
-    ```bash
-    m plan create --intent "Refactor login" --scope "file1.go,file2.go" --type "WET"
-    ```
-4.  **Deterministic Logic (Go)**:
-    - Validates file existence.
-    - Calculates `Track` based on file count/rules.
-    - Generates `mission.md` using strict Go templates.
-5.  **Output**: CLI confirms creation; AI presents the result to the user.
+| Task | Owner | Rationale | Command |
+| :--- | :--- | :--- | :--- |
+| **Pre-execution Check** | **CLI** | Checking mission state and cleaning stale artifacts. | `m plan check` |
+| **Clarification Check** | **AI** | Requires semantic understanding of ambiguity. | N/A (Prompt Logic) |
+| **Intent Analysis** | **AI** | Requires summarizing natural language. | N/A (Prompt Logic) |
+| **Complexity Analysis** | **CLI** | Deterministic rules based on file counts + domain flags. | `m plan analyze` |
+| **Test Coverage Check** | **CLI** | Heuristic check for missing test files (Agnostic). | `m plan analyze` |
+| **Duplication Analysis** | **AI** | Semantic similarity check. | N/A (Prompt Logic) |
+| **Security/Scope Validation** | **CLI** | Strict file system and safety checks. | `m plan validate` |
+| **Mission Generation** | **CLI** | Strict file formatting and writing + Guideline Injection. | `m plan generate` |
+| **Logging** | **CLI** | Unified logging format for both AI and System. | `m log` |
 
-### 3.2 Component Changes
+## 4. Architecture Overview
 
-#### A. New CLI Command: `m plan create`
-A new subcommand in `cmd/plan.go` that accepts:
-- `--intent` (string, required)
-- `--scope` (comma-separated strings, required)
-- `--type` (enum: WET, DRY, CLARIFICATION)
-- `--est-lines` (int, optional, for complexity hints)
-- `--parent` (string, optional, for DRY missions)
+### 4.1 New Workflow
+1.  **Pre-Check**: AI runs `m plan check`.
+    - CLI checks mission state, generates `MISSION_ID`, cleans stale `plan.json`.
+    - CLI logs: "Started planning session".
+2.  **User Intent**: User runs `/m.plan "Refactor login"`
+3.  **AI Logging**: AI runs `m log --step "Intent" "Analyzing user request..."`.
+4.  **Draft Spec**: AI creates a draft `plan.json` with Intent, Scope, and Domain.
+5.  **Complexity & Test Check**: AI runs `m plan analyze --file plan.json`.
+    - CLI logs: "Analyzed scope: X files".
+    - CLI returns Track, Recommendation, and Warnings (missing tests).
+6.  **Validation**: AI runs `m plan validate --file plan.json`.
+    - CLI logs: "Validation passed/failed".
+7.  **Finalize Spec**: AI updates `plan.json` with Plan Steps and Verification.
+8.  **Generation**: AI runs `m plan generate --file plan.json`.
+    - CLI logs: "Mission generated".
+9.  **Output**: CLI creates `mission.md`.
 
-**Responsibilities:**
-- **Validation**: Ensure scope files exist (warn if not).
+### 4.2 Component Changes
+
+#### A. New CLI Command: `m plan` (Parent)
+Parent command for planning tools.
+
+#### B. Subcommand: `m plan check`
 - **Logic**:
-    - `Track 1`: < 1 file, trivial change.
-    - `Track 2`: 1-5 files.
-    - `Track 3`: 6-9 files.
-    - `Track 4`: 10+ files (Error/Decompose).
-- **Generation**: Render `internal/templates/mission/wet.md` (etc.) with provided data.
+    - Check if `.mission/mission.md` exists.
+    - **ID Generation**: Generate `MISSION_ID` and store in `.mission/id` (or `plan.json`).
+    - **Cleanup**: Remove `.mission/plan.json` if it exists.
+    - Return JSON status.
 
-#### B. Refactored Prompt: `m.plan.md`
-Drastically simplified prompt that focuses on:
-1.  **Analysis**: "Review the user's request."
-2.  **Estimation**: "Identify which files need to change."
-3.  **Execution**: "Construct and run the `m plan create` command."
+#### C. Subcommand: `m plan analyze`
+- **Flags**: `--file` (path to `plan.json`).
+- **Logic**:
+    - Read `plan.json`.
+    - Count files (Base Track).
+    - Apply Domain Multipliers.
+    - **Test Gap Detection**: Check for missing test files based on patterns.
+    - **Output**: JSON with `track`, `reason`, `recommendation` ("proceed"/"decompose"), `warnings`.
 
-*Removed*: All "If Track 1 do X" logic. The CLI handles that now.
+#### D. Subcommand: `m plan validate`
+- **Flags**: `--file` (path to `plan.json`).
+- **Logic**:
+    - Read `plan.json`.
+    - **Scope Check**: Fail on traversal/absolute paths. Warn on missing files.
+    - **Verification Check**: Fail on banned patterns.
+    - Return JSON output.
 
-#### C. Template Updates
-- Ensure `internal/templates/` are compatible with Go's `text/template` rendering (already true, but verify variable names).
+#### E. Subcommand: `m plan generate`
+- **Flags**: `--file` (path to `plan.json`).
+- **Logic**:
+    - Read `plan.json`.
+    - **Guideline Injection**: Append `.mission/guidelines.md` content.
+    - Render `mission.md`.
 
-## 4. Implementation Plan
+#### F. New CLI Command: `m log`
+- **Flags**: `--level` (INFO/SUCCESS/ERROR), `--step` (string), `message` (arg).
+- **Logic**:
+    - Read `MISSION_ID` from `.mission/id` (or find active mission).
+    - Append formatted line to `.mission/execution.log`.
 
-### Phase 1: Core CLI Logic
-1.  Create `cmd/plan.go`.
-2.  Implement `plan create` subcommand with flags.
-3.  Port "Complexity Logic" from Markdown to Go struct.
-4.  Implement file writing using existing `internal/templates` package.
+#### G. Refactored Prompt: `m.plan.md`
+Prompt becomes a workflow script using `m plan *` and `m log` commands.
 
-### Phase 2: Prompt Migration
-1.  Rewrite `internal/templates/prompts/m.plan.md`.
-2.  Remove "Simulated State Machine" instructions.
-3.  Add "Tool Use" instructions for `m plan create`.
+## 5. Implementation Plan
 
-### Phase 3: Validation & Testing
-1.  Unit test `cmd/plan.go` logic (e.g., ensure 10 files triggers Track 4 error).
-2.  End-to-end test with an AI agent to verify it correctly constructs the CLI command.
+### Phase 1: Core Infrastructure
+1.  Create `internal/logger` package.
+2.  Create `cmd/log.go` (`m log` command).
+3.  Create `cmd/plan.go` (Parent command).
 
-## 5. Risk Assessment
-- **CLI Syntax Errors**: AI might malform the command string (quoting issues).
-    - *Mitigation*: robust flag parsing and clear error messages back to the AI.
-- **Loss of Nuance**: Rigid track rules might misclassify complex single-file changes.
-    - *Mitigation*: Add an `--override-track` flag for manual AI override if justified.
+### Phase 2: Check & Analysis Tools
+1.  Define `PlanSpec` struct.
+2.  Implement `check` subcommand (ID generation).
+3.  Implement `analyze` subcommand (Complexity + Test Gap).
+
+### Phase 3: Validation & Generation Tools
+1.  Implement `validate` subcommand.
+2.  Implement `generate` subcommand (Guideline Injection).
+
+### Phase 4: Prompt Migration
+1.  Rewrite `m.plan.md`.
+2.  Test end-to-end.
 
 ## 6. Success Metrics
-- **Zero Format Errors**: `mission.md` is always valid markdown.
-- **100% Process Adherence**: Track 4 is *always* rejected/decomposed.
-- **Reduced Prompt Size**: `m.plan.md` token count reduced by >40%.
+- **Unified Logs**: `execution.log` is consistent and readable.
+- **Test Coverage**: AI consistently includes test files.
+- **Idiomatic Code**: Guidelines are injected.
+- **Safety**: Pre-check prevents overwriting.
