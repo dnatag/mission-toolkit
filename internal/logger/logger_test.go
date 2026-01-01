@@ -50,8 +50,3 @@ func TestSuccessAndFailed(t *testing.T) {
 	logger.Success("Test Step", "Success message")
 	logger.Failed("Test Step", "Failure message")
 }
-
-func TestGetMissionID(t *testing.T) {
-	// This test is deprecated - mission ID now handled by centralized service
-	t.Skip("Mission ID handling moved to internal/mission package")
-}

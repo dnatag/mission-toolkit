@@ -10,10 +10,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	fs         = afero.NewOsFs()
+	missionDir = ".mission"
+)
+
 // Common helper functions
 func getMissionID() string {
-	idService := mission.NewIDService(afero.NewOsFs(), ".mission")
-	if missionID, err := idService.GetCurrentID(); err == nil {
+	if missionID, err := mission.NewIDService(fs, missionDir).GetCurrentID(); err == nil {
 		return missionID
 	}
 	return "unknown"
@@ -25,12 +29,20 @@ func handleError(msg string, err error) {
 }
 
 func requireFlag(cmd *cobra.Command, flag, errMsg string) string {
-	value, _ := cmd.Flags().GetString(flag)
-	if value == "" {
-		fmt.Println(errMsg)
-		os.Exit(1)
+	if value, _ := cmd.Flags().GetString(flag); value != "" {
+		return value
 	}
-	return value
+	fmt.Println(errMsg)
+	os.Exit(1)
+	return ""
+}
+
+func outputJSON(data interface{ ToJSON() (string, error) }) {
+	if jsonOutput, err := data.ToJSON(); err != nil {
+		handleError("formatting output", err)
+	} else {
+		fmt.Println(jsonOutput)
+	}
 }
 
 // planCmd represents the plan command
@@ -45,16 +57,11 @@ var planCheckCmd = &cobra.Command{
 	Use:   "check",
 	Short: "Check mission state and cleanup stale artifacts",
 	Run: func(cmd *cobra.Command, args []string) {
-		status, err := mission.NewValidationService(afero.NewOsFs(), ".mission").CheckMissionState()
+		status, err := mission.NewValidationService(fs, missionDir).CheckMissionState()
 		if err != nil {
 			handleError("checking mission state", err)
 		}
-
-		if jsonOutput, err := status.ToJSON(); err != nil {
-			handleError("formatting output", err)
-		} else {
-			fmt.Println(jsonOutput)
-		}
+		outputJSON(status)
 	},
 }
 
@@ -64,7 +71,6 @@ var planAnalyzeCmd = &cobra.Command{
 	Short: "Analyze plan complexity and provide recommendations",
 	Run: func(cmd *cobra.Command, args []string) {
 		planFile := requireFlag(cmd, "file", "Error: --file flag is required")
-		fs := afero.NewOsFs()
 		analyzer := plan.NewAnalyzer(fs, getMissionID())
 
 		result, err := analyzer.AnalyzePlan(fs, planFile)
@@ -91,28 +97,43 @@ var planValidateCmd = &cobra.Command{
 			rootDir = "."
 		}
 
-		fs := afero.NewOsFs()
 		validator := plan.NewValidatorService(fs, getMissionID(), rootDir)
-
 		result, err := validator.ValidatePlan(planFile)
 		if err != nil {
 			handleError("validating plan", err)
 		}
+		outputJSON(result)
+	},
+}
 
-		if jsonOutput, err := result.ToJSON(); err != nil {
-			handleError("formatting output", err)
-		} else {
-			fmt.Println(jsonOutput)
+// planGenerateCmd represents the plan generate command
+var planGenerateCmd = &cobra.Command{
+	Use:   "generate",
+	Short: "Generate mission.md from plan.json specification",
+	Run: func(cmd *cobra.Command, args []string) {
+		planFile := requireFlag(cmd, "file", "Error: --file flag is required")
+		outputFile, _ := cmd.Flags().GetString("output")
+		if outputFile == "" {
+			outputFile = ".mission/mission.md"
 		}
+
+		generator := plan.NewGeneratorService(fs, getMissionID())
+		result, err := generator.GenerateMission(planFile, outputFile)
+		if err != nil {
+			handleError("generating mission", err)
+		}
+		outputJSON(result)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(planCmd)
-	planCmd.AddCommand(planCheckCmd, planAnalyzeCmd, planValidateCmd)
+	planCmd.AddCommand(planCheckCmd, planAnalyzeCmd, planValidateCmd, planGenerateCmd)
 
 	// Add flags
 	planAnalyzeCmd.Flags().StringP("file", "f", "", "Path to plan.json file to analyze")
 	planValidateCmd.Flags().StringP("file", "f", "", "Path to plan.json file to validate")
 	planValidateCmd.Flags().StringP("root", "r", ".", "Project root directory for file validation")
+	planGenerateCmd.Flags().StringP("file", "f", "", "Path to plan.json file to generate from")
+	planGenerateCmd.Flags().StringP("output", "o", ".mission/mission.md", "Output path for generated mission.md")
 }
