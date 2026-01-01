@@ -40,9 +40,13 @@ type ValidatorService struct {
 
 // NewValidatorService creates a new validator service
 func NewValidatorService(fs afero.Fs, missionID string, rootDir string) *ValidatorService {
+	// Create logger config with same filesystem as the service
+	config := logger.DefaultConfig()
+	config.Fs = fs
+
 	return &ValidatorService{
 		ServiceBase: NewServiceBase(fs, missionID),
-		log:         logger.New(missionID),
+		log:         logger.NewWithConfig(missionID, config),
 		rootDir:     rootDir,
 	}
 }
@@ -72,9 +76,12 @@ func (v *ValidatorService) ValidatePlan(planPath string) (*ValidationResult, err
 	v.validateFilePaths(&planSpec, result)
 	v.validateMissionContent(&planSpec, result)
 
-	result.Valid = len(result.Errors) == 0
+	// Valid only if no errors AND no security issues
+	result.Valid = len(result.Errors) == 0 && len(result.SecurityIssues) == 0
+
 	v.log.LogStep("INFO", "validation-complete",
-		fmt.Sprintf("Valid: %t, errors: %d, warnings: %d", result.Valid, len(result.Errors), len(result.Warnings)))
+		fmt.Sprintf("Valid: %t, errors: %d, warnings: %d, security: %d",
+			result.Valid, len(result.Errors), len(result.Warnings), len(result.SecurityIssues)))
 
 	return result, nil
 }
@@ -91,7 +98,9 @@ func (v *ValidatorService) validatePlanFormat(spec *PlanSpec, result *Validation
 	if spec.Intent == "" {
 		result.Errors = append(result.Errors, "Missing required field: intent")
 	}
-	if len(spec.Scope) == 0 {
+	// Check if we have files in either scope or files field
+	allFiles := spec.GetScopeFiles()
+	if len(allFiles) == 0 {
 		result.Errors = append(result.Errors, "Missing required field: scope (must contain at least one file)")
 	}
 	if len(spec.Plan) == 0 {
@@ -110,7 +119,8 @@ func (v *ValidatorService) validatePlanFormat(spec *PlanSpec, result *Validation
 
 // validateFilePaths performs security and accessibility checks on file paths
 func (v *ValidatorService) validateFilePaths(spec *PlanSpec, result *ValidationResult) {
-	for _, filePath := range spec.Scope {
+	// Use GetScopeFiles to ensure we validate all files (legacy Scope + new Files)
+	for _, filePath := range spec.GetScopeFiles() {
 		if strings.Contains(filePath, "..") {
 			result.SecurityIssues = append(result.SecurityIssues, fmt.Sprintf("Path traversal detected in: %s", filePath))
 			continue
@@ -152,16 +162,22 @@ func (v *ValidatorService) validateFileAccess(filePath string, result *Validatio
 	if exists, _ := afero.Exists(v.fs, fullPath); exists {
 		if file, err := v.fs.OpenFile(fullPath, os.O_RDWR, 0644); err != nil {
 			result.FileValidation = append(result.FileValidation, fmt.Sprintf("File not writable: %s (%v)", filePath, err))
+			// Not writable is an error for modification
+			result.Errors = append(result.Errors, fmt.Sprintf("File not writable: %s", filePath))
 		} else {
 			file.Close()
 			result.FileValidation = append(result.FileValidation, fmt.Sprintf("File accessible: %s", filePath))
 		}
 	} else {
+		// File does not exist - check if we can create it
 		dir := filepath.Dir(fullPath)
 		if err := v.fs.MkdirAll(dir, 0755); err != nil {
 			result.FileValidation = append(result.FileValidation, fmt.Sprintf("Cannot create directory for: %s (%v)", filePath, err))
+			result.Errors = append(result.Errors, fmt.Sprintf("Cannot create directory for: %s", filePath))
 		} else {
 			result.FileValidation = append(result.FileValidation, fmt.Sprintf("File can be created: %s", filePath))
+			// Add explicit warning for new file creation as per HLD
+			result.Warnings = append(result.Warnings, fmt.Sprintf("File does not exist and will be created: %s", filePath))
 		}
 	}
 }

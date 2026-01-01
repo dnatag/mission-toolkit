@@ -19,6 +19,7 @@ type FileSpec struct {
 // PlanSpec represents the structure for mission planning data
 type PlanSpec struct {
 	Intent       string     `json:"intent"`
+	Type         string     `json:"type"`  // WET or DRY
 	Scope        []string   `json:"scope"` // Legacy field for backward compatibility
 	Files        []FileSpec `json:"files"` // New field with action annotations
 	Domain       []string   `json:"domain"`

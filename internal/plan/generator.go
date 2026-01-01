@@ -56,7 +56,7 @@ func (g *GeneratorService) GenerateMission(planFile, outputFile string) (*Genera
 	return &GenerateResult{
 		Success: true, Message: "Mission file generated successfully",
 		OutputFile: outputFile, PlanFile: planFile,
-		MissionType: "WET", Track: complexity.Track,
+		MissionType: planSpec.Type, Track: complexity.Track,
 	}, nil
 }
 
@@ -69,9 +69,12 @@ func (g *GeneratorService) errorResult(format string, err error) *GenerateResult
 func (g *GeneratorService) generateMissionContent(spec *PlanSpec, complexity *ComplexityResult) string {
 	var content strings.Builder
 
-	// Header - using markdown library for future structured generation
-	// For now, maintaining backward compatibility with string manipulation
-	content.WriteString(fmt.Sprintf("# MISSION\n\nid: %s\ntype: WET\ntrack: %d\niteration: 1\nstatus: planned\n\n", g.missionID, complexity.Track))
+	// Header
+	missionType := "WET" // Default to WET
+	if spec.Type == "DRY" {
+		missionType = "DRY"
+	}
+	content.WriteString(fmt.Sprintf("# MISSION\n\nid: %s\ntype: %s\ntrack: %d\niteration: 1\nstatus: planned\n\n", g.missionID, missionType, complexity.Track))
 
 	// Intent
 	content.WriteString(fmt.Sprintf("## INTENT\n%s\n\n", spec.Intent))
@@ -100,9 +103,6 @@ func (g *GeneratorService) generateMissionContent(spec *PlanSpec, complexity *Co
 			content.WriteString("\n\n")
 		}
 	}
-
-	// Execution Instructions
-	content.WriteString("## EXECUTION INSTRUCTIONS\n⚠️  DO NOT EXECUTE THIS MISSION NOW\n- This is PLANNING PHASE only\n- Run: `@m.apply` to execute this mission (requires user approval)\n- Run: `@m.complete` to archive when finished")
 
 	return content.String()
 }

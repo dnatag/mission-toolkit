@@ -18,6 +18,7 @@ var logCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		level, _ := cmd.Flags().GetString("level")
 		step, _ := cmd.Flags().GetString("step")
+		file, _ := cmd.Flags().GetString("file")
 		message := args[0]
 
 		// Get mission ID from centralized service
@@ -28,8 +29,17 @@ var logCmd = &cobra.Command{
 			missionID = "unknown"
 		}
 
-		// Create logger
-		log := logger.New(missionID)
+		// Create logger config based on file flag
+		config := logger.DefaultConfig()
+		if file == "" {
+			config.Output = logger.OutputConsole
+		} else {
+			config.Output = logger.OutputBoth
+			config.FilePath = file
+		}
+
+		// Create logger with custom config
+		log := logger.NewWithConfig(missionID, config)
 
 		// Log the message
 		log.LogStep(level, step, message)
@@ -44,4 +54,5 @@ func init() {
 	// Add flags
 	logCmd.Flags().StringP("level", "l", "INFO", "Log level (DEBUG, INFO, WARN, ERROR, SUCCESS)")
 	logCmd.Flags().StringP("step", "s", "General", "Mission step name")
+	logCmd.Flags().StringP("file", "f", ".mission/execution.log", "Log file path (empty string for console only)")
 }

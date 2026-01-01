@@ -14,9 +14,11 @@ type MissionStatus struct {
 	HasActiveMission bool     `json:"has_active_mission"`
 	MissionStatus    string   `json:"mission_status,omitempty"`
 	MissionID        string   `json:"mission_id,omitempty"`
+	MissionIntent    string   `json:"mission_intent,omitempty"`
 	StaleArtifacts   []string `json:"stale_artifacts_cleaned,omitempty"`
 	Ready            bool     `json:"ready"`
 	Message          string   `json:"message"`
+	NextStep         string   `json:"next_step"`
 }
 
 // ValidationService handles mission state validation and cleanup
@@ -48,8 +50,10 @@ func (v *ValidationService) CheckMissionState() (*MissionStatus, error) {
 			status.HasActiveMission = true
 			status.MissionStatus = v.extractField(content, "status: ", "unknown")
 			status.MissionID = v.extractField(content, "id: ", "")
+			status.MissionIntent = v.extractIntent(content)
 			status.Ready = false
 			status.Message = "Active mission detected - requires user decision"
+			status.NextStep = "STOP. Use template libraries/displays/error-mission-exists.md to ask the user for a decision."
 			return status, nil
 		}
 	}
@@ -69,15 +73,12 @@ func (v *ValidationService) CheckMissionState() (*MissionStatus, error) {
 	status.MissionID = missionID
 	status.Ready = true
 	status.Message = "Ready for new mission"
+	status.NextStep = "PROCEED to Step 2 (Intent Analysis)."
 	return status, nil
 }
 
 // cleanupStaleArtifacts removes old id, execution.log, and plan.json files
 func (v *ValidationService) cleanupStaleArtifacts(status *MissionStatus) error {
-	// Note: We do NOT remove "id" here because we might want to reuse it if it's valid,
-	// or IDService handles it. However, the original code removed "id".
-	// If we remove "id", GetOrCreateID will generate a new one.
-	// We MUST remove plan.json to ensure no stale specs.
 	artifacts := []string{"id", "execution.log", "plan.json"}
 
 	for _, artifact := range artifacts {
@@ -100,6 +101,32 @@ func (v *ValidationService) extractField(content, prefix, defaultValue string) s
 		}
 	}
 	return defaultValue
+}
+
+// extractIntent extracts the intent section from mission.md content
+func (v *ValidationService) extractIntent(content string) string {
+	lines := strings.Split(content, "\n")
+	inIntent := false
+	var intentLines []string
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "## INTENT" {
+			inIntent = true
+			continue
+		}
+		if inIntent && strings.HasPrefix(trimmed, "## ") {
+			break
+		}
+		if inIntent && trimmed != "" {
+			intentLines = append(intentLines, trimmed)
+		}
+	}
+
+	if len(intentLines) == 0 {
+		return "No intent found"
+	}
+	return strings.Join(intentLines, " ")
 }
 
 // ToJSON converts status to JSON string

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
 )
 
 // Config holds logger configuration
@@ -14,6 +15,7 @@ type Config struct {
 	Format   string // "text" or "json"
 	Output   string // "console", "file", or "both"
 	FilePath string
+	Fs       afero.Fs // Filesystem interface for testing
 }
 
 const (
@@ -29,8 +31,9 @@ func DefaultConfig() *Config {
 	return &Config{
 		Level:    logrus.InfoLevel,
 		Format:   FormatText,
-		Output:   OutputConsole,
+		Output:   OutputBoth,
 		FilePath: ".mission/execution.log",
+		Fs:       afero.NewOsFs(), // Use real filesystem by default
 	}
 }
 
@@ -55,24 +58,26 @@ func NewLogger(config *Config) *logrus.Logger {
 func getOutput(config *Config) io.Writer {
 	switch config.Output {
 	case OutputFile:
-		if file := openLogFile(config.FilePath); file != nil {
+		if file := openLogFile(config.Fs, config.FilePath); file != nil {
 			return file
 		}
-		fallthrough
+		return os.Stdout
 	case OutputBoth:
-		// TODO: Implement multi-writer for both console and file
-		fallthrough
+		if file := openLogFile(config.Fs, config.FilePath); file != nil {
+			return io.MultiWriter(os.Stdout, file)
+		}
+		return os.Stdout
 	default:
 		return os.Stdout
 	}
 }
 
-// openLogFile opens log file for writing, returns nil on error
-func openLogFile(filePath string) *os.File {
-	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+// openLogFile opens log file for writing using the provided filesystem, returns nil on error
+func openLogFile(fs afero.Fs, filePath string) afero.File {
+	if err := fs.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
 		return nil
 	}
-	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	file, err := fs.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		return nil
 	}

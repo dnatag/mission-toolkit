@@ -2,11 +2,17 @@ package logger
 
 import (
 	"testing"
+
+	"github.com/spf13/afero"
 )
 
 func TestNew(t *testing.T) {
 	missionID := "test-mission-123"
-	logger := New(missionID)
+
+	// Use memFS for testing
+	config := DefaultConfig()
+	config.Fs = afero.NewMemMapFs()
+	logger := NewWithConfig(missionID, config)
 
 	if logger == nil {
 		t.Error("Logger should not be nil")
@@ -19,7 +25,11 @@ func TestNew(t *testing.T) {
 
 func TestLogStep(t *testing.T) {
 	missionID := "test-mission-123"
-	logger := New(missionID)
+
+	// Use memFS for testing
+	config := DefaultConfig()
+	config.Fs = afero.NewMemMapFs()
+	logger := NewWithConfig(missionID, config)
 
 	// Test different log levels
 	testCases := []struct {
@@ -44,7 +54,11 @@ func TestLogStep(t *testing.T) {
 
 func TestSuccessAndFailed(t *testing.T) {
 	missionID := "test-mission-123"
-	logger := New(missionID)
+
+	// Use memFS for testing
+	config := DefaultConfig()
+	config.Fs = afero.NewMemMapFs()
+	logger := NewWithConfig(missionID, config)
 
 	// Test convenience methods
 	logger.Success("Test Step", "Success message")

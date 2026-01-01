@@ -15,6 +15,7 @@ type ComplexityResult struct {
 	Confidence     string   `json:"confidence"`
 	Reasoning      string   `json:"reasoning"`
 	Recommendation string   `json:"recommendation"`
+	NextStep       string   `json:"next_step"`
 	Warnings       []string `json:"warnings,omitempty"`
 	TestGaps       []string `json:"test_gaps,omitempty"`
 }
@@ -44,7 +45,11 @@ var (
 
 // NewComplexityEngine creates a new complexity analysis engine
 func NewComplexityEngine(fs afero.Fs, missionID string) *ComplexityEngine {
-	return &ComplexityEngine{log: logger.New(missionID)}
+	// Create logger config with same filesystem as the engine
+	config := logger.DefaultConfig()
+	config.Fs = fs
+
+	return &ComplexityEngine{log: logger.NewWithConfig(missionID, config)}
 }
 
 // AnalyzeComplexity calculates track complexity for a plan spec
@@ -72,6 +77,7 @@ func (e *ComplexityEngine) AnalyzeComplexity(spec *PlanSpec) (*ComplexityResult,
 		Confidence:     calculateConfidence(implFiles, spec.Domain),
 		Reasoning:      generateReasoning(baseTrack, multipliers, implFiles, spec.Domain),
 		Recommendation: generateRecommendation(finalTrack),
+		NextStep:       generateNextStep(finalTrack, warnings),
 		Warnings:       warnings,
 		TestGaps:       testGaps,
 	}, nil
@@ -155,6 +161,24 @@ func generateRecommendation(track int) string {
 		return recommendations[track]
 	}
 	return "review"
+}
+
+// generateNextStep provides explicit instructions for the AI
+func generateNextStep(track int, warnings []string) string {
+	if len(warnings) > 0 {
+		return "UPDATE .mission/plan.json to include missing test files in scope and run 'm plan analyze' again."
+	}
+
+	switch track {
+	case 1:
+		return "STOP. Use template libraries/displays/plan-atomic.md to provide a direct code suggestion."
+	case 2, 3:
+		return "PROCEED to Step 6 (Validation)."
+	case 4:
+		return "STOP. Decompose this intent into 3-5 sub-intents in .mission/backlog.md and use template libraries/displays/plan-epic.md."
+	default:
+		return "Review the analysis and decide whether to proceed or decompose."
+	}
 }
 
 // detectTestGaps identifies missing test files using language-specific patterns

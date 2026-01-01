@@ -35,8 +35,9 @@ Transition to a **"Thick Client, Thin Agent"** architecture (Toolbox Approach).
 1.  **Pre-Check**: AI runs `m plan check`.
     - CLI checks mission state, generates `MISSION_ID`, cleans stale `plan.json`.
     - CLI logs: "Started planning session".
-2.  **User Intent**: User runs `/m.plan "Refactor login"`
-3.  **AI Logging**: AI runs `m log --step "Intent" "Analyzing user request..."`.
+2.  **Intent & Clarification**: AI analyzes intent using templates.
+    - **Clarification Loop**: If critical details are missing, AI creates a `CLARIFICATION` mission using `libraries/missions/clarification.md` and **STOPS**.
+3.  **Contextualization**: AI checks for duplication and identifies domains.
 4.  **Draft Spec**: AI creates a draft `plan.json` with Intent, Scope, and Domain.
 5.  **Complexity & Test Check**: AI runs `m plan analyze --file plan.json`.
     - CLI logs: "Analyzed scope: X files".
@@ -91,7 +92,7 @@ Parent command for planning tools.
     - Append formatted line to `.mission/execution.log`.
 
 #### G. Refactored Prompt: `m.plan.md`
-Prompt becomes a workflow script using `m plan *` and `m log` commands.
+Prompt becomes a workflow script using `m plan *` and `m log` commands, with explicit analysis steps.
 
 ## 5. Implementation Plan
 
