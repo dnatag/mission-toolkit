@@ -33,7 +33,7 @@ type ValidationResult struct {
 
 // ValidatorService handles plan validation with comprehensive safety checks
 type ValidatorService struct {
-	fs      afero.Fs
+	ServiceBase
 	log     *logger.Logger
 	rootDir string
 }
@@ -41,9 +41,9 @@ type ValidatorService struct {
 // NewValidatorService creates a new validator service
 func NewValidatorService(fs afero.Fs, missionID string, rootDir string) *ValidatorService {
 	return &ValidatorService{
-		fs:      fs,
-		log:     logger.New(missionID),
-		rootDir: rootDir,
+		ServiceBase: NewServiceBase(fs, missionID),
+		log:         logger.New(missionID),
+		rootDir:     rootDir,
 	}
 }
 
@@ -199,6 +199,5 @@ func (v *ValidatorService) checkDangerousCommands(content string, result *Valida
 
 // ToJSON converts validation result to JSON string
 func (r *ValidationResult) ToJSON() (string, error) {
-	data, err := json.MarshalIndent(r, "", "  ")
-	return string(data), err
+	return MarshalToJSON(r)
 }

@@ -10,8 +10,7 @@ import (
 
 // GeneratorService handles mission.md generation from plan.json
 type GeneratorService struct {
-	fs        afero.Fs
-	missionID string
+	ServiceBase
 }
 
 // GenerateResult represents the result of mission generation
@@ -27,8 +26,7 @@ type GenerateResult struct {
 // NewGeneratorService creates a new generator service
 func NewGeneratorService(fs afero.Fs, missionID string) *GeneratorService {
 	return &GeneratorService{
-		fs:        fs,
-		missionID: missionID,
+		ServiceBase: NewServiceBase(fs, missionID),
 	}
 }
 
@@ -96,9 +94,5 @@ func (g *GeneratorService) generateMissionContent(spec *PlanSpec, complexity *Co
 
 // ToJSON converts GenerateResult to JSON string
 func (r *GenerateResult) ToJSON() (string, error) {
-	data, err := json.MarshalIndent(r, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
+	return MarshalToJSON(r)
 }

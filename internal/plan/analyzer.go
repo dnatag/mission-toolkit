@@ -1,7 +1,6 @@
 package plan
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/spf13/afero"
@@ -60,6 +59,5 @@ func (a *Analyzer) detectFileActions(fs afero.Fs, filePaths []string) []FileSpec
 
 // FormatResult converts analysis result to JSON
 func FormatResult(result *ComplexityResult) (string, error) {
-	data, err := json.MarshalIndent(result, "", "  ")
-	return string(data), err
+	return MarshalToJSON(result)
 }
