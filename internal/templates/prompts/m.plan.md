@@ -36,23 +36,25 @@ Before generating output, read `.mission/governance.md`.
 ### Step 1: Mission State Check
 
 1.  **Run Check**: Execute `m plan check`.
-2.  **Follow Instructions**: Read the `next_step` field from the JSON output and **follow it literally**.
+2.  **Validate JSON**: Ensure the CLI output is valid JSON. If not, report CLI error and stop.
+3.  **Follow Instructions**: Read the `next_step` field from the JSON output and **follow it literally**.
     *   **If `next_step` says STOP**:
-        1.  Use file read tool to load template `libraries/displays/error-mission-exists.md`.
+        1.  Use file read tool to load template `.mission/libraries/displays/error-mission-exists.md`.
         2.  Output the filled template with `{{MISSION_ID}}`, `{{STATUS}}`, and `{{INTENT}}` from the CLI output.
         3.  **WAIT** for user response (A, B, or C).
     *   **If `next_step` says PROCEED**: Continue to Step 2.
-3.  **Log**: Run `m log --step "Check" "Mission state check complete"`
+    *   **If CLI command fails**: Report error and ask user to check CLI installation.
+4.  **Log**: Run `m log --step "Check" "Mission state check complete"`
 
 ### Step 2: Intent & Clarification (The "What")
 
-1.  **Analyze Intent**: Use file read tool to load template `libraries/analysis/intent.md`. Use it to refine the user's request.
+1.  **Analyze Intent**: Use file read tool to load template `.mission/libraries/analysis/intent.md`. Use it to refine the user's request.
     *   **Decision**: If the output is "AMBIGUOUS", **STOP IMMEDIATELY**. Ask the user to clarify the specific reason for the ambiguity.
-2.  **Verify Clarity**: If intent seems clear, use file read tool to load template `libraries/analysis/clarification.md`. Run it as a final check for missing details.
+2.  **Verify Clarity**: If intent seems clear, use file read tool to load template `.mission/libraries/analysis/clarification.md`. Run it as a final check for missing details.
     *   **Decision**: If it identifies missing [CRITICAL] details:
-        1.  Use file read tool to load template `libraries/missions/clarification.md`.
+        1.  Use file read tool to load template `.mission/libraries/missions/clarification.md`.
         2.  Create `.mission/mission.md` using this template, populating the `{{CLARIFICATION_QUESTIONS}}` section.
-        3.  Use file read tool to load template `libraries/displays/plan-clarification.md`.
+        3.  Use file read tool to load template `.mission/libraries/displays/plan-clarification.md`.
         4.  **STOP**. Output the filled `plan-clarification.md` template.
 3.  **Refine**: If both checks pass, you now have a `[REFINED_INTENT]`.
 4.  **Log**: Run `m log --step "Intent" "Intent analyzed and refined"`
@@ -61,12 +63,12 @@ Before generating output, read `.mission/governance.md`.
 
 *Prerequisite: You must have a clear `[REFINED_INTENT]` from Step 2.*
 
-1.  **Duplication Check**: Use file read tool to load template `libraries/analysis/duplication.md`. Use it to scan for existing patterns or redundant code.
+1.  **Duplication Check**: Use file read tool to load template `.mission/libraries/analysis/duplication.md`. Use it to scan for existing patterns or redundant code.
     *   **Action**: If duplication or refactoring opportunities are detected:
         1.  Use file read tool to load `.mission/backlog.md`.
         2.  Append the pattern and affected files to the `## REFACTORING OPPORTUNITIES` section.
         3.  Note the findings for use in the Plan section later.
-2.  **Domain Identification**: Use file read tool to load template `libraries/analysis/domain.md`. Use it to select applicable domains.
+2.  **Domain Identification**: Use file read tool to load template `.mission/libraries/analysis/domain.md`. Use it to select applicable domains.
 3.  **Log**: Run `m log --step "Context" "Duplication and domain analysis complete"`
 
 ### Step 4: Draft Spec Creation
@@ -89,27 +91,31 @@ Before generating output, read `.mission/governance.md`.
 ### Step 5: Complexity Analysis
 
 1.  **Run Analysis**: Execute `m plan analyze --file .mission/plan.json`.
-2.  **Follow Instructions**: Read the `next_step` field from the JSON output and **follow it literally**.
+2.  **Validate JSON**: Ensure the CLI output is valid JSON. If not, report CLI error and stop.
+3.  **Follow Instructions**: Read the `next_step` field from the JSON output and **follow it literally**.
     *   **If `next_step` says UPDATE**: Update `.mission/plan.json` as instructed and retry analysis.
     *   **If `next_step` says STOP (Track 1)**:
-        1.  Use file read tool to load template `libraries/displays/plan-atomic.md`.
+        1.  Use file read tool to load template `.mission/libraries/displays/plan-atomic.md`.
         2.  Output the filled `plan-atomic.md` template with `{{REFINED_INTENT}}` and a `{{SUGGESTED_EDIT}}`.
     *   **If `next_step` says STOP (Track 4)**:
         1.  Use file read tool to load `.mission/backlog.md`.
         2.  Decompose the `[REFINED_INTENT]` into 3-5 atomic sub-intents.
         3.  Append sub-intents to the `## DECOMPOSED INTENTS` section of `.mission/backlog.md`.
-        4.  Use file read tool to load template `libraries/displays/plan-epic.md`.
+        4.  Use file read tool to load template `.mission/libraries/displays/plan-epic.md`.
         5.  Output the filled `plan-epic.md` template.
     *   **If `next_step` says PROCEED**: Continue to Step 6.
-3.  **Log**: Run `m log --step "Analyze" "Complexity analysis complete. Track: [TRACK]"`
+    *   **If CLI command fails**: Report error and ask user to check CLI installation.
+4.  **Log**: Run `m log --step "Analyze" "Complexity analysis complete. Track: [TRACK]"`
 
 ### Step 6: Validation
 
 1.  **Run Validation**: Execute `m plan validate --file .mission/plan.json`.
-2.  **Handle Output**:
+2.  **Validate JSON**: Ensure the CLI output is valid JSON. If not, report CLI error and stop.
+3.  **Handle Output**:
     *   If `valid: true`, proceed to Step 7.
     *   If `valid: false`, **STOP** and report the errors to the user. Fix the `plan.json` if possible (e.g., remove invalid files) and retry validation.
-3.  **Log**: Run `m log --step "Validate" "Plan validation passed"`
+    *   **If CLI command fails**: Report error and ask user to check CLI installation.
+4.  **Log**: Run `m log --step "Validate" "Plan validation passed"`
 
 ### Step 7: Finalize & Generate
 
@@ -133,9 +139,10 @@ Before generating output, read `.mission/governance.md`.
     }
     ```
 4.  **Generate**: Execute `m plan generate --file .mission/plan.json`.
-5.  **Log**: Run `m log --step "Generate" "Mission generated successfully"`
-6.  **Final Output**: 
-    1.  Use file read tool to load template `libraries/displays/plan-success.md`.
+5.  **Validate Generation**: Ensure the CLI command succeeded and `.mission/mission.md` was created.
+6.  **Log**: Run `m log --step "Generate" "Mission generated successfully"`
+7.  **Final Output**: 
+    1.  Use file read tool to load template `.mission/libraries/displays/plan-success.md`.
     2.  Output the filled `plan-success.md` template with variables:
         - `{{TRACK}}`: From `m plan analyze` output.
         - `{{MISSION_TYPE}}`: WET or DRY.

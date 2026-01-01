@@ -94,7 +94,13 @@ var planValidateCmd = &cobra.Command{
 		if err != nil {
 			handleError("validating plan", err)
 		}
-		outputJSON(result)
+
+		output := validator.FormatValidationOutput(result)
+		if jsonStr, err := output.FormatOutput(); err != nil {
+			handleError("formatting output", err)
+		} else {
+			fmt.Println(jsonStr)
+		}
 	},
 }
 
@@ -114,7 +120,13 @@ var planGenerateCmd = &cobra.Command{
 		if err != nil {
 			handleError("generating mission", err)
 		}
-		outputJSON(result)
+
+		output := generator.FormatGenerateOutput(result)
+		if jsonStr, err := output.FormatOutput(); err != nil {
+			handleError("formatting output", err)
+		} else {
+			fmt.Println(jsonStr)
+		}
 	},
 }
 

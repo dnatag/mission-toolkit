@@ -217,3 +217,21 @@ func (v *ValidatorService) checkDangerousCommands(content string, result *Valida
 func (r *ValidationResult) ToJSON() (string, error) {
 	return ToJSON(r)
 }
+
+// FormatValidationOutput creates standardized output with next_step guidance
+func (v *ValidatorService) FormatValidationOutput(result *ValidationResult) OutputResponse {
+	nextStep := "PROCEED to Step 7 (Generate Mission)."
+	if !result.Valid {
+		nextStep = "FIX errors in plan.json and retry validation."
+	}
+
+	data := map[string]interface{}{
+		"valid":           result.Valid,
+		"errors":          result.Errors,
+		"warnings":        result.Warnings,
+		"security_issues": result.SecurityIssues,
+		"file_validation": result.FileValidation,
+	}
+
+	return NewOutputResponse(data, nextStep)
+}

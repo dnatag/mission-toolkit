@@ -111,3 +111,19 @@ func (g *GeneratorService) generateMissionContent(spec *PlanSpec, complexity *Co
 func (r *GenerateResult) ToJSON() (string, error) {
 	return ToJSON(r)
 }
+
+// FormatGenerateOutput creates standardized output with next_step guidance
+func (g *GeneratorService) FormatGenerateOutput(result *GenerateResult) OutputResponse {
+	nextStep := "Mission generated successfully. Use @m.apply to execute."
+
+	data := map[string]interface{}{
+		"success":      result.Success,
+		"message":      result.Message,
+		"output_file":  result.OutputFile,
+		"plan_file":    result.PlanFile,
+		"mission_type": result.MissionType,
+		"track":        result.Track,
+	}
+
+	return NewOutputResponse(data, nextStep)
+}
