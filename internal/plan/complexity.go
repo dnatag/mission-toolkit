@@ -56,6 +56,14 @@ func (e *ComplexityEngine) AnalyzeComplexity(spec *PlanSpec) (*ComplexityResult,
 	finalTrack := calculateFinalTrack(baseTrack, multipliers)
 	testGaps := detectTestGaps(allFiles)
 
+	// Add test gaps to warnings
+	var warnings []string
+	if len(testGaps) > 0 {
+		for _, gap := range testGaps {
+			warnings = append(warnings, fmt.Sprintf("Missing test file: %s", gap))
+		}
+	}
+
 	e.log.LogStep("INFO", "complexity-result",
 		fmt.Sprintf("Track %d (files:%d, base:%d, mult:%d)", finalTrack, implFiles, baseTrack, multipliers))
 
@@ -64,6 +72,7 @@ func (e *ComplexityEngine) AnalyzeComplexity(spec *PlanSpec) (*ComplexityResult,
 		Confidence:     calculateConfidence(implFiles, spec.Domain),
 		Reasoning:      generateReasoning(baseTrack, multipliers, implFiles, spec.Domain),
 		Recommendation: generateRecommendation(finalTrack),
+		Warnings:       warnings,
 		TestGaps:       testGaps,
 	}, nil
 }
@@ -106,7 +115,13 @@ func calculateDomainMultipliers(domains []string) int {
 
 // calculateFinalTrack applies multipliers with max cap
 func calculateFinalTrack(baseTrack, multipliers int) int {
+	// If base track is already 4 (files > 9), keep it 4 regardless of multipliers
+	if baseTrack >= 4 {
+		return 4
+	}
+
 	final := baseTrack + multipliers
+	// Cap at 3 for normal flows, unless base was already 4
 	if final > 3 {
 		return 3
 	}

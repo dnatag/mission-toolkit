@@ -3,6 +3,7 @@ package plan
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/afero"
@@ -68,7 +69,8 @@ func (g *GeneratorService) errorResult(format string, err error) *GenerateResult
 func (g *GeneratorService) generateMissionContent(spec *PlanSpec, complexity *ComplexityResult) string {
 	var content strings.Builder
 
-	// Header
+	// Header - using markdown library for future structured generation
+	// For now, maintaining backward compatibility with string manipulation
 	content.WriteString(fmt.Sprintf("# MISSION\n\nid: %s\ntype: WET\ntrack: %d\niteration: 1\nstatus: planned\n\n", g.missionID, complexity.Track))
 
 	// Intent
@@ -76,7 +78,7 @@ func (g *GeneratorService) generateMissionContent(spec *PlanSpec, complexity *Co
 
 	// Scope
 	content.WriteString("## SCOPE\n")
-	for _, file := range spec.Scope {
+	for _, file := range spec.GetScopeFiles() {
 		content.WriteString(file + "\n")
 	}
 
@@ -86,13 +88,26 @@ func (g *GeneratorService) generateMissionContent(spec *PlanSpec, complexity *Co
 		content.WriteString(fmt.Sprintf("- [ ] %s\n", step))
 	}
 
-	// Verification and Instructions
-	content.WriteString(fmt.Sprintf("\n## VERIFICATION\n%s\n\n## EXECUTION INSTRUCTIONS\n⚠️  DO NOT EXECUTE THIS MISSION NOW\n- This is PLANNING PHASE only\n- Run: `@m.apply` to execute this mission (requires user approval)\n- Run: `@m.complete` to archive when finished", spec.Verification))
+	// Verification
+	content.WriteString(fmt.Sprintf("\n## VERIFICATION\n%s\n\n", spec.Verification))
+
+	// Guidelines Injection
+	guidelinesPath := filepath.Join(".mission", "guidelines.md")
+	if exists, _ := afero.Exists(g.fs, guidelinesPath); exists {
+		if data, err := afero.ReadFile(g.fs, guidelinesPath); err == nil {
+			content.WriteString("## GUIDELINES\n")
+			content.WriteString(string(data))
+			content.WriteString("\n\n")
+		}
+	}
+
+	// Execution Instructions
+	content.WriteString("## EXECUTION INSTRUCTIONS\n⚠️  DO NOT EXECUTE THIS MISSION NOW\n- This is PLANNING PHASE only\n- Run: `@m.apply` to execute this mission (requires user approval)\n- Run: `@m.complete` to archive when finished")
 
 	return content.String()
 }
 
 // ToJSON converts GenerateResult to JSON string
 func (r *GenerateResult) ToJSON() (string, error) {
-	return MarshalToJSON(r)
+	return ToJSON(r)
 }

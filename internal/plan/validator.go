@@ -199,5 +199,5 @@ func (v *ValidatorService) checkDangerousCommands(content string, result *Valida
 
 // ToJSON converts validation result to JSON string
 func (r *ValidationResult) ToJSON() (string, error) {
-	return MarshalToJSON(r)
+	return ToJSON(r)
 }

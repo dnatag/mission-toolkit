@@ -81,18 +81,23 @@ func TestValidationService_CleanupStaleArtifacts(t *testing.T) {
 		t.Fatalf("Failed to create stale log: %v", err)
 	}
 
+	err = afero.WriteFile(fs, "/tmp/plan.json", []byte("{}"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create stale plan.json: %v", err)
+	}
+
 	status, err := service.CheckMissionState()
 	if err != nil {
 		t.Fatalf("CheckMissionState() error = %v", err)
 	}
 
 	// Check artifacts were cleaned
-	if len(status.StaleArtifacts) != 2 {
-		t.Errorf("Expected 2 stale artifacts cleaned, got %d", len(status.StaleArtifacts))
+	if len(status.StaleArtifacts) != 3 {
+		t.Errorf("Expected 3 stale artifacts cleaned, got %d", len(status.StaleArtifacts))
 	}
 
 	// Note: Files are cleaned up and new ID is generated, so we check the cleanup was recorded
-	expectedArtifacts := map[string]bool{"id": false, "execution.log": false}
+	expectedArtifacts := map[string]bool{"id": false, "execution.log": false, "plan.json": false}
 	for _, artifact := range status.StaleArtifacts {
 		expectedArtifacts[artifact] = true
 	}

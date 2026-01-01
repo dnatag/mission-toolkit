@@ -72,9 +72,15 @@ func (v *ValidationService) CheckMissionState() (*MissionStatus, error) {
 	return status, nil
 }
 
-// cleanupStaleArtifacts removes old id and execution.log files
+// cleanupStaleArtifacts removes old id, execution.log, and plan.json files
 func (v *ValidationService) cleanupStaleArtifacts(status *MissionStatus) error {
-	for _, artifact := range []string{"id", "execution.log"} {
+	// Note: We do NOT remove "id" here because we might want to reuse it if it's valid,
+	// or IDService handles it. However, the original code removed "id".
+	// If we remove "id", GetOrCreateID will generate a new one.
+	// We MUST remove plan.json to ensure no stale specs.
+	artifacts := []string{"id", "execution.log", "plan.json"}
+
+	for _, artifact := range artifacts {
 		path := filepath.Join(v.missionDir, artifact)
 		if exists, _ := afero.Exists(v.fs, path); exists {
 			if err := v.fs.Remove(path); err != nil {

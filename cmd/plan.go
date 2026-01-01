@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -28,20 +29,11 @@ func handleError(msg string, err error) {
 	os.Exit(1)
 }
 
-func requireFlag(cmd *cobra.Command, flag, errMsg string) string {
-	if value, _ := cmd.Flags().GetString(flag); value != "" {
-		return value
-	}
-	fmt.Println(errMsg)
-	os.Exit(1)
-	return ""
-}
-
-func outputJSON(data interface{ ToJSON() (string, error) }) {
-	if jsonOutput, err := data.ToJSON(); err != nil {
+func outputJSON(data interface{}) {
+	if jsonOutput, err := json.MarshalIndent(data, "", "  "); err != nil {
 		handleError("formatting output", err)
 	} else {
-		fmt.Println(jsonOutput)
+		fmt.Println(string(jsonOutput))
 	}
 }
 
@@ -70,7 +62,7 @@ var planAnalyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Analyze plan complexity and provide recommendations",
 	Run: func(cmd *cobra.Command, args []string) {
-		planFile := requireFlag(cmd, "file", "Error: --file flag is required")
+		planFile, _ := cmd.Parent().Flags().GetString("file")
 		analyzer := plan.NewAnalyzer(fs, getMissionID())
 
 		result, err := analyzer.AnalyzePlan(fs, planFile)
@@ -91,7 +83,7 @@ var planValidateCmd = &cobra.Command{
 	Use:   "validate",
 	Short: "Validate plan with comprehensive safety checks",
 	Run: func(cmd *cobra.Command, args []string) {
-		planFile := requireFlag(cmd, "file", "Error: --file flag is required")
+		planFile, _ := cmd.Parent().Flags().GetString("file")
 		rootDir, _ := cmd.Flags().GetString("root")
 		if rootDir == "" {
 			rootDir = "."
@@ -111,7 +103,7 @@ var planGenerateCmd = &cobra.Command{
 	Use:   "generate",
 	Short: "Generate mission.md from plan.json specification",
 	Run: func(cmd *cobra.Command, args []string) {
-		planFile := requireFlag(cmd, "file", "Error: --file flag is required")
+		planFile, _ := cmd.Parent().Flags().GetString("file")
 		outputFile, _ := cmd.Flags().GetString("output")
 		if outputFile == "" {
 			outputFile = ".mission/mission.md"
@@ -131,9 +123,10 @@ func init() {
 	planCmd.AddCommand(planCheckCmd, planAnalyzeCmd, planValidateCmd, planGenerateCmd)
 
 	// Add flags
-	planAnalyzeCmd.Flags().StringP("file", "f", "", "Path to plan.json file to analyze")
-	planValidateCmd.Flags().StringP("file", "f", "", "Path to plan.json file to validate")
+	planCmd.PersistentFlags().StringP("file", "f", "", "Path to plan.json file")
+	planAnalyzeCmd.MarkFlagRequired("file")
+	planValidateCmd.MarkFlagRequired("file")
+	planGenerateCmd.MarkFlagRequired("file")
 	planValidateCmd.Flags().StringP("root", "r", ".", "Project root directory for file validation")
-	planGenerateCmd.Flags().StringP("file", "f", "", "Path to plan.json file to generate from")
 	planGenerateCmd.Flags().StringP("output", "o", ".mission/mission.md", "Output path for generated mission.md")
 }

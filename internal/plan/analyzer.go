@@ -59,5 +59,5 @@ func (a *Analyzer) detectFileActions(fs afero.Fs, filePaths []string) []FileSpec
 
 // FormatResult converts analysis result to JSON
 func FormatResult(result *ComplexityResult) (string, error) {
-	return MarshalToJSON(result)
+	return ToJSON(result)
 }

@@ -139,7 +139,7 @@ func TestComplexityEngine_CalculateFinalTrack(t *testing.T) {
 		{2, 1, 3},
 		{3, 2, 3}, // Capped at 3
 		{1, 0, 1},
-		{4, 1, 3}, // Capped at 3
+		{4, 1, 4}, // Track 4 preserved (files > 9)
 	}
 
 	for _, tc := range testCases {
