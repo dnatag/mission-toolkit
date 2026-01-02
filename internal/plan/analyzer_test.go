@@ -28,6 +28,39 @@ func TestAnalyzer_AnalyzePlan(t *testing.T) {
 	}
 }
 
+func TestAnalyzer_ClarificationWorkflow(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	analyzer := NewAnalyzer(fs, "clarify-test")
+
+	// Test plan.json updates during clarification
+	initialPlan := `{"intent":"Vague request","scope":["file1.go"],"domain":[]}`
+	updatedPlan := `{"intent":"Clarified specific request","scope":["file1.go","file2.go"],"domain":["security"],"plan":["step 1"],"verification":"go test"}`
+
+	// Test initial analysis
+	if err := afero.WriteFile(fs, "/tmp/plan.json", []byte(initialPlan), 0644); err != nil {
+		t.Fatalf("Failed to create initial plan: %v", err)
+	}
+
+	result1, err := analyzer.AnalyzePlan(fs, "/tmp/plan.json")
+	if err != nil {
+		t.Fatalf("Initial analysis error = %v", err)
+	}
+
+	// Test updated analysis after clarification
+	if err := afero.WriteFile(fs, "/tmp/plan.json", []byte(updatedPlan), 0644); err != nil {
+		t.Fatalf("Failed to update plan: %v", err)
+	}
+
+	result2, err := analyzer.AnalyzePlan(fs, "/tmp/plan.json")
+	if err != nil {
+		t.Fatalf("Updated analysis error = %v", err)
+	}
+
+	if result2.Track <= result1.Track {
+		t.Errorf("Expected complexity to increase after clarification, got %d -> %d", result1.Track, result2.Track)
+	}
+}
+
 func TestAnalyzer_DetectFileActions(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	analyzer := NewAnalyzer(fs, "test-mission")

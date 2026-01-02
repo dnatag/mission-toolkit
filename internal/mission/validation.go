@@ -44,23 +44,34 @@ func (v *ValidationService) CheckMissionState() (*MissionStatus, error) {
 	status := &MissionStatus{StaleArtifacts: []string{}}
 
 	// Check for existing mission.md
-	if exists, _ := afero.Exists(v.fs, v.missionPath); exists {
-		if data, err := afero.ReadFile(v.fs, v.missionPath); err == nil {
-			content := string(data)
-			status.HasActiveMission = true
-			status.MissionStatus = v.extractField(content, "status: ", "unknown")
-			status.MissionID = v.extractField(content, "id: ", "")
-			status.MissionIntent = v.extractIntent(content)
-			status.Ready = false
+	if data, err := afero.ReadFile(v.fs, v.missionPath); err == nil {
+		content := string(data)
+		status.HasActiveMission = true
+		status.MissionStatus = v.extractField(content, "status: ", "unknown")
+		status.MissionID = v.extractField(content, "id: ", "")
+		status.MissionIntent = v.extractIntent(content)
+		status.Ready = false
+
+		// Validate mission ID and execution log files
+		if err := v.validateMissionFiles(status); err != nil {
+			return nil, fmt.Errorf("mission file validation failed: %w", err)
+		}
+
+		if status.MissionStatus == "clarifying" {
+			status.Message = "Mission is in clarifying state"
+			status.NextStep = "Run the m.clarify prompt to resolve questions."
+		} else {
 			status.Message = "Active mission detected - requires user decision"
 			status.NextStep = "STOP. Use template libraries/displays/error-mission-exists.md to ask the user for a decision."
-			return status, nil
 		}
+		return status, nil
 	}
 
-	// Clean up stale artifacts
-	if err := v.cleanupStaleArtifacts(status); err != nil {
-		return nil, fmt.Errorf("failed to cleanup stale artifacts: %w", err)
+	// Clean up stale artifacts if not in clarification mode
+	if !(status.HasActiveMission && status.MissionStatus == "clarifying") {
+		if err := v.cleanupStaleArtifacts(status); err != nil {
+			return nil, fmt.Errorf("failed to cleanup stale artifacts: %w", err)
+		}
 	}
 
 	// Generate new mission ID
@@ -77,11 +88,32 @@ func (v *ValidationService) CheckMissionState() (*MissionStatus, error) {
 	return status, nil
 }
 
+// validateMissionFiles checks that required mission files exist and are valid
+func (v *ValidationService) validateMissionFiles(status *MissionStatus) error {
+	// Check mission ID file exists and matches
+	idPath := filepath.Join(v.missionDir, "id")
+	data, err := afero.ReadFile(v.fs, idPath)
+	if err != nil {
+		return fmt.Errorf("mission ID file missing or unreadable: %s", idPath)
+	}
+
+	fileID := strings.TrimSpace(string(data))
+	if fileID != status.MissionID {
+		return fmt.Errorf("mission ID mismatch: file=%s, mission=%s", fileID, status.MissionID)
+	}
+
+	// Check execution log exists
+	logPath := filepath.Join(v.missionDir, "execution.log")
+	if exists, _ := afero.Exists(v.fs, logPath); !exists {
+		return fmt.Errorf("execution log missing: %s", logPath)
+	}
+
+	return nil
+}
+
 // cleanupStaleArtifacts removes old id, execution.log, and plan.json files
 func (v *ValidationService) cleanupStaleArtifacts(status *MissionStatus) error {
-	artifacts := []string{"id", "execution.log", "plan.json"}
-
-	for _, artifact := range artifacts {
+	for _, artifact := range []string{"id", "execution.log", "plan.json"} {
 		path := filepath.Join(v.missionDir, artifact)
 		if exists, _ := afero.Exists(v.fs, path); exists {
 			if err := v.fs.Remove(path); err != nil {
