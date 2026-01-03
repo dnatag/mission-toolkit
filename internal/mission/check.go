@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/afero"
 )
 
-// MissionStatus represents the current state of mission artifacts
-type MissionStatus struct {
+// Status represents the current state of mission artifacts
+type Status struct {
 	HasActiveMission bool     `json:"has_active_mission"`
 	MissionStatus    string   `json:"mission_status,omitempty"`
 	MissionID        string   `json:"mission_id,omitempty"`
@@ -27,6 +27,7 @@ type CheckService struct {
 	missionPath string
 	reader      *Reader
 	idService   *IDService
+	command     string
 }
 
 // NewCheckService creates a new check service
@@ -37,16 +38,22 @@ func NewCheckService(fs afero.Fs, missionDir string) *CheckService {
 		missionPath: filepath.Join(missionDir, "mission.md"),
 		reader:      NewReader(fs),
 		idService:   NewIDService(fs, missionDir),
+		command:     "",
 	}
 }
 
+// SetCommand sets the command context for validation
+func (c *CheckService) SetCommand(cmd string) {
+	c.command = cmd
+}
+
 // CheckMissionState validates mission state and cleans up stale artifacts
-func (c *CheckService) CheckMissionState() (*MissionStatus, error) {
-	status := &MissionStatus{StaleArtifacts: []string{}}
+func (c *CheckService) CheckMissionState() (*Status, error) {
+	status := &Status{StaleArtifacts: []string{}}
 
 	// Check for existing mission.md
 	if exists, _ := afero.Exists(c.fs, c.missionPath); exists {
-		return c.handleActiveMission(status)
+		return c.handleExistingMission(status)
 	}
 
 	// Clean up stale artifacts
@@ -68,8 +75,8 @@ func (c *CheckService) CheckMissionState() (*MissionStatus, error) {
 	return status, nil
 }
 
-// handleActiveMission processes existing mission state
-func (c *CheckService) handleActiveMission(status *MissionStatus) (*MissionStatus, error) {
+// handleExistingMission processes existing mission state
+func (c *CheckService) handleExistingMission(status *Status) (*Status, error) {
 	mission, err := c.reader.Read(c.missionPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read mission file: %w", err)
@@ -81,10 +88,41 @@ func (c *CheckService) handleActiveMission(status *MissionStatus) (*MissionStatu
 	status.MissionIntent = c.extractIntent(mission.Body)
 	status.Ready = false
 
-	if mission.Status == "clarifying" {
+	// Command-specific validation
+	if c.command == "m.apply" {
+		if mission.Status == "planned" || mission.Status == "active" {
+			status.Message = "Mission is ready for execution or re-execution"
+			status.NextStep = "PROCEED with m.apply execution."
+			return status, nil
+		}
+		status.Message = fmt.Sprintf("Mission status '%s' is not valid for m.apply", mission.Status)
+		status.NextStep = "STOP. Mission must be in 'planned' or 'active' status for m.apply."
+		return status, nil
+	}
+
+	if c.command == "m.complete" {
+		if mission.Status == "active" || mission.Status == "completed" {
+			status.Message = "Mission is ready for completion or re-completion"
+			status.NextStep = "PROCEED with m.complete execution."
+			return status, nil
+		}
+		status.Message = fmt.Sprintf("Mission status '%s' is not valid for m.complete", mission.Status)
+		status.NextStep = "STOP. Mission must be in 'active' or 'completed' status for m.complete."
+		return status, nil
+	}
+
+	// Generic status routing (no command specified)
+	switch mission.Status {
+	case "clarifying":
 		status.Message = "Mission is in clarifying state"
 		status.NextStep = "Run the m.clarify prompt to resolve questions."
-	} else {
+	case "planned", "active":
+		status.Message = "Mission is ready for execution or re-execution"
+		status.NextStep = "Run the m.apply prompt to execute this mission."
+	case "completed":
+		status.Message = "Mission is completed"
+		status.NextStep = "Run the m.complete prompt to finalize this mission."
+	default:
 		status.Message = "Active mission detected - requires user decision"
 		status.NextStep = "STOP. Use template libraries/displays/error-mission-exists.md to ask the user for a decision."
 	}
@@ -111,7 +149,7 @@ func (c *CheckService) extractIntent(body string) string {
 }
 
 // cleanupStaleArtifacts removes stale mission artifacts
-func (c *CheckService) cleanupStaleArtifacts(status *MissionStatus) error {
+func (c *CheckService) cleanupStaleArtifacts(status *Status) error {
 	artifacts := []string{"id", "plan.json", "execution.log"}
 	for _, artifact := range artifacts {
 		path := filepath.Join(c.missionDir, artifact)

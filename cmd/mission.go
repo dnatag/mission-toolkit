@@ -27,6 +27,13 @@ var missionCheckCmd = &cobra.Command{
 	Short: "Check mission state and validate artifacts",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		checkService := mission.NewCheckService(missionFs, missionDir)
+
+		// Set command context if provided
+		command, _ := cmd.Flags().GetString("command")
+		if command != "" {
+			checkService.SetCommand(command)
+		}
+
 		status, err := checkService.CheckMissionState()
 		if err != nil {
 			return fmt.Errorf("checking mission state: %w", err)
@@ -86,6 +93,7 @@ func init() {
 	missionCmd.AddCommand(missionCheckCmd, missionUpdateCmd, missionIDCmd)
 
 	// Add flags
+	missionCheckCmd.Flags().StringP("command", "c", "", "Command context (m.apply or m.complete)")
 	missionUpdateCmd.Flags().StringP("status", "s", "", "New mission status (required)")
 	missionUpdateCmd.MarkFlagRequired("status")
 }

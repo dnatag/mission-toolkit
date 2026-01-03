@@ -4,7 +4,13 @@ description: "Complete current mission and update project tracking"
 
 ## Prerequisites
 
-**CRITICAL:** This prompt requires `.mission/mission.md` to exist. If `.mission/mission.md` is not found, use template `.mission/libraries/displays/error-no-mission.md`.
+**CRITICAL:** Run `m mission check --command m.complete` to validate mission state before completion.
+
+1. **Execute Check**: Run `m mission check --command m.complete` and parse JSON output
+2. **Validate Status**: Check `next_step` field:
+   - If `next_step` says "PROCEED with m.complete execution" → Continue with completion
+   - If `next_step` says "STOP" → Display the message and halt
+   - If no mission exists → Use template `.mission/libraries/displays/error-no-mission.md`
 
 ## Role & Objective
 
@@ -17,10 +23,10 @@ Before generating output, read `.mission/governance.md`.
 **MUST LOG:** Use file read tool to check if `.mission/execution.log` exists. If file doesn't exist, use file read tool to load template `libraries/scripts/init-execution-log.md`, then use file write tool to create the log file.
 
 ### Step 1: Mission Status Check
-1. **Status Check**: Check mission status (`active`, `failed`, or other)
+1. **Parse CLI Output**: Extract `mission_status` from `m mission check --command m.complete` JSON output (already validated in Prerequisites)
 2. **Route by Status**: 
-   - `status: active` → Success completion workflow
-   - `status: failed` → Failure completion workflow
+   - `mission_status: "active"` or `"completed"` → Success completion workflow
+   - `mission_status: "failed"` → Failure completion workflow
    - Other status → Error (use error template)
 
 **MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:

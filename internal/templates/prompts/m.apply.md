@@ -4,9 +4,13 @@ description: "Execute current mission with status tracking"
 
 ## Prerequisites
 
-**CRITICAL:** This prompt requires `.mission/mission.md` to exist with `status: planned`. If not found, use template `.mission/libraries/displays/error-no-mission.md` or check for other statuses:
-- `status: clarifying` → return error: "Mission needs clarification. Use /m.clarify to provide answers."
-- No mission file → Use template `.mission/libraries/displays/error-no-mission.md`
+**CRITICAL:** Run `m mission check --command m.apply` to validate mission state before execution.
+
+1. **Execute Check**: Run `m mission check --command m.apply` and parse JSON output
+2. **Validate Status**: Check `next_step` field:
+   - If `next_step` says "PROCEED with m.apply execution" → Continue with execution
+   - If `next_step` says "STOP" → Display the message and halt
+   - If no mission exists → Use template `.mission/libraries/displays/error-no-mission.md`
 
 ## Role & Objective
 
