@@ -1,174 +1,70 @@
 package mission
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
-	"os"
-	"path/filepath"
-	"sort"
-	"strings"
-	"time"
+
+	"github.com/spf13/afero"
+	"gopkg.in/yaml.v2"
 )
 
-// Mission represents a parsed mission
-type Mission struct {
-	Type          string
-	Track         string
-	Iteration     string
-	Status        string
-	Intent        string
-	Scope         []string
-	Plan          []string
-	Verification  string
-	CompletedAt   *time.Time
-	ParentMission string
-	FilePath      string
+// Reader handles reading and parsing mission.md files
+type Reader struct {
+	fs afero.Fs
 }
 
-// ReadCurrentMission reads the current mission from .mission/mission.md
-func ReadCurrentMission() (*Mission, error) {
-	return readMissionFile(".mission/mission.md")
+// NewReader creates a new mission reader
+func NewReader(fs afero.Fs) *Reader {
+	return &Reader{fs: fs}
 }
 
-// ReadCompletedMissions reads all completed missions from .mission/completed/
-func ReadCompletedMissions() ([]*Mission, error) {
-	completedDir := ".mission/completed"
-
-	entries, err := os.ReadDir(completedDir)
+// Read reads and parses a mission file into a Mission struct
+func (r *Reader) Read(path string) (*Mission, error) {
+	data, err := afero.ReadFile(r.fs, path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read completed missions directory: %w", err)
+		return nil, fmt.Errorf("failed to read mission file: %w", err)
 	}
 
-	var missions []*Mission
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), "-mission.md") {
-			filePath := filepath.Join(completedDir, entry.Name())
-			mission, err := readMissionFile(filePath)
-			if err != nil {
-				continue // Skip invalid files
-			}
-			// Validate mission has required fields
-			if mission.Intent == "" || mission.Type == "" {
-				continue // Skip missions with missing required fields
-			}
-			missions = append(missions, mission)
-		}
+	// Split frontmatter and body manually
+	if !bytes.HasPrefix(data, []byte("---\n")) {
+		return nil, fmt.Errorf("no frontmatter found in mission file")
 	}
 
-	// Sort by completion time (newest first)
-	sort.Slice(missions, func(i, j int) bool {
-		timeI := getEffectiveTime(missions[i])
-		timeJ := getEffectiveTime(missions[j])
+	// Find the closing --- delimiter
+	parts := bytes.SplitN(data[4:], []byte("\n---\n"), 2)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid frontmatter format")
+	}
 
-		// If both times are nil, maintain stable order
-		if timeI == nil && timeJ == nil {
-			return false
-		}
-		// Nil times go to the end
-		if timeI == nil {
-			return false
-		}
-		if timeJ == nil {
-			return true
-		}
+	frontmatterData := parts[0]
+	bodyData := parts[1]
 
-		return timeI.After(*timeJ)
-	})
+	mission := &Mission{
+		Body: string(bodyData),
+	}
 
-	return missions, nil
+	// Parse frontmatter YAML
+	if err := yaml.Unmarshal(frontmatterData, mission); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal frontmatter: %w", err)
+	}
+
+	return mission, nil
 }
 
-// getEffectiveTime returns the effective time for sorting, using CompletedAt if available,
-// otherwise parsing from filename, or nil if both fail
-func getEffectiveTime(mission *Mission) *time.Time {
-	// Use CompletedAt if available
-	if mission.CompletedAt != nil {
-		return mission.CompletedAt
-	}
-
-	// Try to parse time from filename
-	filename := filepath.Base(mission.FilePath)
-
-	// Format 1: YYYY-MM-DD-HH-MM-mission.md (existing format)
-	if len(filename) >= 16 && strings.HasSuffix(filename, "-mission.md") {
-		timeStr := filename[:16] // Extract YYYY-MM-DD-HH-MM
-		if t, err := time.Parse("2006-01-02-15-04", timeStr); err == nil {
-			return &t
-		}
-	}
-
-	// Format 2: YYYYMMDDHHMMSS-SSSS-mission.md (new format)
-	if len(filename) >= 19 && strings.HasSuffix(filename, "-mission.md") {
-		// Check if it matches the new format pattern
-		parts := strings.Split(filename, "-")
-		if len(parts) >= 3 && len(parts[0]) == 14 && len(parts[1]) == 4 {
-			timeStr := parts[0] // Extract YYYYMMDDHHMMSS
-			if t, err := time.Parse("20060102150405", timeStr); err == nil {
-				return &t
-			}
-		}
-	}
-
-	// Return nil if both methods fail (will be sorted to end)
-	return nil
-}
-
-// readMissionFile parses a mission.md file
-func readMissionFile(filePath string) (*Mission, error) {
-	file, err := os.Open(filePath)
+// GetMissionID reads the mission ID from a mission file
+func (r *Reader) GetMissionID(path string) (string, error) {
+	mission, err := r.Read(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open mission file: %w", err)
+		return "", err
 	}
-	defer file.Close()
+	return mission.ID, nil
+}
 
-	mission := &Mission{FilePath: filePath}
-	scanner := bufio.NewScanner(file)
-
-	var currentSection string
-	var planItems []string
-	var scopeItems []string
-
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-
-		if strings.HasPrefix(line, "type:") {
-			mission.Type = strings.TrimSpace(strings.TrimPrefix(line, "type:"))
-		} else if strings.HasPrefix(line, "track:") {
-			mission.Track = strings.TrimSpace(strings.TrimPrefix(line, "track:"))
-		} else if strings.HasPrefix(line, "iteration:") {
-			mission.Iteration = strings.TrimSpace(strings.TrimPrefix(line, "iteration:"))
-		} else if strings.HasPrefix(line, "status:") {
-			mission.Status = strings.TrimSpace(strings.TrimPrefix(line, "status:"))
-		} else if strings.HasPrefix(line, "completed_at:") {
-			timeStr := strings.TrimSpace(strings.TrimPrefix(line, "completed_at:"))
-			if t, err := time.Parse(time.RFC3339, timeStr); err == nil {
-				mission.CompletedAt = &t
-			}
-		} else if strings.HasPrefix(line, "parent_mission:") {
-			mission.ParentMission = strings.TrimSpace(strings.TrimPrefix(line, "parent_mission:"))
-		} else if line == "## INTENT" {
-			currentSection = "intent"
-		} else if line == "## SCOPE" {
-			currentSection = "scope"
-		} else if line == "## PLAN" {
-			currentSection = "plan"
-		} else if line == "## VERIFICATION" {
-			currentSection = "verification"
-		} else if strings.HasPrefix(line, "## ") {
-			currentSection = ""
-		} else if currentSection == "intent" && line != "" {
-			mission.Intent = line
-		} else if currentSection == "scope" && line != "" {
-			scopeItems = append(scopeItems, line)
-		} else if currentSection == "plan" && strings.HasPrefix(line, "- [") {
-			planItems = append(planItems, line)
-		} else if currentSection == "verification" && line != "" {
-			mission.Verification = line
-		}
+// GetMissionStatus reads the mission status from a mission file
+func (r *Reader) GetMissionStatus(path string) (string, error) {
+	mission, err := r.Read(path)
+	if err != nil {
+		return "", err
 	}
-
-	mission.Plan = planItems
-	mission.Scope = scopeItems
-
-	return mission, scanner.Err()
+	return mission.Status, nil
 }

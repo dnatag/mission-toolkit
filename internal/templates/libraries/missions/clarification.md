@@ -1,10 +1,10 @@
-# MISSION
-
+---
 id: {{MISSION_ID}}
 type: CLARIFICATION
 track: TBD
 iteration: 1
 status: clarifying
+---
 
 ## INTENT
 {{INITIAL_INTENT}}

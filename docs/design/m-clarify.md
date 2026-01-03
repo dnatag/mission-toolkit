@@ -1,4 +1,8 @@
-# High-Level Design: Refactoring `m.clarify` with "Thick Client, Thin Agent" Pattern
+# Design: `m.clarify` - Clarification Workflow
+
+**Status**: ✅ Implemented (prompt-based, no CLI)  
+**Last Updated**: 2026-01-03  
+**Implementation**: `internal/templates/prompts/m.clarify.md`
 
 ## 1. Problem Statement
 The current `m.clarify` workflow is isolated, manual, and relies heavily on the AI ("Thick Agent") to manage state, validate logic, and generate the final `mission.md` using raw templates. This leads to inconsistency with `m plan`, potential for invalid output, and a lack of rigorous analysis (complexity, risk) after new information is gathered.

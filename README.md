@@ -162,10 +162,19 @@ Captures what was accomplished and learned. Builds organizational memory for fut
 ## Mission Lifecycle
 
 ```
-User Intent → [m.clarify] → m.plan → .mission/mission.md → m.apply → Verification → m.complete → Archive
-                              ↓                                                                    ↓
-                          .mission/backlog.md ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←← .mission/metrics.md
+m.plan → [m.clarify] → 🤝 Review mission.md → m.apply → 🤝 Review code → [Adjustments] → m.complete
+                        (Handshake #1)                  (Handshake #2)
 ```
+
+**How it works:**
+1. **m.plan** creates mission.md with INTENT, SCOPE, PLAN, VERIFICATION
+2. **m.clarify** (optional) refines ambiguous requirements
+3. **🤝 Review & approve** the mission before execution (authorize the architecture)
+4. **m.apply** executes, polishes, and generates commit message
+5. **🤝 Review code** and optionally request adjustments (verify the implementation)
+6. **m.complete** archives mission and creates git commit
+
+[See detailed workflow diagram →](docs/workflows/01-mission-lifecycle.md)
 
 ## Key Principles
 

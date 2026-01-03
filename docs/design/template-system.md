@@ -1,13 +1,13 @@
-# TEMPLATE SYSTEM DESIGN RATIONALE
+# Design: Template System Rationale
 
-## PROBLEM IDENTIFIED
+## Problem Identified
 Complex multi-step instructions (10 steps in m.plan, 3 steps in m.complete) fail across different LLM models due to:
 - Instruction following inconsistency
 - Step skipping or reordering
 - Template format variations
 - Context window limitations
 
-## SOLUTION IMPLEMENTED: TEMPLATE + SCRIPT HYBRID
+## Solution Implemented: Template + Script Hybrid
 
 ### 1. Template Libraries
 Replaced complex instructions with exact templates in `libraries/`:
@@ -45,7 +45,7 @@ if [ -f ".mission/mission.md" ]; then
 fi
 ```
 
-## IMPLEMENTATION COMPLETED
+## Implementation Completed
 
 ### ✅ Phase 1: Template Library
 Created exact templates for:
@@ -67,7 +67,7 @@ Refactored all slash commands to use templates:
 - EXECUTION INSTRUCTIONS prevent LLM bypass
 - Clear variable requirements prevent template breakage
 
-## RESULTS ACHIEVED
+## Results Achieved
 - **Consistency**: Exact templates across all LLMs
 - **Reliability**: Simple template filling vs complex logic
 - **Maintainability**: Change template once, affects all models

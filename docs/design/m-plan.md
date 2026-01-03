@@ -1,4 +1,8 @@
-# High-Level Design: Refactoring `m.plan` to CLI-Driven Toolbox Architecture
+# Design: `m.plan` - CLI-Driven Planning Workflow
+
+**Status**: ✅ Implemented  
+**Last Updated**: 2026-01-03  
+**Implementation**: `cmd/plan.go` + `internal/templates/prompts/m.plan.md`
 
 ## 1. Problem Statement
 The current `m.plan` workflow relies entirely on a "Simulated State Machine" within the LLM prompt. This leads to:

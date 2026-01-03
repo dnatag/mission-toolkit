@@ -1,11 +1,11 @@
-# MISSION
-
+---
 id: {{MISSION_ID}}
 type: DRY
 track: {{TRACK}}
 iteration: {{ITERATION}}
 status: planned
 parent_mission: {{PARENT_MISSION}}
+---
 
 ## INTENT
 {{REFINED_INTENT}}
