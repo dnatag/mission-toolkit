@@ -12,11 +12,13 @@ import (
 
 // Test helper functions
 func createTestMission(intent, status string) *mission.Mission {
+	body := "## INTENT\n" + intent + "\n\n## SCOPE\ntest.go\n\n## PLAN\n- Step 1\n\n## VERIFICATION\ngo test"
 	return &mission.Mission{
-		Intent: intent,
+		ID:     "test-id",
 		Status: status,
 		Type:   "WET",
-		Track:  "2",
+		Track:  2,
+		Body:   body,
 	}
 }
 
@@ -288,19 +290,19 @@ func TestGetCurrentPageMissions(t *testing.T) {
 	model.currentPage = 0
 	pageMissions := model.getCurrentPageMissions()
 	assert.Len(t, pageMissions, 2)
-	assert.Equal(t, "Mission A", pageMissions[0].Intent)
+	assert.Equal(t, "Mission A", extractIntent(pageMissions[0].Body))
 
 	// Test second page
 	model.currentPage = 1
 	pageMissions = model.getCurrentPageMissions()
 	assert.Len(t, pageMissions, 2)
-	assert.Equal(t, "Mission C", pageMissions[0].Intent)
+	assert.Equal(t, "Mission C", extractIntent(pageMissions[0].Body))
 
 	// Test last page (partial)
 	model.currentPage = 2
 	pageMissions = model.getCurrentPageMissions()
 	assert.Len(t, pageMissions, 1)
-	assert.Equal(t, "Mission E", pageMissions[0].Intent)
+	assert.Equal(t, "Mission E", extractIntent(pageMissions[0].Body))
 }
 
 // Test search and filtering

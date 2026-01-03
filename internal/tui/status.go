@@ -2,11 +2,15 @@ package tui
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/dnatag/mission-toolkit/internal/mission"
+	"github.com/spf13/afero"
 )
 
 var (
@@ -68,18 +72,36 @@ func (m Model) Init() tea.Cmd {
 }
 
 func loadCurrentMission() tea.Msg {
-	mission, err := mission.ReadCurrentMission()
+	fs := afero.NewOsFs()
+	reader := mission.NewReader(fs)
+	m, err := reader.Read(".mission/mission.md")
 	if err != nil {
 		return currentMissionMsg{err: err}
 	}
-	return currentMissionMsg{mission: mission}
+	return currentMissionMsg{mission: m}
 }
 
 func loadCompletedMissions() tea.Msg {
-	missions, err := mission.ReadCompletedMissions()
+	fs := afero.NewOsFs()
+	reader := mission.NewReader(fs)
+
+	completedDir := ".mission/completed"
+	entries, err := os.ReadDir(completedDir)
 	if err != nil {
 		return completedMissionsMsg{err: err}
 	}
+
+	var missions []*mission.Mission
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), "-mission.md") {
+			path := filepath.Join(completedDir, entry.Name())
+			m, err := reader.Read(path)
+			if err == nil {
+				missions = append(missions, m)
+			}
+		}
+	}
+
 	return completedMissionsMsg{missions: missions}
 }
 
@@ -306,7 +328,8 @@ func (m Model) filterMissions(query string) []*mission.Mission {
 // matchesFuzzy performs fuzzy matching against mission content
 func (m Model) matchesFuzzy(mission *mission.Mission, query string) bool {
 	// Check intent
-	if strings.Contains(strings.ToLower(mission.Intent), query) {
+	intent := extractIntent(mission.Body)
+	if strings.Contains(strings.ToLower(intent), query) {
 		return true
 	}
 
@@ -321,16 +344,9 @@ func (m Model) matchesFuzzy(mission *mission.Mission, query string) bool {
 	}
 
 	// Check track
-	if strings.Contains(strings.ToLower(mission.Track), query) {
+	trackStr := fmt.Sprintf("%d", mission.Track)
+	if strings.Contains(trackStr, query) {
 		return true
-	}
-
-	// Check completion date
-	if mission.CompletedAt != nil {
-		dateStr := mission.CompletedAt.Format("2006-01-02")
-		if strings.Contains(dateStr, query) {
-			return true
-		}
 	}
 
 	return false
@@ -390,15 +406,18 @@ func (m Model) getMaxScrollOffset() int {
 	totalLines += 3 // Status, completed time, empty line
 	totalLines += 1 // Intent line
 
-	if len(m.selectedMission.Scope) > 0 {
-		totalLines += 2 + len(m.selectedMission.Scope) // "Scope:" + scope items
+	scope := extractScope(m.selectedMission.Body)
+	if len(scope) > 0 {
+		totalLines += 2 + len(scope) // "Scope:" + scope items
 	}
 
-	if len(m.selectedMission.Plan) > 0 {
-		totalLines += 2 + len(m.selectedMission.Plan) // "Plan:" + plan items
+	plan := extractPlan(m.selectedMission.Body)
+	if len(plan) > 0 {
+		totalLines += 2 + len(plan) // "Plan:" + plan items
 	}
 
-	if m.selectedMission.Verification != "" {
+	verification := extractVerification(m.selectedMission.Body)
+	if verification != "" {
 		totalLines += 2 // empty line + verification
 	}
 
@@ -416,39 +435,38 @@ func (m Model) renderMissionDetails(mission *mission.Mission) string {
 		statusStyle = lipgloss.NewStyle()
 	}
 
-	timeStr := "Unknown"
-	if mission.CompletedAt != nil {
-		timeStr = mission.CompletedAt.Format("2006-01-02 15:04:05")
-	}
+	intent := extractIntent(mission.Body)
+	scope := extractScope(mission.Body)
+	plan := extractPlan(mission.Body)
+	verification := extractVerification(mission.Body)
 
 	var sections []string
-	sections = append(sections, fmt.Sprintf("%s %s (Track %s)",
+	sections = append(sections, fmt.Sprintf("%s %s (Track %d)",
 		statusStyle.Render(strings.ToUpper(mission.Status)),
 		mission.Type,
 		mission.Track))
-	sections = append(sections, fmt.Sprintf("Completed: %s", timeStr))
 	sections = append(sections, "")
-	sections = append(sections, fmt.Sprintf("Intent: %s", mission.Intent))
+	sections = append(sections, fmt.Sprintf("Intent: %s", intent))
 
-	if len(mission.Scope) > 0 {
+	if len(scope) > 0 {
 		sections = append(sections, "")
 		sections = append(sections, "Scope:")
-		for _, scope := range mission.Scope {
-			sections = append(sections, fmt.Sprintf("  %s", scope))
+		for _, s := range scope {
+			sections = append(sections, fmt.Sprintf("  %s", s))
 		}
 	}
 
-	if len(mission.Plan) > 0 {
+	if len(plan) > 0 {
 		sections = append(sections, "")
 		sections = append(sections, "Plan:")
-		for _, plan := range mission.Plan {
-			sections = append(sections, fmt.Sprintf("  %s", plan))
+		for _, p := range plan {
+			sections = append(sections, fmt.Sprintf("  %s", p))
 		}
 	}
 
-	if mission.Verification != "" {
+	if verification != "" {
 		sections = append(sections, "")
-		sections = append(sections, fmt.Sprintf("Verification: %s", mission.Verification))
+		sections = append(sections, fmt.Sprintf("Verification: %s", verification))
 	}
 
 	// Apply viewport scrolling
@@ -506,11 +524,12 @@ func (m Model) renderCurrentMission() string {
 		nextSteps = "Unknown status - use '/m.plan' to create a new mission"
 	}
 
-	content := fmt.Sprintf("%s %s (Track %s)\n\n%s\n\n%s",
+	intent := extractIntent(mission.Body)
+	content := fmt.Sprintf("%s %s (Track %d)\n\n%s\n\n%s",
 		statusStyle.Render(strings.ToUpper(mission.Status)),
 		mission.Type,
 		mission.Track,
-		mission.Intent,
+		intent,
 		nextSteps,
 	)
 
@@ -564,16 +583,12 @@ func (m Model) renderCompletedMissions() string {
 				prefix = "▶ "
 			}
 
-			timeStr := "Unknown"
-			if mission.CompletedAt != nil {
-				timeStr = mission.CompletedAt.Format("2006-01-02 15:04")
-			}
-
+			intent := extractIntent(mission.Body)
 			item := fmt.Sprintf("%s%s [%s] %s",
 				prefix,
-				timeStr,
+				mission.ID,
 				mission.Type,
-				truncate(mission.Intent, 50),
+				truncate(intent, 50),
 			)
 			items = append(items, item)
 		}
@@ -601,16 +616,12 @@ func (m Model) renderCompletedMissions() string {
 			prefix = "▶ "
 		}
 
-		timeStr := "Unknown"
-		if mission.CompletedAt != nil {
-			timeStr = mission.CompletedAt.Format("2006-01-02 15:04")
-		}
-
+		intent := extractIntent(mission.Body)
 		item := fmt.Sprintf("%s%s [%s] %s",
 			prefix,
-			timeStr,
+			mission.ID,
 			mission.Type,
-			truncate(mission.Intent, 50),
+			truncate(intent, 50),
 		)
 		items = append(items, item)
 	}
@@ -642,6 +653,59 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// Helper functions to extract sections from mission body
+func extractIntent(body string) string {
+	re := regexp.MustCompile(`(?s)## INTENT\s*\n(.*?)(?:\n##|$)`)
+	matches := re.FindStringSubmatch(body)
+	if len(matches) > 1 {
+		return strings.TrimSpace(matches[1])
+	}
+	return ""
+}
+
+func extractScope(body string) []string {
+	re := regexp.MustCompile(`(?s)## SCOPE\s*\n(.*?)(?:\n##|$)`)
+	matches := re.FindStringSubmatch(body)
+	if len(matches) > 1 {
+		lines := strings.Split(strings.TrimSpace(matches[1]), "\n")
+		var scope []string
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line != "" {
+				scope = append(scope, line)
+			}
+		}
+		return scope
+	}
+	return nil
+}
+
+func extractPlan(body string) []string {
+	re := regexp.MustCompile(`(?s)## PLAN\s*\n(.*?)(?:\n##|$)`)
+	matches := re.FindStringSubmatch(body)
+	if len(matches) > 1 {
+		lines := strings.Split(strings.TrimSpace(matches[1]), "\n")
+		var plan []string
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line != "" {
+				plan = append(plan, line)
+			}
+		}
+		return plan
+	}
+	return nil
+}
+
+func extractVerification(body string) string {
+	re := regexp.MustCompile(`(?s)## VERIFICATION\s*\n(.*?)(?:\n##|$)`)
+	matches := re.FindStringSubmatch(body)
+	if len(matches) > 1 {
+		return strings.TrimSpace(matches[1])
+	}
+	return ""
 }
 
 // RunStatusTUI starts the TUI for status display
