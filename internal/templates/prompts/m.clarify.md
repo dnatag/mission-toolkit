@@ -2,29 +2,25 @@
 description: "Handle clarification workflow and update mission"
 ---
 
+## Prerequisites
+
+**CRITICAL:** Run `m mission check` to validate mission state before clarification.
+
+1. **Execute Check**: Run `m mission check` and parse JSON output
+2. **Validate Status**: Check `next_step` field:
+   - If `next_step` says "Run the m.clarify prompt to resolve questions" → Continue with clarification
+   - If `next_step` says "STOP" → Display the message and halt
+   - If no mission exists → Use template `.mission/libraries/displays/error-no-mission.md`
+
 ## Role & Objective
 
 You are the **Clarification Handler**. Your goal is to guide the user through answering clarification questions and then use the `m plan` CLI tools to finalize the mission.
-
-## Prerequisites
-
-**CRITICAL:** This prompt requires `.mission/mission.md` to exist with `status: clarifying`. If not found, use file read tool to load template `.mission/libraries/displays/error-no-mission.md` and output it.
 
 ## Execution Steps
 
 Before processing, read `.mission/governance.md` and current `.mission/mission.md`.
 
-### Step 1: State Validation
-
-1.  **Check State**: Execute `m plan check`.
-2.  **Validate JSON**: Ensure the CLI output is valid JSON. If not, report CLI error and stop.
-3.  **Follow Instructions**: Read the `next_step` field from the JSON output and **follow it literally**.
-    *   **If `next_step` says "Run the m.clarify prompt to resolve questions."**: Continue to Step 2.
-    *   **If `next_step` says anything else**: Report the CLI guidance and stop.
-    *   **If CLI command fails**: Report error and ask user to check CLI installation.
-4.  **Log**: Run `m log --step "Check" "Mission state check complete"`
-
-### Step 2: Display Questions and Collect Answers
+### Step 1: Display Questions and Collect Answers
 
 1.  **Extract Questions**: Parse `NEED_CLARIFICATION` section from `.mission/mission.md`.
 2.  **Display to User**: Show numbered list of questions.
@@ -45,7 +41,7 @@ Please provide answers to these questions:
 Provide your answers - you can reference questions by number or respond in any clear format.
 ```
 
-### Step 3: Contextualization (The "How")
+### Step 2: Contextualization (The "How")
 
 *Prerequisite: You must have a clear `[REFINED_INTENT]` from Step 2.*
 
@@ -57,7 +53,7 @@ Provide your answers - you can reference questions by number or respond in any c
 2.  **Domain Identification**: Use file read tool to load template `.mission/libraries/analysis/domain.md`. Use it to select applicable domains.
 3.  **Log**: Run `m log --step "Context" "Duplication and domain analysis complete"`
 
-### Step 4: Update Plan Specification
+### Step 3: Update Plan Specification
 
 1.  **Identify Scope**: Determine which files need to be modified or created based on the `[REFINED_INTENT]`.
 2.  **Determine Type**:
@@ -74,7 +70,7 @@ Provide your answers - you can reference questions by number or respond in any c
     ```
 4.  **Log**: Run `m log --step "Draft" "Updated draft plan.json with refined intent and scope"`
 
-### Step 5: Complexity Analysis
+### Step 4: Complexity Analysis
 
 1.  **Run Analysis**: Execute `m plan analyze --file .mission/plan.json`.
 2.  **Validate JSON**: Ensure the CLI output is valid JSON. If not, report CLI error and stop.
@@ -93,7 +89,7 @@ Provide your answers - you can reference questions by number or respond in any c
     *   **If CLI command fails**: Report error and ask user to check CLI installation.
 4.  **Log**: Run `m log --step "Analyze" "Complexity analysis complete. Track: [TRACK]"`
 
-### Step 6: Validation
+### Step 5: Validation
 
 1.  **Run Validation**: Execute `m plan validate --file .mission/plan.json`.
 2.  **Validate JSON**: Ensure the CLI output is valid JSON. If not, report CLI error and stop.
@@ -103,7 +99,7 @@ Provide your answers - you can reference questions by number or respond in any c
     *   **If CLI command fails**: Report error and ask user to check CLI installation.
 4.  **Log**: Run `m log --step "Validate" "Plan validation passed"`
 
-### Step 7: Finalize & Generate
+### Step 6: Finalize & Generate
 
 1.  **Develop Plan**: Create a step-by-step implementation plan.
     *   **If Type is WET**: Add a note to the plan: "Note: Allow duplication for initial implementation (WET principle)."

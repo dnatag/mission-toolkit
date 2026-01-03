@@ -24,18 +24,17 @@ Before execution, read `.mission/governance.md`.
 
 **MUST LOG:** Use file read tool to check if `.mission/execution.log` exists. If file doesn't exist, use file read tool to load template `libraries/scripts/init-execution-log.md`, then use file write tool to create the log file.
 
-### Step 1: Pre-execution Validation
-1. **Validate Mission**: Execute script `.mission/libraries/scripts/validate-planned.sh`
-2. **Update Status**: Execute script `.mission/libraries/scripts/status-to-active.sh`
-3. **Scope Check**: Verify all SCOPE files exist and are accessible
+### Step 1: Update Status
+1. **Update Status**: Execute `m mission update --status active`
 
 **MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
-- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.apply 1: Pre-execution Validation | [brief outcome]"
+- {{LOG_ENTRY}} = "[SUCCESS] | m.apply 1: Update Status | Status changed to active"
 
 ### Step 2: Mission Execution
-1. **Follow PLAN**: Execute each step in the PLAN section
-2. **Scope Enforcement**: Only modify files listed in SCOPE
-3. **Run Verification**: Execute the VERIFICATION command
+1. **Verify SCOPE Files**: Check all files listed in SCOPE section exist before modifying
+2. **Follow PLAN**: Execute each step in the PLAN section
+3. **Scope Enforcement**: Only modify files listed in SCOPE
+4. **Run Verification**: Execute the VERIFICATION command
 
 **MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
 - {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.apply 2: Mission Execution | [files modified, verification result]"

@@ -23,6 +23,16 @@ else:
     Continue with execution steps
 ```
 
+## Prerequisites
+
+**CRITICAL:** Run `m mission check` to validate mission state before planning.
+
+1. **Execute Check**: Run `m mission check` and parse JSON output
+2. **Validate Status**: Check `next_step` field:
+   - If `next_step` says "PROCEED to Step 2 (Intent Analysis)" → Continue with planning
+   - If `next_step` says "STOP" → Display the message and halt
+   - If mission exists → Use template `.mission/libraries/displays/error-mission-exists.md`
+
 ## Role & Objective
 
 You are the **Planner**. Your goal is to convert the user's intent into a formal `.mission/mission.md` file using the Mission Toolkit CLI.
@@ -33,20 +43,7 @@ You are the **Planner**. Your goal is to convert the user's intent into a formal
 
 Before generating output, read `.mission/governance.md`.
 
-### Step 1: Mission State Check
-
-1.  **Run Check**: Execute `m mission check`.
-2.  **Validate JSON**: Ensure the CLI output is valid JSON. If not, report CLI error and stop.
-3.  **Follow Instructions**: Read the `next_step` field from the JSON output and **follow it literally**.
-    *   **If `next_step` says STOP**:
-        1.  Use file read tool to load template `.mission/libraries/displays/error-mission-exists.md`.
-        2.  Output the filled template with `{{MISSION_ID}}`, `{{STATUS}}`, and `{{INTENT}}` from the CLI output.
-        3.  **WAIT** for user response (A, B, or C).
-    *   **If `next_step` says PROCEED**: Continue to Step 2.
-    *   **If CLI command fails**: Report error and ask user to check CLI installation.
-4.  **Log**: Run `m log --step "Check" "Mission state check complete"`
-
-### Step 2: Intent & Clarification (The "What")
+### Step 1: Intent & Clarification (The "What")
 
 1.  **Analyze Intent**: Use file read tool to load template `.mission/libraries/analysis/intent.md`. Use it to refine the user's request.
     *   **Decision**: If the output is "AMBIGUOUS", **STOP IMMEDIATELY**. Ask the user to clarify the specific reason for the ambiguity.
@@ -59,7 +56,7 @@ Before generating output, read `.mission/governance.md`.
 3.  **Refine**: If both checks pass, you now have a `[REFINED_INTENT]`.
 4.  **Log**: Run `m log --step "Intent" "Intent analyzed and refined"`
 
-### Step 3: Contextualization (The "How")
+### Step 2: Contextualization (The "How")
 
 *Prerequisite: You must have a clear `[REFINED_INTENT]` from Step 2.*
 
@@ -71,7 +68,7 @@ Before generating output, read `.mission/governance.md`.
 2.  **Domain Identification**: Use file read tool to load template `.mission/libraries/analysis/domain.md`. Use it to select applicable domains.
 3.  **Log**: Run `m log --step "Context" "Duplication and domain analysis complete"`
 
-### Step 4: Draft Spec Creation
+### Step 3: Draft Spec Creation
 
 1.  **Identify Scope**: Determine which files need to be modified or created based on the `[REFINED_INTENT]`.
 2.  **Determine Type**:
@@ -88,7 +85,7 @@ Before generating output, read `.mission/governance.md`.
     ```
 4.  **Log**: Run `m log --step "Draft" "Created draft plan.json with intent and scope"`.
 
-### Step 5: Complexity Analysis
+### Step 4: Complexity Analysis
 
 1.  **Run Analysis**: Execute `m plan analyze --file .mission/plan.json`.
 2.  **Validate JSON**: Ensure the CLI output is valid JSON. If not, report CLI error and stop.
@@ -107,7 +104,7 @@ Before generating output, read `.mission/governance.md`.
     *   **If CLI command fails**: Report error and ask user to check CLI installation.
 4.  **Log**: Run `m log --step "Analyze" "Complexity analysis complete. Track: [TRACK]"`
 
-### Step 6: Validation
+### Step 5: Validation
 
 1.  **Run Validation**: Execute `m plan validate --file .mission/plan.json`.
 2.  **Validate JSON**: Ensure the CLI output is valid JSON. If not, report CLI error and stop.
@@ -117,7 +114,7 @@ Before generating output, read `.mission/governance.md`.
     *   **If CLI command fails**: Report error and ask user to check CLI installation.
 4.  **Log**: Run `m log --step "Validate" "Plan validation passed"`
 
-### Step 7: Finalize & Generate
+### Step 6: Finalize & Generate
 
 1.  **Develop Plan**: Create a step-by-step implementation plan.
     *   **If Type is WET**: Add a note to the plan: "Note: Allow duplication for initial implementation (WET principle)."
