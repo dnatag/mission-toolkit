@@ -27,7 +27,7 @@ type CheckService struct {
 	missionPath string
 	reader      *Reader
 	idService   *IDService
-	command     string
+	context     string
 }
 
 // NewCheckService creates a new check service
@@ -38,13 +38,13 @@ func NewCheckService(fs afero.Fs, missionDir string) *CheckService {
 		missionPath: filepath.Join(missionDir, "mission.md"),
 		reader:      NewReader(fs),
 		idService:   NewIDService(fs, missionDir),
-		command:     "",
+		context:     "",
 	}
 }
 
-// SetCommand sets the command context for validation
-func (c *CheckService) SetCommand(cmd string) {
-	c.command = cmd
+// SetContext sets the context context for validation
+func (c *CheckService) SetContext(ctx string) {
+	c.context = ctx
 }
 
 // CheckMissionState validates mission state and cleans up stale artifacts
@@ -89,7 +89,7 @@ func (c *CheckService) handleExistingMission(status *Status) (*Status, error) {
 	status.Ready = false
 
 	// Command-specific validation
-	if c.command == "m.apply" {
+	if c.context == "apply" {
 		if mission.Status == "planned" || mission.Status == "active" {
 			status.Message = "Mission is ready for execution or re-execution"
 			status.NextStep = "PROCEED with m.apply execution."
@@ -100,7 +100,7 @@ func (c *CheckService) handleExistingMission(status *Status) (*Status, error) {
 		return status, nil
 	}
 
-	if c.command == "m.complete" {
+	if c.context == "complete" {
 		if mission.Status == "active" || mission.Status == "completed" {
 			status.Message = "Mission is ready for completion or re-completion"
 			status.NextStep = "PROCEED with m.complete execution."
@@ -111,7 +111,7 @@ func (c *CheckService) handleExistingMission(status *Status) (*Status, error) {
 		return status, nil
 	}
 
-	// Generic status routing (no command specified)
+	// Generic status routing (no context specified)
 	switch mission.Status {
 	case "clarifying":
 		status.Message = "Mission is in clarifying state"

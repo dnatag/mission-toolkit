@@ -4,9 +4,9 @@ description: "Complete current mission and update project tracking"
 
 ## Prerequisites
 
-**CRITICAL:** Run `m mission check --command m.complete` to validate mission state before completion.
+**CRITICAL:** Run `m mission check --context complete` to validate mission state before completion.
 
-1. **Execute Check**: Run `m mission check --command m.complete` and parse JSON output
+1. **Execute Check**: Run `m mission check --context complete` and parse JSON output
 2. **Validate Status**: Check `next_step` field:
    - If `next_step` says "PROCEED with m.complete execution" → Continue with completion
    - If `next_step` says "STOP" → Display the message and halt

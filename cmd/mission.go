@@ -29,9 +29,9 @@ var missionCheckCmd = &cobra.Command{
 		checkService := mission.NewCheckService(missionFs, missionDir)
 
 		// Set command context if provided
-		command, _ := cmd.Flags().GetString("command")
-		if command != "" {
-			checkService.SetCommand(command)
+		context, _ := cmd.Flags().GetString("context")
+		if context != "" {
+			checkService.SetContext(context)
 		}
 
 		status, err := checkService.CheckMissionState()
@@ -93,7 +93,7 @@ func init() {
 	missionCmd.AddCommand(missionCheckCmd, missionUpdateCmd, missionIDCmd)
 
 	// Add flags
-	missionCheckCmd.Flags().StringP("command", "c", "", "Command context (m.apply or m.complete)")
+	missionCheckCmd.Flags().StringP("context", "c", "", "Context for validation (apply or complete)")
 	missionUpdateCmd.Flags().StringP("status", "s", "", "New mission status (required)")
 	missionUpdateCmd.MarkFlagRequired("status")
 }

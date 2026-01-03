@@ -16,12 +16,20 @@ The `m.clarify` workflow will be redesigned to feed back into the standard `m pl
 
 ## 3. Architecture Overview
 
-### 3.1 Principles
+### 3.1 Prerequisites
+
+**All clarification workflows start with**: `m mission check` to validate mission state.
+
+- Checks if mission.md exists with `status: clarifying`
+- Returns JSON with `next_step` instructions
+- Ensures mission is ready for clarification
+
+### 3.2 Principles
 - **Single Source of Truth**: The CLI (`m plan` subcommands) defines the rules for a valid mission.
 - **Reuse**: `m.clarify` should reuse the analysis and generation logic of `m plan`.
 - **State Awareness**: The CLI knows when a mission is `clarifying` and guides the user/agent accordingly.
 
-### 3.2 Roles & Responsibilities Matrix
+### 3.3 Roles & Responsibilities Matrix
 
 | Task | Responsibility | Component | Description |
 | :--- | :--- | :--- | :--- |
@@ -33,7 +41,10 @@ The `m.clarify` workflow will be redesigned to feed back into the standard `m pl
 | **Artifact Generation** | **CLI (Thick Client)** | `m plan generate` | Generates `mission.md` from the validated spec. |
 | **Audit Trail** | **CLI (Thick Client)** | `m log` | Structured logging of the execution flow. |
 
-### 3.3 The New Workflow
+### 3.4 The New Workflow
+
+**Prerequisites**: Run `m mission check` to validate mission state before clarification.
+
 1.  **Trigger**: User runs `m.clarify` (prompt).
 2.  **Load**: AI reads `mission.md` (status: `clarifying`) and extracts questions.
 3.  **Interact**: AI asks user for answers.

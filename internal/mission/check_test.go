@@ -158,7 +158,7 @@ Test intent
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
 	service := NewCheckService(fs, missionDir)
-	service.SetCommand("m.apply")
+	service.SetContext("apply")
 	status, err := service.CheckMissionState()
 	if err != nil {
 		t.Fatalf("CheckMissionState() error = %v", err)
@@ -185,7 +185,7 @@ Test intent
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
 	service := NewCheckService(fs, missionDir)
-	service.SetCommand("m.apply")
+	service.SetContext("apply")
 	status, err := service.CheckMissionState()
 	if err != nil {
 		t.Fatalf("CheckMissionState() error = %v", err)
@@ -212,7 +212,7 @@ Test intent
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
 	service := NewCheckService(fs, missionDir)
-	service.SetCommand("m.apply")
+	service.SetContext("apply")
 	status, err := service.CheckMissionState()
 	if err != nil {
 		t.Fatalf("CheckMissionState() error = %v", err)
@@ -239,7 +239,7 @@ Test intent
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
 	service := NewCheckService(fs, missionDir)
-	service.SetCommand("m.complete")
+	service.SetContext("complete")
 	status, err := service.CheckMissionState()
 	if err != nil {
 		t.Fatalf("CheckMissionState() error = %v", err)
@@ -266,7 +266,7 @@ Test intent
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
 	service := NewCheckService(fs, missionDir)
-	service.SetCommand("m.complete")
+	service.SetContext("complete")
 	status, err := service.CheckMissionState()
 	if err != nil {
 		t.Fatalf("CheckMissionState() error = %v", err)
@@ -293,7 +293,7 @@ Test intent
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
 	service := NewCheckService(fs, missionDir)
-	service.SetCommand("m.complete")
+	service.SetContext("complete")
 	status, err := service.CheckMissionState()
 	if err != nil {
 		t.Fatalf("CheckMissionState() error = %v", err)

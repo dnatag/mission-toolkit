@@ -61,6 +61,8 @@
 
 ### 3.2 The Workflow (AI-Orchestrated)
 
+**Prerequisites**: Run `m mission check --context complete` to validate mission state before completion.
+
 | Step | CLI Responsibilities | AI Responsibilities |
 |------|---------------------|--------------------|
 | **1. Pre-completion Validation** | • `m mission check --context complete` - Validate mission state<br>• Verify mission status is `completed`<br>• Validate git working tree is clean | • Interpret CLI JSON output<br>• Follow `next_step` instructions (proceed/stop) |

@@ -11,10 +11,11 @@
 4.  **Missing Commit Message Generation**: No automatic generation of conventional commit messages during execution.
 
 ## 2. Implemented Solution
-1.  **Structured Execution Workflow**: Four-step process with validation, execution, commit generation, and status handling.
-2.  **"Thick Client, Thin Agent" Pattern**: AI orchestrates workflow using shell scripts for deterministic operations.
-3.  **Automatic Commit Message Generation**: Conventional commit messages generated during execution and stored in mission.md.
-4.  **Execution Logging**: Structured logging of all execution steps for debugging and observability.
+1.  **Two-Pass Execution**: First pass implements functionality, second pass (Polish) always runs to refine code quality.
+2.  **Structured Execution Workflow**: Five-step process with validation, execution, polish, commit generation, and status handling.
+3.  **"Thick Client, Thin Agent" Pattern**: AI orchestrates workflow using shell scripts for deterministic operations.
+4.  **Automatic Commit Message Generation**: Conventional commit messages generated after polish pass and stored in mission.md.
+5.  **Execution Logging**: Structured logging of all execution steps for debugging and observability.
 
 ## 3. Architecture Overview
 
@@ -36,33 +37,45 @@
 - Polish decision-making (keep vs revert)
 
 ### 3.2 The Workflow (AI-Orchestrated)
-Following the `m.plan` pattern, AI follows structured steps using CLI tools for deterministic operations:
+Following the "Thick Client, Thin Agent" pattern, AI follows structured steps using CLI tools for deterministic operations:
 
-| Step | Shell Script Responsibilities | AI Responsibilities |
-|------|------------------------------|--------------------|
-| **1. Pre-execution Validation** | • `validate-planned.sh` - Validate mission state<br>• `status-to-active.sh` - Transition to active<br>• Execution log initialization | • Check prerequisites (mission.md exists, status is planned)<br>• Verify SCOPE files exist<br>• Log validation outcome |
-| **2. Mission Execution** | • Execution logging | • Read `.mission/mission.md` and implement PLAN<br>• Enforce SCOPE constraints during file modification<br>• Execute verification command and interpret results<br>• Stop if verification fails |
-| **3. Generate Commit Message** | • Execution logging | • Extract mission context (MISSION_ID, TYPE, TRACK, INTENT, SCOPE)<br>• Generate conventional commit message<br>• Update mission.md `## COMMIT_MESSAGE` section<br>• Regenerate if code changes after initial generation |
-| **4. Status Handling** | • Status update (active/failed)<br>• `git checkout .` on failure<br>• Execution logging | • Load and populate display templates<br>• Format final output for user<br>• Decide success or failure based on verification |
+**Prerequisites**: Run `m mission check --context apply` to validate mission state before execution.
+
+| Step | CLI Responsibilities | AI Responsibilities |
+|------|---------------------|--------------------|
+| **1. Update Status** | • `m mission update --status active` - Transition to active<br>• Execution log initialization | • Update mission status<br>• Log status change |
+| **2. First Pass (Implementation)** | • Execution logging | • Verify SCOPE files exist<br>• Read `.mission/mission.md` and implement PLAN<br>• Enforce SCOPE constraints during file modification<br>• Execute verification command and interpret results<br>• Stop if verification fails |
+| **3. Second Pass (Polish)** | • Execution logging | • Review implemented code for quality improvements<br>• Apply idiomatic patterns and optimizations<br>• Improve readability and maintainability<br>• Re-run verification command<br>• Stop if verification fails |
+| **4. Generate Commit Message** | • Execution logging | • Extract mission context (MISSION_ID, TYPE, TRACK, INTENT, SCOPE)<br>• Generate conventional commit message reflecting ALL changes<br>• Update mission.md `## COMMIT_MESSAGE` section<br>• Regenerate if code changes after initial generation |
+| **5. Status Handling** | • `m mission update --status failed` on failure<br>• `git checkout .` on failure<br>• Execution logging | • Load and populate display templates<br>• Format final output for user<br>• Decide success or failure based on verification |
 
 ### 3.3 Step-by-Step Workflow Details
 
-#### Step 1: Pre-execution Validation
-1. **CLI**: Execute `m mission check --context apply` and validate JSON output
-2. **AI**: Follow `next_step` field instructions (proceed/stop)
-   - If `next_step` says STOP: Use error template and wait for user
-   - If `next_step` says PROCEED: Continue to status update
-3. **CLI**: Execute `m mission update --status active` if proceeding
-4. **CLI**: Log validation completion via `m log`
+#### Step 1: Update Status
+1. **CLI**: Execute `m mission update --status active`
+2. **CLI**: Log status change via `m log`
 
-#### Step 2: Implementation
-1. **AI**: Read `.mission/mission.md` and extract PLAN steps
-2. **AI**: Implement changes, enforcing SCOPE file constraints
-3. **CLI**: Log implementation progress via `m log`
-4. **AI**: Execute verification command from mission.md
+#### Step 2: First Pass (Implementation)
+1. **AI**: Verify all SCOPE files exist
+2. **AI**: Read `.mission/mission.md` and extract PLAN steps
+3. **AI**: Implement changes, enforcing SCOPE file constraints
+4. **CLI**: Log implementation progress via `m log`
+5. **AI**: Execute verification command from mission.md
+6. **AI**: If verification fails, update status to `failed` and stop
+
+#### Step 3: Second Pass (Polish) - ALWAYS RUNS
+1. **AI**: Review all modified code from Step 2
+2. **AI**: Apply quality improvements:
+   - Idiomatic patterns and language conventions
+   - Code readability and clarity
+   - Performance optimizations
+   - Error handling improvements
+   - Documentation and comments where needed
+3. **CLI**: Log polish progress via `m log`
+4. **AI**: Re-execute verification command from mission.md
 5. **AI**: If verification fails, update status to `failed` and stop
 
-#### Step 3: Generate Commit Message
+#### Step 4: Generate Commit Message
 1. **AI**: Extract mission context (MISSION_ID, TYPE, TRACK, INTENT, SCOPE)
 2. **AI**: Generate conventional commit message:
    - **Type**: WET → `feat`, DRY → `refactor` (override if clearly fix/docs/test/chore)
@@ -75,7 +88,7 @@ Following the `m.plan` pattern, AI follows structured steps using CLI tools for 
 
 **Regeneration Rule**: AI MUST regenerate commit message after ANY code changes (polish pass, user-requested adjustments)
 
-#### Step 4: Status Handling
+#### Step 5: Status Handling
 1. **AI**: Determine success or failure based on verification results
 2. **Shell**: On failure, execute `git checkout .` to revert changes and update status to `failed`
 3. **AI**: Load appropriate display template (`apply-success.md` or `apply-failure.md`)
@@ -100,54 +113,53 @@ The AI MUST regenerate the commit message in these scenarios:
 ### 3.5 Component Changes
 
 #### A. Prompt Template: `m.apply.md`
-Structured four-step execution pattern:
+Structured five-step execution pattern:
 - **Step 1: Pre-execution Validation** - Use shell scripts to validate and transition status
-- **Step 2: Mission Execution** - AI implements plan with scope enforcement and verification
-- **Step 3: Generate Commit Message** - AI creates conventional commit message and stores in mission.md
-- **Step 4: Status Handling** - Use shell scripts and display templates
+- **Step 2: First Pass (Implementation)** - AI implements plan with scope enforcement and verification
+- **Step 3: Second Pass (Polish)** - AI always refines code quality after first pass completes
+- **Step 4: Generate Commit Message** - AI creates conventional commit message reflecting all changes
+- **Step 5: Status Handling** - Use shell scripts and display templates
 
 #### B. Execution Logging
 Structured logging using `execution.log` with template `libraries/logs/execution.md`:
 - Each step logs outcome with format: `[SUCCESS/FAILED] | m.apply <step>: <name> | <details>`
 - Logs archived with completed missions for debugging and analysis
 
-#### C. Shell Scripts (`.mission/libraries/scripts/`)
+#### C. CLI Commands
 Deterministic operations for state management:
 
-**`validate-planned.sh`**
-- Validates mission.md exists and status is `planned`
-- Checks SCOPE files exist
-- Returns exit code 0 on success, 1 on failure
+**`m mission check --context apply`** (Prerequisites)
+- Validates mission.md exists and status is `planned` or `active`
+- Returns JSON with `next_step` field
 
-**`status-to-active.sh`**
-- Updates mission status from `planned` to `active`
-- Atomic file update
-
-**`init-execution-log.sh`**
-- Creates `.mission/execution.log` if it doesn't exist
-- Uses template `libraries/scripts/init-execution-log.md`
+**`m mission update --status <status>`**
+- Updates mission status atomically
+- Supports: `active`, `failed`, `completed`
 
 ## 4. Implementation Status
 
 ### 🚧 Future Work
-1. Four-step execution workflow with structured logging
-2. Automatic commit message generation in Step 3
-3. Shell scripts for state validation and transitions
-4. Display templates for success and failure outcomes
-5. Execution log archival with completed missions
-6. Commit message regeneration rules
+1. Five-step execution workflow with structured logging
+2. Mandatory polish pass after first implementation pass
+3. Automatic commit message generation in Step 4
+4. Shell scripts for state validation and transitions
+5. Display templates for success and failure outcomes
+6. Execution log archival with completed missions
+7. Commit message regeneration rules
 
 ### ✅ Current State
 - Prompt template exists (`internal/templates/prompts/m.apply.md`)
-- AI-driven workflow (no CLI implementation yet)
-- Design ready for CLI implementation
+- CLI commands implemented: `m mission check`, `m mission update`
+- Prerequisites section validates mission state before execution
+- AI-driven workflow with CLI tools for deterministic operations
 
 ## 5. Success Metrics
 - ✅ **Architectural Consistency**: `m.apply.md` follows structured step-by-step pattern
 - ✅ **Responsibility Clarity**: Clear division between shell scripts (deterministic) and AI (creative) tasks
+- ✅ **Two-Pass Execution**: Polish pass always runs after first implementation pass completes
+- ✅ **Code Quality**: Mandatory polish pass ensures professional, idiomatic code
 - ✅ **Commit Message Generation**: Automatic conventional commit messages with regeneration rules
 - ✅ **Execution Logging**: All steps logged with consistent format for debugging
 - ✅ **Safety**: Rollback mechanism (`git checkout .`) on verification failure
 - ✅ **Display Consistency**: Template-based output for success and failure scenarios
-- 🚧 **Code Quality**: Single-pass execution (polish pass planned for future)
-- 🚧 **CLI Migration**: Shell scripts work but could be replaced with Go CLI commands
+- ✅ **CLI Migration**: Shell scripts replaced with Go CLI commands (`m mission check`, `m mission update`)

@@ -4,9 +4,9 @@ description: "Execute current mission with status tracking"
 
 ## Prerequisites
 
-**CRITICAL:** Run `m mission check --command m.apply` to validate mission state before execution.
+**CRITICAL:** Run `m mission check --context apply` to validate mission state before execution.
 
-1. **Execute Check**: Run `m mission check --command m.apply` and parse JSON output
+1. **Execute Check**: Run `m mission check --context apply` and parse JSON output
 2. **Validate Status**: Check `next_step` field:
    - If `next_step` says "PROCEED with m.apply execution" → Continue with execution
    - If `next_step` says "STOP" → Display the message and halt

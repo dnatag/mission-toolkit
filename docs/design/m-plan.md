@@ -35,7 +35,19 @@ Transition to a **"Thick Client, Thin Agent"** architecture (Toolbox Approach).
 
 ## 4. Architecture Overview
 
-### 4.1 New Workflow
+### 4.1 Prerequisites
+
+**All planning workflows start with**: `m mission check` to validate mission state.
+
+- Checks if mission.md exists
+- Validates current mission status
+- Returns JSON with `next_step` instructions
+- Cleans stale artifacts if no mission exists
+
+### 4.2 New Workflow
+
+**Prerequisites**: Run `m mission check` to validate mission state before planning.
+
 1.  **Pre-Check**: AI runs `m mission check`.
     - CLI checks mission state, generates `MISSION_ID`, cleans stale `plan.json`.
     - CLI logs: "Started planning session".
