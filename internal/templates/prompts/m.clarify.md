@@ -124,7 +124,7 @@ Provide your answers - you can reference questions by number or respond in any c
       "verification": "go test ./..."
     }
     ```
-4.  **Generate**: Execute `m plan generate --file .mission/plan.json`.
+4.  **Generate**: Execute `m mission create --file .mission/plan.json`.
 5.  **Validate Generation**: Ensure the CLI command succeeded and `.mission/mission.md` was created.
 6.  **Log**: Run `m log --step "Generate" "Mission generated successfully"`
 7.  **Final Output**: 

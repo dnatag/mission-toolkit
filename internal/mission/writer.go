@@ -4,18 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/dnatag/mission-toolkit/internal/plan"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 )
-
-// PlanSpec represents the structure for mission planning data (minimal subset needed for mission creation)
-type PlanSpec struct {
-	Intent       string   `json:"intent"`
-	Type         string   `json:"type"` // WET or DRY
-	Scope        []string `json:"scope"`
-	Plan         []string `json:"plan"`
-	Verification string   `json:"verification"`
-}
 
 // Writer handles writing mission files and updating status
 type Writer struct {
@@ -50,7 +42,7 @@ func (w *Writer) UpdateStatus(path string, newStatus string) error {
 }
 
 // CreateFromPlan creates a mission.md file from a PlanSpec
-func (w *Writer) CreateFromPlan(path string, missionID string, track int, spec *PlanSpec) error {
+func (w *Writer) CreateFromPlan(path string, missionID string, track int, spec *plan.PlanSpec) error {
 	mission := &Mission{
 		ID:        missionID,
 		Type:      spec.Type,
@@ -64,7 +56,7 @@ func (w *Writer) CreateFromPlan(path string, missionID string, track int, spec *
 }
 
 // buildBody constructs mission body from PlanSpec
-func (w *Writer) buildBody(spec *PlanSpec) string {
+func (w *Writer) buildBody(spec *plan.PlanSpec) string {
 	var body strings.Builder
 
 	body.WriteString("## INTENT\n")

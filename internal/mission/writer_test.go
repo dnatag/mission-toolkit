@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dnatag/mission-toolkit/internal/plan"
 	"github.com/spf13/afero"
 )
 
@@ -160,7 +161,7 @@ func TestWriter_CreateFromPlan(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	writer := NewWriter(fs)
 
-	spec := &PlanSpec{
+	spec := &plan.PlanSpec{
 		Intent: "Test mission intent",
 		Type:   "WET",
 		Scope: []string{

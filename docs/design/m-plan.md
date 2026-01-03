@@ -23,20 +23,20 @@ Transition to a **"Thick Client, Thin Agent"** architecture (Toolbox Approach).
 
 | Task | Owner | Rationale | Command |
 | :--- | :--- | :--- | :--- |
-| **Pre-execution Check** | **CLI** | Checking mission state and cleaning stale artifacts. | `m plan check` |
+| **Pre-execution Check** | **CLI** | Checking mission state and cleaning stale artifacts. | `m mission check` |
 | **Clarification Check** | **AI** | Requires semantic understanding of ambiguity. | N/A (Prompt Logic) |
 | **Intent Analysis** | **AI** | Requires summarizing natural language. | N/A (Prompt Logic) |
 | **Complexity Analysis** | **CLI** | Deterministic rules based on file counts + domain flags. | `m plan analyze` |
 | **Test Coverage Check** | **CLI** | Heuristic check for missing test files (Agnostic). | `m plan analyze` |
 | **Duplication Analysis** | **AI** | Semantic similarity check. | N/A (Prompt Logic) |
 | **Security/Scope Validation** | **CLI** | Strict file system and safety checks. | `m plan validate` |
-| **Mission Generation** | **CLI** | Strict file formatting and writing + Guideline Injection. | `m plan generate` |
+| **Mission Generation** | **CLI** | Strict file formatting and writing + Guideline Injection. | `m mission create` |
 | **Logging** | **CLI** | Unified logging format for both AI and System. | `m log` |
 
 ## 4. Architecture Overview
 
 ### 4.1 New Workflow
-1.  **Pre-Check**: AI runs `m plan check`.
+1.  **Pre-Check**: AI runs `m mission check`.
     - CLI checks mission state, generates `MISSION_ID`, cleans stale `plan.json`.
     - CLI logs: "Started planning session".
 2.  **Intent & Clarification**: AI analyzes intent using templates.
@@ -49,7 +49,7 @@ Transition to a **"Thick Client, Thin Agent"** architecture (Toolbox Approach).
 6.  **Validation**: AI runs `m plan validate --file plan.json`.
     - CLI logs: "Validation passed/failed".
 7.  **Finalize Spec**: AI updates `plan.json` with Plan Steps and Verification.
-8.  **Generation**: AI runs `m plan generate --file plan.json`.
+8.  **Generation**: AI runs `m mission create --file plan.json`.
     - CLI logs: "Mission generated".
 9.  **Output**: CLI creates `mission.md`.
 
@@ -58,7 +58,7 @@ Transition to a **"Thick Client, Thin Agent"** architecture (Toolbox Approach).
 #### A. New CLI Command: `m plan` (Parent)
 Parent command for planning tools.
 
-#### B. Subcommand: `m plan check`
+#### B. Subcommand: `m mission check`
 - **Logic**:
     - Check if `.mission/mission.md` exists.
     - **ID Generation**: Generate `MISSION_ID` and store in `.mission/id` (or `plan.json`).
@@ -82,7 +82,7 @@ Parent command for planning tools.
     - **Verification Check**: Fail on banned patterns.
     - Return JSON output.
 
-#### E. Subcommand: `m plan generate`
+#### E. Subcommand: `m mission create`
 - **Flags**: `--file` (path to `plan.json`).
 - **Logic**:
     - Read `plan.json`.

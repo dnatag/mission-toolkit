@@ -35,7 +35,7 @@ Before generating output, read `.mission/governance.md`.
 
 ### Step 1: Mission State Check
 
-1.  **Run Check**: Execute `m plan check`.
+1.  **Run Check**: Execute `m mission check`.
 2.  **Validate JSON**: Ensure the CLI output is valid JSON. If not, report CLI error and stop.
 3.  **Follow Instructions**: Read the `next_step` field from the JSON output and **follow it literally**.
     *   **If `next_step` says STOP**:
@@ -138,7 +138,7 @@ Before generating output, read `.mission/governance.md`.
       "verification": "go test ./..."
     }
     ```
-4.  **Generate**: Execute `m plan generate --file .mission/plan.json`.
+4.  **Generate**: Execute `m mission create --file .mission/plan.json`.
 5.  **Validate Generation**: Ensure the CLI command succeeded and `.mission/mission.md` was created.
 6.  **Log**: Run `m log --step "Generate" "Mission generated successfully"`
 7.  **Final Output**: 
