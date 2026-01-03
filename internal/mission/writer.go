@@ -51,57 +51,41 @@ func (w *Writer) UpdateStatus(path string, newStatus string) error {
 
 // CreateFromPlan creates a mission.md file from a PlanSpec
 func (w *Writer) CreateFromPlan(path string, missionID string, track int, spec *PlanSpec) error {
-	// Build mission body
-	var body strings.Builder
-
-	// INTENT section
-	body.WriteString("## INTENT\n")
-	body.WriteString(spec.Intent)
-	body.WriteString("\n\n")
-
-	// SCOPE section
-	body.WriteString("## SCOPE\n")
-	for _, file := range spec.Scope {
-		body.WriteString(file)
-		body.WriteString("\n")
-	}
-	body.WriteString("\n")
-
-	// PLAN section
-	body.WriteString("## PLAN\n")
-	for _, step := range spec.Plan {
-		body.WriteString("- [ ] ")
-		body.WriteString(step)
-		body.WriteString("\n")
-	}
-	body.WriteString("\n")
-
-	// VERIFICATION section
-	body.WriteString("## VERIFICATION\n")
-	body.WriteString(spec.Verification)
-	body.WriteString("\n")
-
-	// Create mission struct
-	missionType := "WET"
-	if spec.Type == "DRY" {
-		missionType = "DRY"
-	}
-
 	mission := &Mission{
 		ID:        missionID,
-		Type:      missionType,
+		Type:      spec.Type,
 		Track:     track,
 		Iteration: 1,
 		Status:    "planned",
-		Body:      body.String(),
+		Body:      w.buildBody(spec),
 	}
 
 	return w.Write(path, mission)
 }
 
+// buildBody constructs mission body from PlanSpec
+func (w *Writer) buildBody(spec *PlanSpec) string {
+	var body strings.Builder
+
+	body.WriteString("## INTENT\n")
+	body.WriteString(spec.Intent)
+	body.WriteString("\n\n## SCOPE\n")
+	body.WriteString(strings.Join(spec.Scope, "\n"))
+	body.WriteString("\n\n## PLAN\n")
+	for _, step := range spec.Plan {
+		body.WriteString("- [ ] ")
+		body.WriteString(step)
+		body.WriteString("\n")
+	}
+	body.WriteString("\n## VERIFICATION\n")
+	body.WriteString(spec.Verification)
+	body.WriteString("\n")
+
+	return body.String()
+}
+
 // format converts a Mission struct to markdown with YAML frontmatter
 func (w *Writer) format(mission *Mission) (string, error) {
-	// Create frontmatter map
 	frontmatter := map[string]interface{}{
 		"id":        mission.ID,
 		"type":      mission.Type,
@@ -114,13 +98,11 @@ func (w *Writer) format(mission *Mission) (string, error) {
 		frontmatter["parent_mission"] = mission.ParentMission
 	}
 
-	// Marshal to YAML
 	yamlData, err := yaml.Marshal(frontmatter)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal frontmatter: %w", err)
 	}
 
-	// Build final content
 	var sb strings.Builder
 	sb.WriteString("---\n")
 	sb.Write(yamlData)

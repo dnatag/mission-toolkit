@@ -60,13 +60,18 @@ func TestIDService_GetCurrentID(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	service := NewIDService(fs, "/tmp")
 
-	// Create mission.md with ID
+	// Create mission.md with ID in YAML frontmatter
 	missionPath := "/tmp/mission.md"
-	missionContent := `# MISSION
-
+	missionContent := `---
 id: 20251231114608-5678
 type: WET
-status: active`
+track: 2
+iteration: 1
+status: active
+---
+
+## INTENT
+Test mission`
 
 	err := afero.WriteFile(fs, missionPath, []byte(missionContent), 0644)
 	if err != nil {

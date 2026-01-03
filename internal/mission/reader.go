@@ -25,26 +25,22 @@ func (r *Reader) Read(path string) (*Mission, error) {
 		return nil, fmt.Errorf("failed to read mission file: %w", err)
 	}
 
-	// Split frontmatter and body manually
+	return r.parse(data)
+}
+
+// parse parses mission data with frontmatter and body
+func (r *Reader) parse(data []byte) (*Mission, error) {
 	if !bytes.HasPrefix(data, []byte("---\n")) {
 		return nil, fmt.Errorf("no frontmatter found in mission file")
 	}
 
-	// Find the closing --- delimiter
 	parts := bytes.SplitN(data[4:], []byte("\n---\n"), 2)
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid frontmatter format")
 	}
 
-	frontmatterData := parts[0]
-	bodyData := parts[1]
-
-	mission := &Mission{
-		Body: string(bodyData),
-	}
-
-	// Parse frontmatter YAML
-	if err := yaml.Unmarshal(frontmatterData, mission); err != nil {
+	mission := &Mission{Body: string(parts[1])}
+	if err := yaml.Unmarshal(parts[0], mission); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal frontmatter: %w", err)
 	}
 

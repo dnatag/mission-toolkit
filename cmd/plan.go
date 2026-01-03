@@ -12,8 +12,7 @@ import (
 )
 
 var (
-	fs         = afero.NewOsFs()
-	missionDir = ".mission"
+	fs = afero.NewOsFs()
 )
 
 // Common helper functions
@@ -49,7 +48,7 @@ var planCheckCmd = &cobra.Command{
 	Use:   "check",
 	Short: "Check mission state and cleanup stale artifacts",
 	Run: func(cmd *cobra.Command, args []string) {
-		status, err := mission.NewValidationService(fs, missionDir).CheckMissionState()
+		status, err := mission.NewCheckService(fs, missionDir).CheckMissionState()
 		if err != nil {
 			handleError("checking mission state", err)
 		}

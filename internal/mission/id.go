@@ -19,6 +19,7 @@ type IDService struct {
 	missionDir  string
 	idPath      string
 	missionPath string
+	reader      *Reader
 }
 
 // NewIDService creates a new mission ID service
@@ -28,16 +29,15 @@ func NewIDService(fs afero.Fs, missionDir string) *IDService {
 		missionDir:  missionDir,
 		idPath:      filepath.Join(missionDir, "id"),
 		missionPath: filepath.Join(missionDir, "mission.md"),
+		reader:      NewReader(fs),
 	}
 }
 
 // GetOrCreateID returns existing mission ID or creates new one (initialize once algorithm)
 func (s *IDService) GetOrCreateID() (string, error) {
 	// Check if ID already exists
-	if data, err := afero.ReadFile(s.fs, s.idPath); err == nil {
-		if id := strings.TrimSpace(string(data)); id != "" && s.isValidID(id) {
-			return id, nil
-		}
+	if id := s.readIDFile(); id != "" {
+		return id, nil
 	}
 
 	// Generate and store new ID
@@ -73,10 +73,8 @@ func (s *IDService) GetCurrentID() (string, error) {
 	}
 
 	// Fallback to stored ID file
-	if data, err := afero.ReadFile(s.fs, s.idPath); err == nil {
-		if id := strings.TrimSpace(string(data)); id != "" && s.isValidID(id) {
-			return id, nil
-		}
+	if id := s.readIDFile(); id != "" {
+		return id, nil
 	}
 
 	return "", fmt.Errorf("no active mission ID found")
@@ -99,17 +97,21 @@ func (s *IDService) isValidID(id string) bool {
 	return idPattern.MatchString(id)
 }
 
-// getIDFromMission extracts ID from mission.md file
-func (s *IDService) getIDFromMission() string {
-	data, err := afero.ReadFile(s.fs, s.missionPath)
+// readIDFile reads and validates ID from stored file
+func (s *IDService) readIDFile() string {
+	data, err := afero.ReadFile(s.fs, s.idPath)
 	if err != nil {
 		return ""
 	}
-
-	for _, line := range strings.Split(string(data), "\n") {
-		if strings.HasPrefix(line, "id: ") {
-			return strings.TrimSpace(line[4:])
-		}
+	id := strings.TrimSpace(string(data))
+	if id != "" && s.isValidID(id) {
+		return id
 	}
 	return ""
+}
+
+// getIDFromMission extracts ID from mission.md file using reader
+func (s *IDService) getIDFromMission() string {
+	id, _ := s.reader.GetMissionID(s.missionPath)
+	return id
 }
