@@ -160,7 +160,7 @@ func TestBacklogManager_ensureBacklogExists(t *testing.T) {
 	expectedSections := []string{
 		"# Mission Backlog",
 		"## DECOMPOSED INTENTS",
-		"## REFACTORING OPPORTUNITIES", 
+		"## REFACTORING OPPORTUNITIES",
 		"## FUTURE ENHANCEMENTS",
 		"## COMPLETED",
 	}
@@ -190,6 +190,113 @@ func TestBacklogManager_validateType(t *testing.T) {
 	}
 }
 
+func TestBacklogManager_AddToEmptySection(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Create backlog with empty sections
+	if err := manager.ensureBacklogExists(); err != nil {
+		t.Fatalf("ensureBacklogExists failed: %v", err)
+	}
+
+	// Add item to empty decomposed section
+	if err := manager.Add("First decomposed item", "decomposed"); err != nil {
+		t.Fatalf("Add to empty section failed: %v", err)
+	}
+
+	// Verify item was added correctly
+	items, err := manager.List(false)
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Errorf("Expected 1 item, got %d", len(items))
+	}
+	if !strings.Contains(items[0], "First decomposed item") {
+		t.Error("Item not found in list")
+	}
+
+	// Add second item to same section
+	if err := manager.Add("Second decomposed item", "decomposed"); err != nil {
+		t.Fatalf("Add second item failed: %v", err)
+	}
+
+	// Verify both items exist
+	items, err = manager.List(false)
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 2 {
+		t.Errorf("Expected 2 items, got %d", len(items))
+	}
+}
+
+func TestBacklogManager_ExistingBacklogWithEmptySections(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Create backlog file with custom content (empty sections)
+	customBacklog := `# Mission Backlog
+
+## DECOMPOSED INTENTS
+*This section lists atomic tasks that were broken down from a larger user-defined epic.*
+
+## REFACTORING OPPORTUNITIES
+*This section lists technical debt and refactoring opportunities identified by the AI during planning or execution.*
+
+## FUTURE ENHANCEMENTS
+*This section is for user-defined ideas and future feature requests.*
+
+## COMPLETED
+*History of completed backlog items.*
+`
+	if err := manager.writeBacklogContent(customBacklog); err != nil {
+		t.Fatalf("Failed to write custom backlog: %v", err)
+	}
+
+	// Add items to each empty section
+	testCases := []struct {
+		description string
+		itemType    string
+	}{
+		{"Test decomposed task", "decomposed"},
+		{"Test refactor opportunity", "refactor"},
+		{"Test future enhancement", "future"},
+	}
+
+	for _, tc := range testCases {
+		if err := manager.Add(tc.description, tc.itemType); err != nil {
+			t.Errorf("Add(%q, %q) failed: %v", tc.description, tc.itemType, err)
+		}
+	}
+
+	// Verify all items were added
+	items, err := manager.List(false)
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 3 {
+		t.Errorf("Expected 3 items, got %d", len(items))
+	}
+
+	// Verify items are in correct sections
+	content, err := manager.readBacklogContent()
+	if err != nil {
+		t.Fatalf("Failed to read backlog: %v", err)
+	}
+
+	expectedItems := []string{
+		"- [ ] Test decomposed task",
+		"- [ ] Test refactor opportunity", 
+		"- [ ] Test future enhancement",
+	}
+
+	for _, item := range expectedItems {
+		if !strings.Contains(content, item) {
+			t.Errorf("Expected item %q not found in backlog", item)
+		}
+	}
+}
 func TestBacklogManager_getSectionHeader(t *testing.T) {
 	manager := NewManager("")
 

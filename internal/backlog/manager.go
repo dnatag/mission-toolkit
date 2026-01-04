@@ -11,7 +11,7 @@ import (
 
 // BacklogManager handles backlog file operations
 type BacklogManager struct {
-	missionDir string
+	missionDir  string
 	backlogPath string
 }
 
@@ -41,12 +41,12 @@ func (m *BacklogManager) List(includeCompleted bool) ([]string, error) {
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		if line == "## COMPLETED" {
 			inCompletedSection = true
 			continue
 		}
-		
+
 		if strings.HasPrefix(line, "## ") {
 			inCompletedSection = false
 			continue
@@ -84,38 +84,28 @@ func (m *BacklogManager) Add(description, itemType string) error {
 	sectionHeader := m.getSectionHeader(itemType)
 	newItem := fmt.Sprintf("- [ ] %s", description)
 
-	// Find the section and add the item
 	lines := strings.Split(content, "\n")
-	var result []string
-	sectionFound := false
+	result := make([]string, 0, len(lines)+1)
 
 	for i, line := range lines {
 		result = append(result, line)
-		
+
 		if strings.TrimSpace(line) == sectionHeader {
-			sectionFound = true
-			// Add the item after any existing items in this section
+			// Find the end of this section
 			j := i + 1
-			for j < len(lines) && (strings.HasPrefix(strings.TrimSpace(lines[j]), "- [") || strings.TrimSpace(lines[j]) == "" || strings.HasPrefix(strings.TrimSpace(lines[j]), "*")) {
-				if j+1 < len(lines) {
-					result = append(result, lines[j])
-					j++
-				} else {
-					break
-				}
+			for j < len(lines) && !strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") && strings.TrimSpace(lines[j]) != "" {
+				result = append(result, lines[j])
+				j++
 			}
+			// Add the new item
 			result = append(result, newItem)
 			// Add remaining lines
 			result = append(result, lines[j:]...)
-			break
+			return m.writeBacklogContent(strings.Join(result, "\n"))
 		}
 	}
 
-	if !sectionFound {
-		return fmt.Errorf("section %s not found in backlog", sectionHeader)
-	}
-
-	return m.writeBacklogContent(strings.Join(result, "\n"))
+	return fmt.Errorf("section %s not found in backlog", sectionHeader)
 }
 
 // Complete marks an item as completed and moves it to the COMPLETED section
@@ -130,17 +120,18 @@ func (m *BacklogManager) Complete(itemText string) error {
 	}
 
 	lines := strings.Split(content, "\n")
-	var result []string
+	result := make([]string, 0, len(lines))
+	var completedItem string
 	itemFound := false
-	completedItem := ""
 
 	// Find and remove the item from its current section
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "- [ ]") && strings.Contains(trimmed, itemText) {
-			// Mark as completed with timestamp
+			// Create completed item with timestamp
 			timestamp := time.Now().Format("2006-01-02")
-			completedItem = fmt.Sprintf("- [x] %s (Completed: %s)", strings.TrimPrefix(trimmed, "- [ ] "), timestamp)
+			itemDesc := strings.TrimPrefix(trimmed, "- [ ] ")
+			completedItem = fmt.Sprintf("- [x] %s (Completed: %s)", itemDesc, timestamp)
 			itemFound = true
 			continue
 		}
@@ -152,34 +143,31 @@ func (m *BacklogManager) Complete(itemText string) error {
 	}
 
 	// Add to COMPLETED section
-	completedSectionFound := false
-	var finalResult []string
+	return m.addToCompletedSection(result, completedItem)
+}
 
-	for i, line := range result {
-		finalResult = append(finalResult, line)
+// addToCompletedSection adds a completed item to the COMPLETED section
+func (m *BacklogManager) addToCompletedSection(lines []string, completedItem string) error {
+	result := make([]string, 0, len(lines)+1)
+
+	for i, line := range lines {
+		result = append(result, line)
 		if strings.TrimSpace(line) == "## COMPLETED" {
-			completedSectionFound = true
-			// Add the completed item after the section header
+			// Find the end of the completed section
 			j := i + 1
-			for j < len(result) && (strings.HasPrefix(strings.TrimSpace(result[j]), "- [x]") || strings.TrimSpace(result[j]) == "" || strings.HasPrefix(strings.TrimSpace(result[j]), "*")) {
-				if j < len(result) {
-					finalResult = append(finalResult, result[j])
-					j++
-				} else {
-					break
-				}
+			for j < len(lines) && !strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") && strings.TrimSpace(lines[j]) != "" {
+				result = append(result, lines[j])
+				j++
 			}
-			finalResult = append(finalResult, completedItem)
-			finalResult = append(finalResult, result[j:]...)
-			break
+			// Add the completed item
+			result = append(result, completedItem)
+			// Add remaining lines
+			result = append(result, lines[j:]...)
+			return m.writeBacklogContent(strings.Join(result, "\n"))
 		}
 	}
 
-	if !completedSectionFound {
-		return fmt.Errorf("COMPLETED section not found in backlog")
-	}
-
-	return m.writeBacklogContent(strings.Join(finalResult, "\n"))
+	return fmt.Errorf("COMPLETED section not found in backlog")
 }
 
 // ensureBacklogExists creates the backlog file if it doesn't exist

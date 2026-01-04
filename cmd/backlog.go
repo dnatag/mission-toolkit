@@ -20,7 +20,7 @@ var backlogListCmd = &cobra.Command{
 	Short: "List backlog items",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		all, _ := cmd.Flags().GetBool("all")
-		
+
 		manager := backlog.NewManager(missionDir)
 		items, err := manager.List(all)
 		if err != nil {
@@ -36,16 +36,13 @@ var backlogListCmd = &cobra.Command{
 
 // backlogAddCmd adds a new backlog item
 var backlogAddCmd = &cobra.Command{
-	Use:   "add",
+	Use:   "add [description]",
 	Short: "Add a new backlog item",
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return fmt.Errorf("item description is required")
-		}
-		
 		itemType, _ := cmd.Flags().GetString("type")
 		description := args[0]
-		
+
 		manager := backlog.NewManager(missionDir)
 		if err := manager.Add(description, itemType); err != nil {
 			return fmt.Errorf("adding backlog item: %w", err)
@@ -65,7 +62,7 @@ var backlogCompleteCmd = &cobra.Command{
 		if item == "" {
 			return fmt.Errorf("--item flag is required")
 		}
-		
+
 		manager := backlog.NewManager(missionDir)
 		if err := manager.Complete(item); err != nil {
 			return fmt.Errorf("completing backlog item: %w", err)
