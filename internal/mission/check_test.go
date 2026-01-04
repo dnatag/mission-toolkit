@@ -218,8 +218,38 @@ Test intent
 		t.Fatalf("CheckMissionState() error = %v", err)
 	}
 
-	if status.NextStep != "STOP. Mission must be in 'planned' or 'active' status for m.apply." {
+	if status.NextStep != "STOP. Mission must be in 'planned', 'active', or 'failed' status for m.apply." {
 		t.Errorf("CheckMissionState() NextStep = %v, want STOP", status.NextStep)
+	}
+}
+
+func TestCheckService_WithCommand_Apply_FailedStatus(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	missionDir := ".mission"
+	fs.MkdirAll(missionDir, 0755)
+
+	missionContent := `---
+id: test-123
+status: failed
+---
+
+## INTENT
+Test intent
+`
+	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
+
+	service := NewCheckService(fs, missionDir)
+	service.SetContext("apply")
+	status, err := service.CheckMissionState()
+	if err != nil {
+		t.Fatalf("CheckMissionState() error = %v", err)
+	}
+
+	if status.NextStep != "PROCEED with m.apply execution." {
+		t.Errorf("CheckMissionState() NextStep = %v, want PROCEED", status.NextStep)
+	}
+	if status.Message != "Mission is ready for execution or re-execution" {
+		t.Errorf("CheckMissionState() Message = %v, want ready message", status.Message)
 	}
 }
 

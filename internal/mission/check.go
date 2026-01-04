@@ -90,13 +90,13 @@ func (c *CheckService) handleExistingMission(status *Status) (*Status, error) {
 
 	// Command-specific validation
 	if c.context == "apply" {
-		if mission.Status == "planned" || mission.Status == "active" {
+		if mission.Status == "planned" || mission.Status == "active" || mission.Status == "failed" {
 			status.Message = "Mission is ready for execution or re-execution"
 			status.NextStep = "PROCEED with m.apply execution."
 			return status, nil
 		}
 		status.Message = fmt.Sprintf("Mission status '%s' is not valid for m.apply", mission.Status)
-		status.NextStep = "STOP. Mission must be in 'planned' or 'active' status for m.apply."
+		status.NextStep = "STOP. Mission must be in 'planned', 'active', or 'failed' status for m.apply."
 		return status, nil
 	}
 
