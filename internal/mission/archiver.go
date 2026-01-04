@@ -65,6 +65,22 @@ func (a *Archiver) Archive() error {
 	return nil
 }
 
+// CleanupObsoleteFiles removes obsolete mission files after successful archive
+func (a *Archiver) CleanupObsoleteFiles() error {
+	filesToClean := []string{"execution.log", "mission.md", "id", "plan.json"}
+	
+	for _, filename := range filesToClean {
+		filePath := filepath.Join(a.missionDir, filename)
+		if exists, _ := afero.Exists(a.fs, filePath); exists {
+			if err := a.fs.Remove(filePath); err != nil {
+				return fmt.Errorf("removing %s: %w", filename, err)
+			}
+		}
+	}
+	
+	return nil
+}
+
 // copyFile copies a file from src to dst
 func (a *Archiver) copyFile(src, dst string) error {
 	content, err := afero.ReadFile(a.fs, src)

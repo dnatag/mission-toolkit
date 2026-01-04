@@ -132,6 +132,11 @@ var missionArchiveCmd = &cobra.Command{
 			return fmt.Errorf("archiving mission: %w", err)
 		}
 
+		// Clean up obsolete files after successful archive
+		if err := archiver.CleanupObsoleteFiles(); err != nil {
+			return fmt.Errorf("cleaning up obsolete files: %w", err)
+		}
+
 		fmt.Println("Mission archived successfully")
 		return nil
 	},
