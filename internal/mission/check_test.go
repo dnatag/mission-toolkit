@@ -224,6 +224,7 @@ Test intent
 }
 
 func TestCheckService_WithCommand_Apply_FailedStatus(t *testing.T) {
+	// Test that failed missions can be retried with m.apply
 	fs := afero.NewMemMapFs()
 	missionDir := ".mission"
 	fs.MkdirAll(missionDir, 0755)
@@ -245,11 +246,14 @@ Test intent
 		t.Fatalf("CheckMissionState() error = %v", err)
 	}
 
-	if status.NextStep != "PROCEED with m.apply execution." {
-		t.Errorf("CheckMissionState() NextStep = %v, want PROCEED", status.NextStep)
+	expectedNextStep := "PROCEED with m.apply execution."
+	if status.NextStep != expectedNextStep {
+		t.Errorf("CheckMissionState() NextStep = %v, want %v", status.NextStep, expectedNextStep)
 	}
-	if status.Message != "Mission is ready for execution or re-execution" {
-		t.Errorf("CheckMissionState() Message = %v, want ready message", status.Message)
+
+	expectedMessage := "Mission is ready for execution or re-execution"
+	if status.Message != expectedMessage {
+		t.Errorf("CheckMissionState() Message = %v, want %v", status.Message, expectedMessage)
 	}
 }
 

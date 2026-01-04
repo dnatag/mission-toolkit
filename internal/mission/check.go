@@ -90,6 +90,7 @@ func (c *CheckService) handleExistingMission(status *Status) (*Status, error) {
 
 	// Command-specific validation
 	if c.context == "apply" {
+		// Allow retry functionality for failed missions
 		if mission.Status == "planned" || mission.Status == "active" || mission.Status == "failed" {
 			status.Message = "Mission is ready for execution or re-execution"
 			status.NextStep = "PROCEED with m.apply execution."
