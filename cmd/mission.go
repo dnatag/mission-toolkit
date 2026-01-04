@@ -119,9 +119,25 @@ var missionCreateCmd = &cobra.Command{
 	},
 }
 
+// missionArchiveCmd archives mission.md and execution.log to completed directory
+var missionArchiveCmd = &cobra.Command{
+	Use:   "archive",
+	Short: "Archive mission.md and execution.log to completed directory",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		archiver := mission.NewArchiver(missionFs, missionDir)
+
+		if err := archiver.Archive(); err != nil {
+			return fmt.Errorf("archiving mission: %w", err)
+		}
+
+		fmt.Println("Mission archived successfully")
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(missionCmd)
-	missionCmd.AddCommand(missionCheckCmd, missionUpdateCmd, missionIDCmd, missionCreateCmd)
+	missionCmd.AddCommand(missionCheckCmd, missionUpdateCmd, missionIDCmd, missionCreateCmd, missionArchiveCmd)
 
 	// Add flags
 	missionCheckCmd.Flags().StringP("context", "c", "", "Context for validation (apply or complete)")

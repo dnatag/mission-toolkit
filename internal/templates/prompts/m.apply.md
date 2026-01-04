@@ -1,5 +1,5 @@
 ---
-description: "Execute current mission with status tracking"
+description: "Execute current mission with two-pass implementation and polish"
 ---
 
 ## Prerequisites
@@ -14,7 +14,9 @@ description: "Execute current mission with status tracking"
 
 ## Role & Objective
 
-You are the **Executor**. Implement the current mission following the PLAN steps.
+You are the **Executor**. Implement the current mission using a two-pass approach:
+1. **First Pass (Implementation)**: Implement functionality following PLAN steps
+2. **Second Pass (Polish)**: Refine code quality with automatic rollback on failure
 
 **CRITICAL OUTPUT FORMAT:** Always use the exact success and failure format below. Do NOT create custom summaries.
 
@@ -22,70 +24,111 @@ You are the **Executor**. Implement the current mission following the PLAN steps
 
 Before execution, read `.mission/governance.md`.
 
-**MUST LOG:** Use file read tool to check if `.mission/execution.log` exists. If file doesn't exist, use file read tool to load template `libraries/scripts/init-execution-log.md`, then use file write tool to create the log file.
-
-### Step 1: Update Status
+### Step 1: Update Status & Create Checkpoint
 1. **Update Status**: Execute `m mission update --status active`
+2. **Create Initial Checkpoint**: Execute `m checkpoint create` to save clean state
+   - Returns checkpoint name (e.g., `MISS-20260103-143022-0`)
+   - **On Checkpoint Creation Failure**:
+     - Run `m log --step "Update Status" "Checkpoint creation failed: <error>. Aborting mission."`
+     - Execute `m mission update --status failed`
+     - Display error and halt
+3. **Log**: Run `m log --step "Update Status" "Status active, checkpoint created"`
 
-**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
-- {{LOG_ENTRY}} = "[SUCCESS] | m.apply 1: Update Status | Status changed to active"
-
-### Step 2: Mission Execution
+### Step 2: First Pass (Implementation)
 1. **Verify SCOPE Files**: Check all files listed in SCOPE section exist before modifying
 2. **Follow PLAN**: Execute each step in the PLAN section
 3. **Scope Enforcement**: Only modify files listed in SCOPE
 4. **Run Verification**: Execute the VERIFICATION command
+5. **On Verification Failure**: Attempt to fix issues and re-run verification (iterate until passing or unable to fix)
+6. **If Unable to Fix**: Proceed to Step 5 (Status Handling) with failure
+7. **Log**: Run `m log --step "First Pass" "[files modified, verification result, fix attempts if any]"`
 
-**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
-- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.apply 2: Mission Execution | [files modified, verification result]"
+### Step 3: Second Pass (Polish) - ALWAYS RUNS after Step 2 succeeds
 
-### Step 3: Generate Commit Message
-1. **Read Mission Context**: Extract MISSION_ID, TYPE, TRACK, INTENT, SCOPE from mission.md
-2. **Generate Conventional Commit**:
-   - **Type**: WET → `feat`, DRY → `refactor` (override if clearly fix/docs/test/chore)
-   - **Scope**: Extract from primary file/module in SCOPE (e.g., `auth`, `api`, `cli`)
-   - **Title**: Imperative mood, max 72 chars, capitalize first letter, no period
-   - **Description**: Explain what and why (not how), wrap at 72 chars
-   - **Footer**: Add `Mission-ID: {{MISSION_ID}}`, `Track: {{TRACK}}`, `Type: {{TYPE}}`
-3. **Update mission.md**: Replace `## COMMIT_MESSAGE` section with generated message
+**CRITICAL:** This step ALWAYS runs after Step 2 succeeds. Polish improves code quality with automatic rollback protection.
+
+1. **Create Polish Checkpoint**: Execute `m checkpoint create` to save first pass state
+   - Returns checkpoint name (e.g., `MISS-20260103-143022-1`)
+   - **On Checkpoint Creation Failure**:
+     - Run `m log --step "Polish Pass" "Checkpoint creation failed: <error>. Skipping polish."`
+     - Skip polish pass entirely
+     - Continue to Step 4 with first pass code
+     - Add footer to commit message: `Polish-Skipped: checkpoint-creation-failed`
+
+2. **Review and Polish**: Analyze all modified code from Step 2 and apply quality improvements:
+   - Idiomatic patterns and language conventions
+   - Code readability and clarity
+   - Performance optimizations
+   - Error handling improvements
+   - Documentation and comments where needed
+
+3. **Re-run Verification**: Execute the VERIFICATION command again
+
+4. **Handle Polish Verification**:
+   - **On Success**: 
+     - Keep polished code, continue to Step 4
+     - Run `m log --step "Polish Pass" "Polish applied successfully, verification passed"`
+   - **On Failure**: 
+     - Execute `m checkpoint revert <checkpoint-name>` to rollback polish changes
+     - Run `m log --step "Polish Pass" "Polish verification failed, rolled back to first pass"`
+     - Continue to Step 4 with first pass code
+     - **On Revert Failure**: Mark mission failed, display manual recovery steps
+
+### Step 4: Generate Commit Message
+
+**CRITICAL:** Generate commit message AFTER polish pass (whether polish succeeded or rolled back).
+
+1. **Load Template**: Use file read tool to load template `libraries/scripts/generate-commit-message.md`
+2. **Read Mission Context**: Extract MISSION_ID, TYPE, TRACK, INTENT, SCOPE from mission.md
+3. **Generate Message**: Follow template rules to populate all variables
+4. **Update mission.md**: Replace `## COMMIT_MESSAGE` section with generated message
+5. **Log**: Run `m log --step "Generate Commit" "[commit type and scope]"`
 
 **CRITICAL - When to Regenerate**:
-- After initial implementation (always)
-- After ANY code changes (polish pass, bug fixes, user-requested changes)
-- After verification fixes that modify code
+- After polish pass completes (always)
+- After ANY user-requested code changes post-/m.apply
 - Description must reflect ALL changes made, not just latest
 
-**Format Example**:
-```
-feat(auth): Add JWT authentication middleware
+**Note**: Checkpoints are automatically cleaned up by `m.complete` after successful commit or by CLI on mission failure.
 
-Implement token-based authentication for API endpoints using JWT.
-Includes middleware for token validation and user context injection.
+### Step 5: Status Handling
 
-Mission-ID: M-20250115-001
-Track: 2
-Type: WET
-```
+**On Any Failure (Step 1, Step 2, or Step 3 revert failure)**:
+1. Execute `m checkpoint revert --all` to revert all changes (if checkpoints exist)
+2. Execute `m mission update --status failed`
+3. Run `m log --step "Status Handling" "Mission failed, all changes reverted"`
+4. Use template `.mission/libraries/displays/apply-failure.md`
 
-**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
-- {{LOG_ENTRY}} = "[SUCCESS] | m.apply 3: Generate Commit Message | [commit type and scope]"
+**On Success (Step 2 passed, Step 3 completed or skipped, Step 4 completed)**:
+1. Keep `status: active`
+2. Run `m log --step "Status Handling" "Mission execution complete"`
+3. Use template `.mission/libraries/displays/apply-success.md` with variables:
+   - {{CHANGE_TITLE}} = The commit message title (e.g., "feat(auth): Add JWT authentication")
+   - {{CHANGE_DESCRIPTION}} = The commit message description
+   - {{CHANGE_DETAILS}} = 4 bullet points with implementation → reasoning format:
+     - {{IMPLEMENTATION_DETAIL}} → {{REASONING}}
+     - {{KEY_FILES_CHANGED}} → {{FILE_NECESSITY}}
+     - {{TECHNICAL_APPROACH}} → {{APPROACH_RATIONALE}}
+     - {{ADDITIONAL_CHANGES}} → {{CHANGE_NECESSITY}}
+   - {{CHECKPOINT_0}} = Initial checkpoint name from Step 1 (e.g., "MISS-20260103-143022-0")
+   - {{CHECKPOINT_1}} = Polish checkpoint name from Step 3 (e.g., "MISS-20260103-143022-1", or "N/A" if polish skipped)
 
-### Step 4: Status Handling
-- **On Success**: Keep `status: active`, use success template
-- **On Failure**: Change `status: active` to `status: failed` and run `git checkout .`
+## Error Handling
 
-**MUST LOG:** Use file write tool (append mode) to add to `.mission/execution.log` using template `libraries/logs/execution.md`:
-- {{LOG_ENTRY}} = "[SUCCESS/FAILED] | m.apply 4: Status Handling | [final outcome]"
+### Checkpoint Revert Failure
+- Mark mission as failed: `m mission update --status failed`
+- Display manual recovery steps:
+  ```
+  Checkpoint revert failed. Manual recovery required:
+  1. Run: git reset --hard HEAD
+  2. Run: git clean -fd
+  3. Review .mission/execution.log for details
+  4. Re-run: /m.apply
+  ```
+
+### Verification Command Crash
+- Treat as verification failure
+- Run `m log --step "Verification" "Command crashed: exit_code=<code> stderr=<output>"`
+- Follow normal failure path (Step 2 crash → mission failed, Step 3 crash → rollback polish)
 
 **CRITICAL**: Use templates from `.mission/libraries/` for consistent output.
-
-**Success**: Use template `.mission/libraries/displays/apply-success.md` with variables:
-- {{CHANGE_TITLE}} = The commit message title (e.g., "feat(auth): Add JWT authentication")
-- {{CHANGE_DESCRIPTION}} = The commit message description
-- {{CHANGE_DETAILS}} = 4 bullet points with implementation → reasoning format:
-  - {{IMPLEMENTATION_DETAIL}} → {{REASONING}}
-  - {{KEY_FILES_CHANGED}} → {{FILE_NECESSITY}}
-  - {{TECHNICAL_APPROACH}} → {{APPROACH_RATIONALE}}
-  - {{ADDITIONAL_CHANGES}} → {{CHANGE_NECESSITY}}
-
-**Failure**: Use template `.mission/libraries/displays/apply-failure.md`

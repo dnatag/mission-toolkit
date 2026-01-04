@@ -11,6 +11,11 @@
 - {{TECHNICAL_APPROACH}} → {{APPROACH_RATIONALE}}
 - {{ADDITIONAL_CHANGES}} → {{CHANGE_NECESSITY}}
 
+🔄 CHECKPOINTS CREATED:
+- {{CHECKPOINT_0}} (initial state)
+- {{CHECKPOINT_1}} (first pass state)
+
 🚀 NEXT STEPS:
 • Complete mission: /m.complete
 • Review changes first: check files and then decide
+• Manual revert if needed: m checkpoint revert {{CHECKPOINT_0}} or m checkpoint revert {{CHECKPOINT_1}}
