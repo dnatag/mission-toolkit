@@ -57,23 +57,24 @@ func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
 		return err
 	}
 
-	missionFiles := []string{"governance.md", "metrics.md", "backlog.md"}
-	preserveSet := map[string]bool{"metrics.md": true, "backlog.md": true}
+	missionFiles := []string{"governance.md", "backlog.md"}
 
 	for _, file := range missionFiles {
+		filePath := filepath.Join(missionDir, file)
+
+		// If the file is backlog.md and it already exists, skip it.
+		if file == "backlog.md" {
+			if exists, _ := afero.Exists(fs, filePath); exists {
+				continue
+			}
+		}
+
 		content, err := missionTemplates.ReadFile("mission/" + file)
 		if err != nil {
 			return err
 		}
 
 		contentStr := strings.ReplaceAll(string(content), "/m.", prefix+"m.")
-		filePath := filepath.Join(missionDir, file)
-
-		if preserveSet[file] {
-			if existingContent, err := afero.ReadFile(fs, filePath); err == nil {
-				contentStr = preserveUserSections(contentStr, string(existingContent))
-			}
-		}
 
 		if err := afero.WriteFile(fs, filePath, []byte(contentStr), 0644); err != nil {
 			return err
@@ -108,77 +109,6 @@ func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
 	}
 
 	return nil
-}
-
-// preserveUserSections preserves all user content sections generically
-func preserveUserSections(templateContent, existingContent string) string {
-	templateSections := extractAllSections(templateContent)
-	existingSections := extractAllSections(existingContent)
-
-	result := templateContent
-	for heading, existingSection := range existingSections {
-		if _, exists := templateSections[heading]; exists && strings.TrimSpace(existingSection) != "" {
-			result = replaceSection(result, heading, existingSection)
-		}
-	}
-
-	return result
-}
-
-// extractAllSections extracts all sections from markdown content
-func extractAllSections(content string) map[string]string {
-	sections := make(map[string]string)
-	lines := strings.Split(content, "\n")
-
-	var currentHeading string
-	var start int
-
-	for i, line := range lines {
-		if trimmed := strings.TrimSpace(line); strings.HasPrefix(trimmed, "## ") {
-			if currentHeading != "" {
-				sections[currentHeading] = strings.Join(lines[start:i], "\n")
-			}
-			currentHeading = strings.TrimPrefix(trimmed, "## ")
-			start = i + 1
-		}
-	}
-
-	if currentHeading != "" {
-		sections[currentHeading] = strings.Join(lines[start:], "\n")
-	}
-
-	return sections
-}
-
-// replaceSection replaces content under a specific heading
-func replaceSection(content, heading, newContent string) string {
-	lines := strings.Split(content, "\n")
-	result := make([]string, 0, len(lines)+10)
-	inSection := false
-
-	for _, line := range lines {
-		if strings.HasPrefix(strings.TrimSpace(line), "## ") {
-			if inSection {
-				result = append(result, strings.Split(newContent, "\n")...)
-				inSection = false
-			}
-			if strings.Contains(line, heading) {
-				result = append(result, line)
-				inSection = true
-				continue
-			}
-		}
-
-		if !inSection {
-			result = append(result, line)
-		}
-	}
-
-	if inSection {
-		result = append(result, strings.Split(newContent, "\n")...)
-	}
-
-	return strings.Join(result, "\n")
 }
 
 // WriteLibraryTemplates writes embedded library templates to .mission/libraries
