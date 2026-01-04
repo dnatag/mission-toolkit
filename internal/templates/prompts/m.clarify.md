@@ -10,7 +10,7 @@ description: "Handle clarification workflow and update mission"
 2. **Validate Status**: Check `next_step` field:
    - If `next_step` says "Run the m.clarify prompt to resolve questions" → Continue with clarification
    - If `next_step` says "STOP" → Display the message and halt
-   - If no mission exists → Use template `.mission/libraries/displays/error-no-mission.md`
+   - If no mission exists → Use file read tool to load template `.mission/libraries/displays/error-no-mission.md`
 
 ## Role & Objective
 

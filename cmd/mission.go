@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/dnatag/mission-toolkit/internal/git"
 	"github.com/dnatag/mission-toolkit/internal/mission"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -124,7 +125,8 @@ var missionArchiveCmd = &cobra.Command{
 	Use:   "archive",
 	Short: "Archive mission.md and execution.log to completed directory",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		archiver := mission.NewArchiver(missionFs, missionDir)
+		gitClient := git.NewCmdGitClient(".")
+		archiver := mission.NewArchiver(missionFs, missionDir, gitClient)
 
 		if err := archiver.Archive(); err != nil {
 			return fmt.Errorf("archiving mission: %w", err)

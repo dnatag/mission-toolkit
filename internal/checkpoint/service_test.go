@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	internalgit "github.com/dnatag/mission-toolkit/internal/git"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -81,7 +82,7 @@ func TestService_Create(t *testing.T) {
 	require.NoError(t, err)
 
 	// Use MemGitClient
-	gitClient := NewMemGitClient(repo, fs)
+	gitClient := internalgit.NewMemGitClient(repo, fs)
 	svc := NewServiceWithGit(fs, ".mission", gitClient)
 
 	// Create checkpoint
@@ -109,7 +110,7 @@ func TestService_Create_OnlyScopeFiles(t *testing.T) {
 	require.NoError(t, err)
 
 	// Use MemGitClient
-	gitClient := NewMemGitClient(repo, fs)
+	gitClient := internalgit.NewMemGitClient(repo, fs)
 	svc := NewServiceWithGit(fs, ".mission", gitClient)
 
 	// Create checkpoint
@@ -151,7 +152,7 @@ func TestService_Create_UntrackedFiles(t *testing.T) {
 	require.NoError(t, err)
 
 	// Use MemGitClient
-	gitClient := NewMemGitClient(repo, fs)
+	gitClient := internalgit.NewMemGitClient(repo, fs)
 	svc := NewServiceWithGit(fs, ".mission", gitClient)
 
 	// Create checkpoint
@@ -201,7 +202,7 @@ func TestService_Create_GitIgnoredFiles(t *testing.T) {
 	require.NoError(t, err)
 
 	// Use MemGitClient
-	gitClient := NewMemGitClient(repo, fs)
+	gitClient := internalgit.NewMemGitClient(repo, fs)
 	svc := NewServiceWithGit(fs, ".mission", gitClient)
 
 	// Create checkpoint - should succeed even if ignored because it's in scope
@@ -233,7 +234,7 @@ func TestService_Restore(t *testing.T) {
 	require.NoError(t, err)
 
 	// Use MemGitClient
-	gitClient := NewMemGitClient(repo, fs)
+	gitClient := internalgit.NewMemGitClient(repo, fs)
 	svc := NewServiceWithGit(fs, ".mission", gitClient)
 
 	// Create checkpoint v1
@@ -267,7 +268,7 @@ func TestService_Restore_UntrackedFiles(t *testing.T) {
 	require.NoError(t, err)
 
 	// Use MemGitClient
-	gitClient := NewMemGitClient(repo, fs)
+	gitClient := internalgit.NewMemGitClient(repo, fs)
 	svc := NewServiceWithGit(fs, ".mission", gitClient)
 
 	// Create checkpoint
@@ -299,7 +300,7 @@ func TestService_Clear(t *testing.T) {
 	require.NoError(t, err)
 
 	// Use MemGitClient
-	gitClient := NewMemGitClient(repo, fs)
+	gitClient := internalgit.NewMemGitClient(repo, fs)
 	svc := NewServiceWithGit(fs, ".mission", gitClient)
 
 	// Create checkpoints
@@ -330,7 +331,7 @@ func TestService_Consolidate(t *testing.T) {
 	createMissionFile(t, fs, missionID, []string{scopeFile1, scopeFile2})
 
 	// Use MemGitClient
-	gitClient := NewMemGitClient(repo, fs)
+	gitClient := internalgit.NewMemGitClient(repo, fs)
 	svc := NewServiceWithGit(fs, ".mission", gitClient)
 
 	// --- Checkpoint 1 ---
@@ -384,7 +385,7 @@ func TestService_Consolidate_NoChanges(t *testing.T) {
 	createMissionFile(t, fs, missionID, []string{scopeFile})
 
 	// Use MemGitClient
-	gitClient := NewMemGitClient(repo, fs)
+	gitClient := internalgit.NewMemGitClient(repo, fs)
 	svc := NewServiceWithGit(fs, ".mission", gitClient)
 
 	// Create file and commit it initially (so it's tracked)
@@ -401,7 +402,7 @@ func TestService_Consolidate_NoChanges(t *testing.T) {
 
 	// Try to consolidate without any changes
 	_, err = svc.Consolidate(missionID, "Final commit")
-	require.ErrorIs(t, err, ErrNoChanges)
+	require.ErrorIs(t, err, internalgit.ErrNoChanges)
 }
 
 func TestService_Consolidate_WithUntrackedFile(t *testing.T) {
@@ -413,7 +414,7 @@ func TestService_Consolidate_WithUntrackedFile(t *testing.T) {
 	createMissionFile(t, fs, missionID, []string{scopeFile})
 
 	// Use MemGitClient
-	gitClient := NewMemGitClient(repo, fs)
+	gitClient := internalgit.NewMemGitClient(repo, fs)
 	svc := NewServiceWithGit(fs, ".mission", gitClient)
 
 	// Modify scope file
@@ -449,7 +450,7 @@ func TestService_Consolidate_WithFileDeletion(t *testing.T) {
 	createMissionFile(t, fs, missionID, []string{scopeFile})
 
 	// Use MemGitClient
-	gitClient := NewMemGitClient(repo, fs)
+	gitClient := internalgit.NewMemGitClient(repo, fs)
 	svc := NewServiceWithGit(fs, ".mission", gitClient)
 
 	// Create file and commit it initially

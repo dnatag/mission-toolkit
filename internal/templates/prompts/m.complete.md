@@ -1,5 +1,5 @@
 ---
-description: "Finalize the mission by generating a commit message, metrics, and creating a consolidated commit"
+description: "Finalize the mission by generating a rich commit message and creating a consolidated commit"
 ---
 
 ## Prerequisites
@@ -10,45 +10,37 @@ description: "Finalize the mission by generating a commit message, metrics, and 
 2. **Validate Status**: Check `next_step` field:
    - If `next_step` says "PROCEED with m.complete execution" → Continue with execution
    - If `next_step` says "STOP" → Display the message and halt
-   - If no mission exists → Use template `.mission/libraries/displays/error-no-mission.md`
+   - If no mission exists → Use file read tool to load template `.mission/libraries/displays/error-no-mission.md`
 
 ## Role & Objective
 
-You are the **Completer**. Your job is to finalize the mission by generating a conventional commit message, creating a single consolidated commit, generating mission metrics, and cleaning up the mission artifacts.
+You are the **Expert Commit Author**. Your job is to finalize the mission by generating a high-quality, conventional commit message that tells the story of the mission, and then use it to create the final, consolidated commit.
 
 ## Execution Steps
 
-### Step 1: Generate Commit Message
-1. **Load Template**: Use file read tool to load template `libraries/scripts/generate-commit-message.md`
-2. **Read Mission Context**: Extract MISSION_ID, TYPE, TRACK, INTENT, SCOPE from `mission.md`.
-3. **Analyze Code Changes**: Review the final state of the code in the SCOPE files to understand the changes.
-4. **Generate Message**: Follow the template rules to populate all variables, creating a comprehensive and accurate commit message.
-5. **Log**: Run `m log --step "Generate Commit" "[commit type and scope]"`
+### Step 1: Generate Rich Commit Message
+1. **Analyze the Execution Log**: Read the entire `.mission/execution.log` file. This log contains the full history of the `m.apply` phase, including any failed verification attempts, polish rollbacks, and other context.
+2. **Synthesize the Story**: Based on the execution log and the final code, craft a commit message that explains not just *what* changed, but *why* and *how* the solution evolved. The body of the commit message should be a narrative of the implementation journey.
+3. **Generate the Message**:
+   - **Type**: `feat`, `fix`, `refactor`, etc., as appropriate.
+   - **Scope**: The primary package or component affected.
+   - **Subject**: A concise, imperative summary of the change.
+   - **Body**: The detailed narrative. Explain the problem, the solution, and any trade-offs or discoveries made along the way (as gleaned from the execution log).
+4. **Log**: Run `m log --step "Generate Commit" "Rich commit message created"`
 
 ### Step 2: Create Final Commit
-1. **Execute Commit**: Run `m checkpoint commit` with the generated commit message from the previous step.
-   - The command will be: `m checkpoint commit -m "your generated commit message"`
+1. **Execute Commit**: Run `m checkpoint commit` with the full, multi-line commit message you just generated.
+   - The command will be: `m checkpoint commit -m "Subject\n\nBody of the commit message..."`
    - **On Commit Failure**:
-     - If the error is "no changes to commit", this is a critical failure. The mission should have produced changes. Mark the mission as failed and display an error.
+     - If the error is "no changes to commit", this is a critical failure. Mark the mission as failed and display an error.
      - For other errors, display the error and halt.
 2. **Log**: Run `m log --step "Final Commit" "Consolidated commit created"`
 
-### Step 3: Generate Mission Metrics
-1. **Load Template**: Use file read tool to load template `internal/templates/mission/metrics.md`.
-2. **Gather Data**:
-   - **Final Commit Hash**: Use the hash from the previous step.
-   - **Checkpoints**: Count the number of checkpoints created during the mission (e.g., by listing tags).
-   - **Duration**: This will be calculated by the CLI, but you can note the start/end times if available.
-3. **AI Reflection**: Analyze the mission's execution. Consider the initial plan, the number of checkpoints (as a proxy for rework), and the final solution.
-4. **Generate Content**: Populate the `metrics.md` template with the gathered data and your reflection in the "What I Learned" section.
-5. **Write to File**: Write the generated content to `.mission/metrics.md`.
-6. **Log**: Run `m log --step "Generate Metrics" "Metrics file created"`
-
-### Step 4: Finalize Mission
+### Step 3: Finalize Mission
 1. **Update Status**: Execute `m mission update --status completed`
 2. **Archive Mission**: Execute `m mission archive`
 3. **Log**: Run `m log --step "Finalize" "Mission completed and archived"`
-4. **Display Success**: Use template `.mission/libraries/displays/complete-success.md` with the final commit hash.
+4. **Display Success**: Use file read tool to load template `.mission/libraries/displays/complete-success.md` with the final commit hash.
 
 ## Error Handling
 

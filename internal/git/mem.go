@@ -1,4 +1,4 @@
-package checkpoint
+package git
 
 import (
 	"io"
@@ -205,4 +205,23 @@ func (c *MemGitClient) SoftReset(commitHash string) error {
 		Commit: hash,
 		Mode:   git.SoftReset,
 	})
+}
+
+func (c *MemGitClient) GetCommitMessage(commitHash string) (string, error) {
+	var hash plumbing.Hash
+	if commitHash == "HEAD" {
+		ref, err := c.repo.Head()
+		if err != nil {
+			return "", err
+		}
+		hash = ref.Hash()
+	} else {
+		hash = plumbing.NewHash(commitHash)
+	}
+
+	commit, err := c.repo.CommitObject(hash)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(commit.Message), nil
 }

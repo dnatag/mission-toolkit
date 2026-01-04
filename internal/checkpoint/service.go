@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dnatag/mission-toolkit/internal/git"
 	"github.com/dnatag/mission-toolkit/internal/mission"
 	"github.com/spf13/afero"
 )
@@ -14,7 +15,7 @@ type Service struct {
 	fs            afero.Fs
 	missionDir    string
 	missionReader *mission.Reader
-	git           GitClient
+	git           git.GitClient
 }
 
 // NewService creates a new checkpoint service using CmdGitClient (production)
@@ -23,17 +24,17 @@ func NewService(fs afero.Fs, missionDir string) (*Service, error) {
 		fs:            fs,
 		missionDir:    missionDir,
 		missionReader: mission.NewReader(fs),
-		git:           NewCmdGitClient("."),
+		git:           git.NewCmdGitClient("."),
 	}, nil
 }
 
 // NewServiceWithGit creates a new checkpoint service with a specific GitClient (testing)
-func NewServiceWithGit(fs afero.Fs, missionDir string, git GitClient) *Service {
+func NewServiceWithGit(fs afero.Fs, missionDir string, gitClient git.GitClient) *Service {
 	return &Service{
 		fs:            fs,
 		missionDir:    missionDir,
 		missionReader: mission.NewReader(fs),
-		git:           git,
+		git:           gitClient,
 	}
 }
 

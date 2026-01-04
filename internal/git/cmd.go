@@ -1,25 +1,10 @@
-package checkpoint
+package git
 
 import (
-	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
 )
-
-var ErrNoChanges = errors.New("no changes to commit")
-
-// GitClient defines the interface for git operations
-type GitClient interface {
-	Add(files []string) error
-	Commit(message string) (string, error)
-	CreateTag(name string, commitHash string) error
-	Restore(checkpointName string, files []string) error
-	ListTags(prefix string) ([]string, error)
-	DeleteTag(name string) error
-	GetTagCommit(tagName string) (string, error)
-	SoftReset(commitHash string) error
-}
 
 // CmdGitClient implements GitClient using the git CLI
 type CmdGitClient struct {
@@ -35,14 +20,18 @@ func (c *CmdGitClient) run(args ...string) (string, error) {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = c.workDir
 	output, err := cmd.CombinedOutput()
-	return strings.TrimSpace(string(output)), err
+	if err != nil {
+		return string(output), err
+	}
+	return string(output), nil
 }
 
 func (c *CmdGitClient) Add(files []string) error {
 	if len(files) == 0 {
 		return nil
 	}
-	_, err := c.run(append([]string{"add"}, files...)...)
+	args := append([]string{"add"}, files...)
+	_, err := c.run(args...)
 	return err
 }
 
@@ -54,15 +43,18 @@ func (c *CmdGitClient) Commit(message string) (string, error) {
 		}
 		return "", fmt.Errorf("git commit failed: %s", output)
 	}
-	return c.run("rev-parse", "HEAD")
+
+	// Get the commit hash
+	out, err := c.run("rev-parse", "HEAD")
+	return strings.TrimSpace(out), err
 }
 
 func (c *CmdGitClient) CreateTag(name string, commitHash string) error {
-	if commitHash == "" {
-		_, err := c.run("tag", name)
-		return err
+	args := []string{"tag", name}
+	if commitHash != "" {
+		args = append(args, strings.TrimSpace(commitHash))
 	}
-	_, err := c.run("tag", name, commitHash)
+	_, err := c.run(args...)
 	return err
 }
 
@@ -71,20 +63,30 @@ func (c *CmdGitClient) Restore(checkpointName string, files []string) error {
 		return nil
 	}
 
+	// Check if tag exists
 	if _, err := c.run("rev-parse", checkpointName); err != nil {
 		return fmt.Errorf("checkpoint not found: %s", checkpointName)
 	}
 
-	_, err := c.run(append([]string{"checkout", checkpointName, "--"}, files...)...)
+	// Checkout files from the checkpoint
+	args := []string{"checkout", checkpointName, "--"}
+	args = append(args, files...)
+	_, err := c.run(args...)
 	return err
 }
 
 func (c *CmdGitClient) ListTags(prefix string) ([]string, error) {
 	out, err := c.run("tag", "-l", prefix+"*")
-	if err != nil || out == "" {
+	if err != nil {
 		return nil, err
 	}
-	return strings.Split(out, "\n"), nil
+	var tags []string
+	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+		if line != "" {
+			tags = append(tags, line)
+		}
+	}
+	return tags, nil
 }
 
 func (c *CmdGitClient) DeleteTag(name string) error {
@@ -93,10 +95,17 @@ func (c *CmdGitClient) DeleteTag(name string) error {
 }
 
 func (c *CmdGitClient) GetTagCommit(tagName string) (string, error) {
-	return c.run("rev-parse", tagName+"^{commit}")
+	// Using `^{commit}` ensures we get the commit hash even for annotated tags
+	out, err := c.run("rev-parse", tagName+"^{commit}")
+	return strings.TrimSpace(out), err
 }
 
 func (c *CmdGitClient) SoftReset(commitHash string) error {
 	_, err := c.run("reset", "--soft", commitHash)
 	return err
+}
+
+func (c *CmdGitClient) GetCommitMessage(commitHash string) (string, error) {
+	out, err := c.run("log", "-1", "--pretty=%B", commitHash)
+	return strings.TrimSpace(out), err
 }

@@ -10,7 +10,7 @@ description: "Execute current mission with two-pass implementation and polish"
 2. **Validate Status**: Check `next_step` field:
    - If `next_step` says "PROCEED with m.apply execution" → Continue with execution
    - If `next_step` says "STOP" → Display the message and halt
-   - If no mission exists → Use template `.mission/libraries/displays/error-no-mission.md`
+   - If no mission exists → Use file read tool to load template `.mission/libraries/displays/error-no-mission.md`
 
 ## Role & Objective
 
@@ -80,12 +80,12 @@ Before execution, read `.mission/governance.md`.
 1. Execute `m checkpoint restore --all` to revert all changes (if checkpoints exist)
 2. Execute `m mission update --status failed`
 3. Run `m log --step "Status Handling" "Mission failed, all changes reverted"`
-4. Use template `.mission/libraries/displays/apply-failure.md`
+4. Use file read tool to load template `.mission/libraries/displays/apply-failure.md`
 
 **On Success (Step 2 passed, Step 3 completed or skipped)**:
 1. Keep `status: active`
 2. Run `m log --step "Status Handling" "Mission execution complete"`
-3. Use template `.mission/libraries/displays/apply-success.md` with variables:
+3. Use file read tool to load template `.mission/libraries/displays/apply-success.md` with variables:
    - {{CHANGE_DETAILS}} = 4 bullet points with implementation → reasoning format:
      - {{IMPLEMENTATION_DETAIL}} → {{REASONING}}
      - {{KEY_FILES_CHANGED}} → {{FILE_NECESSITY}}
@@ -112,4 +112,4 @@ Before execution, read `.mission/governance.md`.
 - Run `m log --step "Verification" "Command crashed: exit_code=<code> stderr=<output>"`
 - Follow normal failure path (Step 2 crash → mission failed, Step 3 crash → rollback polish)
 
-**CRITICAL**: Use templates from `.mission/libraries/` for consistent output.
+**CRITICAL**: Use file read tool to load templates from `.mission/libraries/` for consistent output.
