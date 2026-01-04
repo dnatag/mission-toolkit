@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/dnatag/mission-toolkit/internal/templates"
 	"github.com/spf13/afero"
@@ -22,7 +23,7 @@ var initCmd = &cobra.Command{
 for the specified AI assistant type. Creates .mission/ directory with governance files
 and AI-specific prompt templates.
 
-Supported AI types: q, claude, kiro, opencode`,
+If a Git repository is not found, it will be initialized automatically.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Validate AI type
 		if err := templates.ValidateAIType(aiType); err != nil {
@@ -53,6 +54,17 @@ Supported AI types: q, claude, kiro, opencode`,
 		}
 
 		fmt.Printf("Mission Toolkit project initialized successfully for AI type: %s\n", aiType)
+
+		// Check for Git repository and initialize if not found
+		if _, err := os.Stat(".git"); os.IsNotExist(err) {
+			fmt.Println("No Git repository found. Initializing a new one...")
+			gitCmd := exec.Command("git", "init")
+			if output, err := gitCmd.CombinedOutput(); err != nil {
+				fmt.Fprintf(os.Stderr, "Error initializing Git repository: %s\n", output)
+				os.Exit(1)
+			}
+			fmt.Println("Git repository initialized successfully.")
+		}
 	},
 }
 
