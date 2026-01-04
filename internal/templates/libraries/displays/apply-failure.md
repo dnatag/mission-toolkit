@@ -1,6 +1,6 @@
 ❌ MISSION FAILED: .mission/mission.md
 - Status changed to: failed
-- Changes reverted with: m checkpoint revert --all
+- Changes reverted with: m checkpoint restore --all
 - All checkpoints cleared automatically
 
 🚀 NEXT STEPS:

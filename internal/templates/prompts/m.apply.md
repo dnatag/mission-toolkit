@@ -69,10 +69,10 @@ Before execution, read `.mission/governance.md`.
      - Keep polished code, continue to Step 4
      - Run `m log --step "Polish Pass" "Polish applied successfully, verification passed"`
    - **On Failure**: 
-     - Execute `m checkpoint revert <checkpoint-name>` to rollback polish changes
+     - Execute `m checkpoint restore <checkpoint-name>` to rollback polish changes
      - Run `m log --step "Polish Pass" "Polish verification failed, rolled back to first pass"`
      - Continue to Step 4 with first pass code
-     - **On Revert Failure**: Mark mission failed, display manual recovery steps
+     - **On Restore Failure**: Mark mission failed, display manual recovery steps
 
 ### Step 4: Generate Commit Message
 
@@ -93,8 +93,8 @@ Before execution, read `.mission/governance.md`.
 
 ### Step 5: Status Handling
 
-**On Any Failure (Step 1, Step 2, or Step 3 revert failure)**:
-1. Execute `m checkpoint revert --all` to revert all changes (if checkpoints exist)
+**On Any Failure (Step 1, Step 2, or Step 3 restore failure)**:
+1. Execute `m checkpoint restore --all` to revert all changes (if checkpoints exist)
 2. Execute `m mission update --status failed`
 3. Run `m log --step "Status Handling" "Mission failed, all changes reverted"`
 4. Use template `.mission/libraries/displays/apply-failure.md`
@@ -115,11 +115,11 @@ Before execution, read `.mission/governance.md`.
 
 ## Error Handling
 
-### Checkpoint Revert Failure
+### Checkpoint Restore Failure
 - Mark mission as failed: `m mission update --status failed`
 - Display manual recovery steps:
   ```
-  Checkpoint revert failed. Manual recovery required:
+  Checkpoint restore failed. Manual recovery required:
   1. Run: git reset --hard HEAD
   2. Run: git clean -fd
   3. Review .mission/execution.log for details

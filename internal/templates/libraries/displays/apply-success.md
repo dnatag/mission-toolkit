@@ -18,4 +18,4 @@
 🚀 NEXT STEPS:
 • Complete mission: /m.complete
 • Review changes first: check files and then decide
-• Manual revert if needed: m checkpoint revert {{CHECKPOINT_0}} or m checkpoint revert {{CHECKPOINT_1}}
+• Manual revert if needed: m checkpoint restore {{CHECKPOINT_0}} or m checkpoint restore {{CHECKPOINT_1}}

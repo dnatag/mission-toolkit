@@ -47,7 +47,7 @@ Following the "Thick Client, Thin Agent" pattern, AI follows structured steps us
 | **2. First Pass (Implementation)** | • Execution logging | • Verify SCOPE files exist<br>• Read `.mission/mission.md` and implement PLAN<br>• Enforce SCOPE constraints during file modification<br>• Execute verification command and interpret results<br>• Stop if verification fails |
 | **3. Second Pass (Polish)** | • Execution logging | • Review implemented code for quality improvements<br>• Apply idiomatic patterns and optimizations<br>• Improve readability and maintainability<br>• Re-run verification command<br>• Stop if verification fails |
 | **4. Generate Commit Message** | • Execution logging | • Extract mission context (MISSION_ID, TYPE, TRACK, INTENT, SCOPE)<br>• Generate conventional commit message reflecting ALL changes<br>• Update mission.md `## COMMIT_MESSAGE` section<br>• Regenerate if code changes after initial generation |
-| **5. Status Handling** | • `m mission update --status failed` on failure<br>• `git checkout .` on failure<br>• Execution logging | • Load and populate display templates<br>• Format final output for user<br>• Decide success or failure based on verification |
+| **5. Status Handling** | • `m mission update --status failed` on failure<br>• `m checkpoint restore --all` on failure<br>• Execution logging | • Load and populate display templates<br>• Format final output for user<br>• Decide success or failure based on verification |
 
 ### 3.3 Step-by-Step Workflow Details
 
@@ -90,7 +90,7 @@ Following the "Thick Client, Thin Agent" pattern, AI follows structured steps us
 
 #### Step 5: Status Handling
 1. **AI**: Determine success or failure based on verification results
-2. **Shell**: On failure, execute `git checkout .` to revert changes and update status to `failed`
+2. **Shell**: On failure, execute `m checkpoint restore --all` to revert changes and update status to `failed`
 3. **AI**: Load appropriate display template (`apply-success.md` or `apply-failure.md`)
 4. **AI**: Populate template with mission details and commit message
 5. **Shell**: Log final outcome to execution log
@@ -160,6 +160,6 @@ Deterministic operations for state management:
 - ✅ **Code Quality**: Mandatory polish pass ensures professional, idiomatic code
 - ✅ **Commit Message Generation**: Automatic conventional commit messages with regeneration rules
 - ✅ **Execution Logging**: All steps logged with consistent format for debugging
-- ✅ **Safety**: Rollback mechanism (`git checkout .`) on verification failure
+- ✅ **Safety**: Rollback mechanism (`m checkpoint restore --all`) on verification failure
 - ✅ **Display Consistency**: Template-based output for success and failure scenarios
 - ✅ **CLI Migration**: Shell scripts replaced with Go CLI commands (`m mission check`, `m mission update`)
