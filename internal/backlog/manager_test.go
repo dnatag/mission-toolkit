@@ -287,7 +287,7 @@ func TestBacklogManager_ExistingBacklogWithEmptySections(t *testing.T) {
 
 	expectedItems := []string{
 		"- [ ] Test decomposed task",
-		"- [ ] Test refactor opportunity", 
+		"- [ ] Test refactor opportunity",
 		"- [ ] Test future enhancement",
 	}
 
@@ -297,6 +297,7 @@ func TestBacklogManager_ExistingBacklogWithEmptySections(t *testing.T) {
 		}
 	}
 }
+
 func TestBacklogManager_getSectionHeader(t *testing.T) {
 	manager := NewManager("")
 
