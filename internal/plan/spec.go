@@ -1,6 +1,13 @@
 package plan
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/spf13/afero"
+)
+
+var fs = afero.NewOsFs()
 
 // FileAction represents the action to be performed on a file
 type FileAction string
@@ -18,13 +25,15 @@ type FileSpec struct {
 
 // PlanSpec represents the structure for mission planning data
 type PlanSpec struct {
-	Intent       string     `json:"intent"`
-	Type         string     `json:"type"`  // WET or DRY
-	Scope        []string   `json:"scope"` // Legacy field for backward compatibility
-	Files        []FileSpec `json:"files"` // New field with action annotations
-	Domain       []string   `json:"domain"`
-	Plan         []string   `json:"plan"`
-	Verification string     `json:"verification"`
+	Intent                 string     `json:"intent"`
+	Type                   string     `json:"type,omitempty"`  // WET or DRY
+	Scope                  []string   `json:"scope,omitempty"` // Legacy field for backward compatibility
+	Files                  []FileSpec `json:"files,omitempty"` // New field with action annotations
+	Domain                 []string   `json:"domain,omitempty"`
+	Track                  string     `json:"track,omitempty"` // TRACK 1-4
+	Plan                   []string   `json:"plan,omitempty"`
+	Verification           string     `json:"verification,omitempty"`
+	ClarificationQuestions []string   `json:"clarification_questions,omitempty"` // For clarification missions
 }
 
 // GetScopeFiles returns all file paths from both legacy scope and new files fields
@@ -83,5 +92,34 @@ func (p *PlanSpec) Validate() error {
 	if p.Verification == "" {
 		return fmt.Errorf("verification is required")
 	}
+	return nil
+}
+
+// Read reads a PlanSpec from a JSON file
+func Read(path string) (*PlanSpec, error) {
+	data, err := afero.ReadFile(fs, path)
+	if err != nil {
+		return nil, fmt.Errorf("reading plan file: %w", err)
+	}
+
+	var spec PlanSpec
+	if err := json.Unmarshal(data, &spec); err != nil {
+		return nil, fmt.Errorf("parsing plan file: %w", err)
+	}
+
+	return &spec, nil
+}
+
+// Write writes a PlanSpec to a JSON file
+func (p *PlanSpec) Write(path string) error {
+	data, err := json.MarshalIndent(p, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshaling plan: %w", err)
+	}
+
+	if err := afero.WriteFile(fs, path, data, 0644); err != nil {
+		return fmt.Errorf("writing plan file: %w", err)
+	}
+
 	return nil
 }

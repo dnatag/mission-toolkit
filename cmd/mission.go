@@ -88,12 +88,46 @@ var missionIDCmd = &cobra.Command{
 	},
 }
 
+// missionCreateCmd creates mission.md from plan.json
+var missionCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create mission.md from plan.json",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		missionType, _ := cmd.Flags().GetString("type")
+		planFile, _ := cmd.Flags().GetString("file")
+		if planFile == "" {
+			planFile = ".mission/plan.json"
+		}
+
+		// Get mission ID
+		idService := mission.NewIDService(missionFs, missionDir)
+		missionID, err := idService.GetOrCreateID()
+		if err != nil {
+			return fmt.Errorf("getting mission ID: %w", err)
+		}
+
+		// Create mission using Writer
+		writer := mission.NewWriter(missionFs)
+		missionPath := missionDir + "/mission.md"
+
+		if err := writer.CreateFromPlanFile(planFile, missionPath, missionID, missionType); err != nil {
+			return fmt.Errorf("creating mission file: %w", err)
+		}
+
+		fmt.Printf("Mission created: %s\n", missionPath)
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(missionCmd)
-	missionCmd.AddCommand(missionCheckCmd, missionUpdateCmd, missionIDCmd)
+	missionCmd.AddCommand(missionCheckCmd, missionUpdateCmd, missionIDCmd, missionCreateCmd)
 
 	// Add flags
 	missionCheckCmd.Flags().StringP("context", "c", "", "Context for validation (apply or complete)")
 	missionUpdateCmd.Flags().StringP("status", "s", "", "New mission status (required)")
 	missionUpdateCmd.MarkFlagRequired("status")
+	missionCreateCmd.Flags().StringP("type", "t", "", "Mission type (clarification or final)")
+	missionCreateCmd.Flags().StringP("file", "f", "", "Path to plan.json file (default: .mission/plan.json)")
+	missionCreateCmd.MarkFlagRequired("type")
 }
