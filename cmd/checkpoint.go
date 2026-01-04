@@ -134,23 +134,17 @@ var checkpointCommitCmd = &cobra.Command{
 			return fmt.Errorf("getting mission ID: %w", err)
 		}
 
-		// Read commit message from mission.md
-		// Note: We don't strictly need to read the mission file here if we construct the message
-		// dynamically or pass it as an argument, but the original intent was to read it.
-		// Since we are using a placeholder message for now, we can skip reading the mission file
-		// to avoid the unused variable error, or we can use the variable.
-		// Let's use the variable to get the real intent later.
-		// For now, removing the unused variable 'm' by not assigning it or using it.
+		// Get commit message from flag
+		commitMsg, _ := cmd.Flags().GetString("message")
+		if commitMsg == "" {
+			return fmt.Errorf("commit message cannot be empty")
+		}
 
 		// Create checkpoint service
 		svc, err := checkpoint.NewService(missionFs, missionDir)
 		if err != nil {
 			return fmt.Errorf("initializing checkpoint service: %w", err)
 		}
-
-		// This is a placeholder for getting the commit message.
-		// In a real scenario, we'd parse this from the mission body.
-		commitMsg := "feat: Final commit for mission " + missionID
 
 		// Consolidate and commit
 		commitHash, err := svc.Consolidate(missionID, commitMsg)
@@ -169,4 +163,6 @@ func init() {
 
 	// Add flags
 	checkpointRestoreCmd.Flags().Bool("all", false, "Restore all mission changes")
+	checkpointCommitCmd.Flags().StringP("message", "m", "", "Commit message for the final commit")
+	checkpointCommitCmd.MarkFlagRequired("message")
 }

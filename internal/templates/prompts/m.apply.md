@@ -40,7 +40,7 @@ Before execution, read `.mission/governance.md`.
 3. **Scope Enforcement**: Only modify files listed in SCOPE
 4. **Run Verification**: Execute the VERIFICATION command
 5. **On Verification Failure**: Attempt to fix issues and re-run verification (iterate until passing or unable to fix)
-6. **If Unable to Fix**: Proceed to Step 5 (Status Handling) with failure
+6. **If Unable to Fix**: Proceed to Step 4 (Status Handling) with failure
 7. **Log**: Run `m log --step "First Pass" "[files modified, verification result, fix attempts if any]"`
 
 ### Step 3: Second Pass (Polish) - ALWAYS RUNS after Step 2 succeeds
@@ -74,24 +74,7 @@ Before execution, read `.mission/governance.md`.
      - Continue to Step 4 with first pass code
      - **On Restore Failure**: Mark mission failed, display manual recovery steps
 
-### Step 4: Generate Commit Message
-
-**CRITICAL:** Generate commit message AFTER polish pass (whether polish succeeded or rolled back).
-
-1. **Load Template**: Use file read tool to load template `libraries/scripts/generate-commit-message.md`
-2. **Read Mission Context**: Extract MISSION_ID, TYPE, TRACK, INTENT, SCOPE from mission.md
-3. **Generate Message**: Follow template rules to populate all variables
-4. **Update mission.md**: Replace `## COMMIT_MESSAGE` section with generated message
-5. **Log**: Run `m log --step "Generate Commit" "[commit type and scope]"`
-
-**CRITICAL - When to Regenerate**:
-- After polish pass completes (always)
-- After ANY user-requested code changes post-/m.apply
-- Description must reflect ALL changes made, not just latest
-
-**Note**: Checkpoints are automatically cleaned up by `m.complete` after successful commit or by CLI on mission failure.
-
-### Step 5: Status Handling
+### Step 4: Status Handling
 
 **On Any Failure (Step 1, Step 2, or Step 3 restore failure)**:
 1. Execute `m checkpoint restore --all` to revert all changes (if checkpoints exist)
@@ -99,12 +82,10 @@ Before execution, read `.mission/governance.md`.
 3. Run `m log --step "Status Handling" "Mission failed, all changes reverted"`
 4. Use template `.mission/libraries/displays/apply-failure.md`
 
-**On Success (Step 2 passed, Step 3 completed or skipped, Step 4 completed)**:
+**On Success (Step 2 passed, Step 3 completed or skipped)**:
 1. Keep `status: active`
 2. Run `m log --step "Status Handling" "Mission execution complete"`
 3. Use template `.mission/libraries/displays/apply-success.md` with variables:
-   - {{CHANGE_TITLE}} = The commit message title (e.g., "feat(auth): Add JWT authentication")
-   - {{CHANGE_DESCRIPTION}} = The commit message description
    - {{CHANGE_DETAILS}} = 4 bullet points with implementation → reasoning format:
      - {{IMPLEMENTATION_DETAIL}} → {{REASONING}}
      - {{KEY_FILES_CHANGED}} → {{FILE_NECESSITY}}
