@@ -149,17 +149,26 @@ func (c *CheckService) extractIntent(body string) string {
 	return ""
 }
 
-// cleanupStaleArtifacts removes stale mission artifacts
+// cleanupStaleArtifacts removes stale mission artifacts only when called from m.plan context.
+// This prevents accidental cleanup when mission check is called from other contexts like m.apply or m.complete.
 func (c *CheckService) cleanupStaleArtifacts(status *Status) error {
+	// Only clean up stale artifacts when called from m.plan context
+	if c.context != "plan" {
+		return nil
+	}
+
+	// Define artifacts that should be cleaned up from previous missions
 	artifacts := []string{"id", "plan.json", "execution.log"}
+
 	for _, artifact := range artifacts {
 		path := filepath.Join(c.missionDir, artifact)
 		if exists, _ := afero.Exists(c.fs, path); exists {
 			if err := c.fs.Remove(path); err != nil {
-				return fmt.Errorf("failed to remove %s: %w", artifact, err)
+				return fmt.Errorf("failed to remove stale artifact %s: %w", artifact, err)
 			}
 			status.StaleArtifacts = append(status.StaleArtifacts, artifact)
 		}
 	}
+
 	return nil
 }
