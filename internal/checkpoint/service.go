@@ -107,10 +107,21 @@ func (s *Service) Clear(missionID string) (int, error) {
 
 // Consolidate creates a final commit with all changes from the mission and clears checkpoints.
 func (s *Service) Consolidate(missionID, message string) (string, error) {
-	// Reset to parent of initial checkpoint if it exists
+	// Find initial checkpoint to determine base commit
 	if initialCommitHash, err := s.git.GetTagCommit(fmt.Sprintf("%s-1", missionID)); err == nil {
-		if parentHash, err := s.git.GetCommitParent(initialCommitHash); err == nil && parentHash != "" {
-			_ = s.git.SoftReset(parentHash) // Ignore error, proceed anyway
+		// Check if this commit was created by us (starts with "checkpoint:")
+		msg, err := s.git.GetCommitMessage(initialCommitHash)
+		if err == nil {
+			targetHash := initialCommitHash
+			if strings.HasPrefix(msg, "checkpoint:") {
+				// If we created it, reset to its parent to squash it
+				if parentHash, err := s.git.GetCommitParent(initialCommitHash); err == nil && parentHash != "" {
+					targetHash = parentHash
+				}
+			}
+			// If we didn't create it (it was a pre-existing commit we tagged), reset to it directly.
+			// This preserves the pre-existing commit but squashes subsequent checkpoints.
+			_ = s.git.SoftReset(targetHash)
 		}
 	}
 
