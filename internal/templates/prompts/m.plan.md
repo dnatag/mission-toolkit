@@ -55,9 +55,7 @@ Before generating output, read `.mission/governance.md`.
     *   **If output is "PROCEED" or "CAUTION""**: Set `[REFINED_INTENT]` and proceed to Step 2.
     *   **If output contains "QUESTIONS:"**:
         1.  Display questions to user and **STOP**.
-        2.  Wait for user answers.
-        3.  Combine original intent + answers into `[REFINED_INTENT]`.
-        4.  Proceed to Step 2.
+        2.  The user will provide answers in their next turn. When you receive the answers, combine the original intent with the answers to form the `[REFINED_INTENT]` and restart this workflow from Step 2.
 3.  **Log**: Run `m log --step "Intent" "Intent analyzed and refined"```
 
 ### Step 2: Contextualization

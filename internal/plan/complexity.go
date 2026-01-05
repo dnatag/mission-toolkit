@@ -61,13 +61,8 @@ func (e *ComplexityEngine) AnalyzeComplexity(spec *PlanSpec) (*ComplexityResult,
 	finalTrack := calculateFinalTrack(baseTrack, multipliers)
 	testGaps := detectTestGaps(allFiles)
 
-	// Add test gaps to warnings
+	// Warnings slice is now for future, non-test-gap warnings.
 	var warnings []string
-	if len(testGaps) > 0 {
-		for _, gap := range testGaps {
-			warnings = append(warnings, fmt.Sprintf("Potential missing test file: %s (verify if needed)", gap))
-		}
-	}
 
 	e.log.LogStep("INFO", "complexity-result",
 		fmt.Sprintf("Track %d (files:%d, base:%d, mult:%d)", finalTrack, implFiles, baseTrack, multipliers))
@@ -77,7 +72,7 @@ func (e *ComplexityEngine) AnalyzeComplexity(spec *PlanSpec) (*ComplexityResult,
 		Confidence:     calculateConfidence(implFiles, spec.Domain),
 		Reasoning:      generateReasoning(baseTrack, multipliers, implFiles, spec.Domain),
 		Recommendation: generateRecommendation(finalTrack),
-		NextStep:       generateNextStep(finalTrack, warnings),
+		NextStep:       generateNextStep(finalTrack, testGaps),
 		Warnings:       warnings,
 		TestGaps:       testGaps,
 	}, nil
@@ -164,9 +159,18 @@ func generateRecommendation(track int) string {
 }
 
 // generateNextStep provides explicit instructions for the AI
-func generateNextStep(track int, warnings []string) string {
-	if len(warnings) > 0 {
-		return "Review warnings. If test files are needed, UPDATE .mission/plan.json and re-run 'm plan analyze'. Otherwise, PROCEED."
+func generateNextStep(track int, testGaps []string) string {
+	if len(testGaps) > 0 {
+		var sb strings.Builder
+		sb.WriteString("WARNING: Potential test gaps detected.\n\n")
+		sb.WriteString("The following test files appear to be missing from the scope:\n")
+		for _, gap := range testGaps {
+			sb.WriteString(fmt.Sprintf("- %s\n", gap))
+		}
+		sb.WriteString("\nYou MUST take one of the following actions:\n")
+		sb.WriteString("1. Add the required test files to the `scope` and re-run analysis.\n")
+		sb.WriteString("2. Justify in the `plan` notes why tests are not needed for these files.")
+		return sb.String()
 	}
 
 	switch track {

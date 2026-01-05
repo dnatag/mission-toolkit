@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -33,6 +34,43 @@ func TestComplexityEngine_AnalyzeComplexity(t *testing.T) {
 
 	if result.Recommendation != "proceed" {
 		t.Errorf("Expected recommendation 'proceed', got '%s'", result.Recommendation)
+	}
+}
+
+func TestComplexityEngine_AnalyzeComplexity_WithTestGaps(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	engine := NewComplexityEngine(fs, "test-mission")
+
+	spec := &PlanSpec{
+		Intent:       "Test intent",
+		Scope:        []string{"file1.go", "file2.go"}, // Missing test files
+		Domain:       []string{"security"},
+		Plan:         []string{"step 1"},
+		Verification: "go test",
+	}
+
+	result, err := engine.AnalyzeComplexity(spec)
+	if err != nil {
+		t.Fatalf("AnalyzeComplexity() error = %v", err)
+	}
+
+	// Check for test gaps
+	if len(result.TestGaps) != 2 {
+		t.Fatalf("Expected 2 test gaps, got %d", len(result.TestGaps))
+	}
+
+	// Check NextStep instruction format
+	if !strings.Contains(result.NextStep, "WARNING: Potential test gaps detected.") {
+		t.Errorf("NextStep should start with a clear warning")
+	}
+	if !strings.Contains(result.NextStep, "- file1_test.go") {
+		t.Errorf("NextStep should list file1_test.go")
+	}
+	if !strings.Contains(result.NextStep, "- file2_test.go") {
+		t.Errorf("NextStep should list file2_test.go")
+	}
+	if !strings.Contains(result.NextStep, "You MUST take one of the following actions:") {
+		t.Errorf("NextStep should provide clear actions")
 	}
 }
 
