@@ -108,6 +108,50 @@ func (m *BacklogManager) Add(description, itemType string) error {
 	return fmt.Errorf("section %s not found in backlog", sectionHeader)
 }
 
+// AddMultiple adds multiple items to the specified section in a single operation.
+// This is more efficient than calling Add multiple times when adding multiple items.
+func (m *BacklogManager) AddMultiple(descriptions []string, itemType string) error {
+	if err := m.validateType(itemType); err != nil {
+		return err
+	}
+
+	if err := m.ensureBacklogExists(); err != nil {
+		return err
+	}
+
+	content, err := m.readBacklogContent()
+	if err != nil {
+		return err
+	}
+
+	sectionHeader := m.getSectionHeader(itemType)
+
+	lines := strings.Split(content, "\n")
+	result := make([]string, 0, len(lines)+len(descriptions))
+
+	for i, line := range lines {
+		result = append(result, line)
+
+		if strings.TrimSpace(line) == sectionHeader {
+			// Find the end of this section
+			j := i + 1
+			for j < len(lines) && !strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") && strings.TrimSpace(lines[j]) != "" {
+				result = append(result, lines[j])
+				j++
+			}
+			// Add all new items
+			for _, desc := range descriptions {
+				result = append(result, fmt.Sprintf("- [ ] %s", desc))
+			}
+			// Add remaining lines
+			result = append(result, lines[j:]...)
+			return m.writeBacklogContent(strings.Join(result, "\n"))
+		}
+	}
+
+	return fmt.Errorf("section %s not found in backlog", sectionHeader)
+}
+
 // Complete marks an item as completed and moves it to the COMPLETED section
 func (m *BacklogManager) Complete(itemText string) error {
 	if err := m.ensureBacklogExists(); err != nil {

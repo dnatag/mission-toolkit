@@ -34,21 +34,29 @@ var backlogListCmd = &cobra.Command{
 	},
 }
 
-// backlogAddCmd adds a new backlog item
+// backlogAddCmd adds backlog items (single or multiple)
 var backlogAddCmd = &cobra.Command{
-	Use:   "add [description]",
-	Short: "Add a new backlog item",
-	Args:  cobra.ExactArgs(1),
+	Use:   "add [description...]",
+	Short: "Add one or more backlog items",
+	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		itemType, _ := cmd.Flags().GetString("type")
-		description := args[0]
 
 		manager := backlog.NewManager(missionDir)
-		if err := manager.Add(description, itemType); err != nil {
-			return fmt.Errorf("adding backlog item: %w", err)
-		}
 
-		fmt.Printf("Added backlog item: %s\n", description)
+		if len(args) == 1 {
+			// Single item - use existing Add method
+			if err := manager.Add(args[0], itemType); err != nil {
+				return fmt.Errorf("adding backlog item: %w", err)
+			}
+			fmt.Printf("Added backlog item: %s\n", args[0])
+		} else {
+			// Multiple items - use AddMultiple
+			if err := manager.AddMultiple(args, itemType); err != nil {
+				return fmt.Errorf("adding backlog items: %w", err)
+			}
+			fmt.Printf("Added %d backlog items\n", len(args))
+		}
 		return nil
 	},
 }

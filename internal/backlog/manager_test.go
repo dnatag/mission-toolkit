@@ -1,6 +1,7 @@
 package backlog
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -316,5 +317,65 @@ func TestBacklogManager_getSectionHeader(t *testing.T) {
 		if result != tt.expected {
 			t.Errorf("getSectionHeader(%q) = %q, expected %q", tt.itemType, result, tt.expected)
 		}
+	}
+}
+
+func TestBacklogManager_AddMultiple(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Test adding multiple items
+	items := []string{"Multi item 1", "Multi item 2", "Multi item 3"}
+	if err := manager.AddMultiple(items, "decomposed"); err != nil {
+		t.Fatalf("AddMultiple failed: %v", err)
+	}
+
+	// Verify all items were added
+	content, err := manager.readBacklogContent()
+	if err != nil {
+		t.Fatalf("Failed to read backlog: %v", err)
+	}
+
+	for _, item := range items {
+		if !strings.Contains(content, fmt.Sprintf("- [ ] %s", item)) {
+			t.Errorf("Expected item %q not found in backlog", item)
+		}
+	}
+
+	// Verify count
+	storedItems, err := manager.List(false)
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(storedItems) != 3 {
+		t.Errorf("Expected 3 items, got %d", len(storedItems))
+	}
+
+	// Test adding multiple items to different sections
+	refactorItems := []string{"Refactor A", "Refactor B"}
+	if err := manager.AddMultiple(refactorItems, "refactor"); err != nil {
+		t.Fatalf("AddMultiple to refactor failed: %v", err)
+	}
+
+	// Verify refactor items
+	content, err = manager.readBacklogContent()
+	if err != nil {
+		t.Fatalf("Failed to read backlog: %v", err)
+	}
+
+	for _, item := range refactorItems {
+		if !strings.Contains(content, fmt.Sprintf("- [ ] %s", item)) {
+			t.Errorf("Expected refactor item %q not found in backlog", item)
+		}
+	}
+
+	// Test invalid type
+	if err := manager.AddMultiple(items, "invalid"); err == nil {
+		t.Error("AddMultiple with invalid type should fail")
+	}
+
+	// Test empty slice (should not fail but add nothing)
+	if err := manager.AddMultiple([]string{}, "decomposed"); err != nil {
+		t.Errorf("AddMultiple with empty slice should not fail: %v", err)
 	}
 }
