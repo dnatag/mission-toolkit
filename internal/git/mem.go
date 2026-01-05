@@ -225,3 +225,37 @@ func (c *MemGitClient) GetCommitMessage(commitHash string) (string, error) {
 	}
 	return strings.TrimSpace(commit.Message), nil
 }
+
+func (c *MemGitClient) IsTracked(path string) (bool, error) {
+	// Check the index directly to see if the file is tracked
+	idx, err := c.repo.Storer.Index()
+	if err != nil {
+		return false, err
+	}
+
+	_, err = idx.Entry(path)
+	if err == object.ErrEntryNotFound || (err != nil && strings.Contains(err.Error(), "entry not found")) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (c *MemGitClient) GetCommitParent(commitHash string) (string, error) {
+	hash := plumbing.NewHash(commitHash)
+	commit, err := c.repo.CommitObject(hash)
+	if err != nil {
+		return "", err
+	}
+	if commit.NumParents() == 0 {
+		return "", nil // No parent (initial commit)
+	}
+	parent, err := commit.Parent(0)
+	if err != nil {
+		return "", err
+	}
+	return parent.Hash.String(), nil
+}

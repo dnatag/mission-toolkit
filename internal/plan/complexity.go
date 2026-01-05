@@ -65,7 +65,7 @@ func (e *ComplexityEngine) AnalyzeComplexity(spec *PlanSpec) (*ComplexityResult,
 	var warnings []string
 	if len(testGaps) > 0 {
 		for _, gap := range testGaps {
-			warnings = append(warnings, fmt.Sprintf("Missing test file: %s", gap))
+			warnings = append(warnings, fmt.Sprintf("Potential missing test file: %s (verify if needed)", gap))
 		}
 	}
 
@@ -166,7 +166,7 @@ func generateRecommendation(track int) string {
 // generateNextStep provides explicit instructions for the AI
 func generateNextStep(track int, warnings []string) string {
 	if len(warnings) > 0 {
-		return "UPDATE .mission/plan.json to include missing test files in scope and run 'm plan analyze' again."
+		return "Review warnings. If test files are needed, UPDATE .mission/plan.json and re-run 'm plan analyze'. Otherwise, PROCEED."
 	}
 
 	switch track {

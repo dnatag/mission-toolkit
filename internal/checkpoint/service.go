@@ -46,10 +46,9 @@ func (s *Service) Create(missionID string) (string, error) {
 		return "", err
 	}
 
-	// Only stage files that actually exist to avoid "pathspec did not match" errors
-	existingFiles, err := s.filterExistingFiles(scope)
+	stagableFiles, err := s.filterStagableFiles(scope)
 	if err != nil {
-		return "", fmt.Errorf("filtering existing files: %w", err)
+		return "", fmt.Errorf("filtering stagable files: %w", err)
 	}
 
 	num, err := s.getNextCheckpointNumber(missionID)
@@ -59,22 +58,18 @@ func (s *Service) Create(missionID string) (string, error) {
 
 	checkpointName := fmt.Sprintf("%s-%d", missionID, num)
 
-	if err := s.git.Add(existingFiles); err != nil {
+	if err := s.git.Add(stagableFiles); err != nil {
 		return "", fmt.Errorf("staging files: %w", err)
 	}
 
 	commitHash, err := s.git.Commit(fmt.Sprintf("checkpoint: %s", checkpointName))
 	if err != nil {
-		if errors.Is(err, git.ErrNoChanges) {
-			// If no changes, tag the current HEAD
-			// We need to get HEAD hash. GitClient doesn't have GetHeadHash directly,
-			// but GetTagCommit("HEAD") works with our implementation.
-			commitHash, err = s.git.GetTagCommit("HEAD")
-			if err != nil {
-				return "", fmt.Errorf("getting HEAD hash: %w", err)
-			}
-		} else {
+		if !errors.Is(err, git.ErrNoChanges) {
 			return "", fmt.Errorf("creating checkpoint commit: %w", err)
+		}
+		// No changes, tag current HEAD
+		if commitHash, err = s.git.GetTagCommit("HEAD"); err != nil {
+			return "", fmt.Errorf("getting HEAD hash: %w", err)
 		}
 	}
 
@@ -91,12 +86,7 @@ func (s *Service) Restore(checkpointName string) error {
 	if err != nil {
 		return err
 	}
-
-	if err := s.git.Restore(checkpointName, scope); err != nil {
-		return fmt.Errorf("restoring files: %w", err)
-	}
-
-	return nil
+	return s.git.Restore(checkpointName, scope)
 }
 
 // Clear removes all checkpoint tags for the specified mission
@@ -117,17 +107,24 @@ func (s *Service) Clear(missionID string) (int, error) {
 
 // Consolidate creates a final commit with all changes from the mission and clears checkpoints.
 func (s *Service) Consolidate(missionID, message string) (string, error) {
+	// Reset to parent of initial checkpoint if it exists
+	if initialCommitHash, err := s.git.GetTagCommit(fmt.Sprintf("%s-1", missionID)); err == nil {
+		if parentHash, err := s.git.GetCommitParent(initialCommitHash); err == nil && parentHash != "" {
+			_ = s.git.SoftReset(parentHash) // Ignore error, proceed anyway
+		}
+	}
+
 	scope, err := s.getScope()
 	if err != nil {
 		return "", err
 	}
 
-	existingFiles, err := s.filterExistingFiles(scope)
+	stagableFiles, err := s.filterStagableFiles(scope)
 	if err != nil {
-		return "", fmt.Errorf("filtering existing files: %w", err)
+		return "", fmt.Errorf("filtering stagable files: %w", err)
 	}
 
-	if err := s.git.Add(existingFiles); err != nil {
+	if err := s.git.Add(stagableFiles); err != nil {
 		return "", fmt.Errorf("staging final files: %w", err)
 	}
 
@@ -156,19 +153,28 @@ func (s *Service) getScope() ([]string, error) {
 	return scope, nil
 }
 
-// filterExistingFiles returns only the files from the list that exist on the filesystem
-func (s *Service) filterExistingFiles(files []string) ([]string, error) {
-	var existing []string
+// filterStagableFiles returns files that exist OR are tracked (for deletion)
+func (s *Service) filterStagableFiles(files []string) ([]string, error) {
+	var stagable []string
 	for _, file := range files {
 		exists, err := afero.Exists(s.fs, file)
 		if err != nil {
 			return nil, fmt.Errorf("checking file existence %s: %w", file, err)
 		}
+
 		if exists {
-			existing = append(existing, file)
+			stagable = append(stagable, file)
+			continue
+		}
+
+		// If file doesn't exist, check if it's tracked (deleted)
+		if tracked, err := s.git.IsTracked(file); err != nil {
+			return nil, fmt.Errorf("checking if file is tracked %s: %w", file, err)
+		} else if tracked {
+			stagable = append(stagable, file)
 		}
 	}
-	return existing, nil
+	return stagable, nil
 }
 
 // getNextCheckpointNumber finds the next available checkpoint number

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
@@ -29,15 +30,10 @@ type UnparsedElement struct {
 // AllowedUnparsedContent defines content that's expected to be unparsed
 var AllowedUnparsedContent = map[string]map[string]bool{
 	"backlog.md": {
-		"# MISSION TOOLKIT BACKLOG":       true,
-		"---":                             true,
-		"**Format for completed items:**": true,
+		"# MISSION TOOLKIT BACKLOG": true,
+		"---":                       true,
 		"**Format for refactoring opportunities:**": true,
 		"**Format for decomposed intents:**":        true,
-	},
-	"metrics.md": {
-		"# MISSION TOOLKIT METRICS SUMMARY":                                           true,
-		"Detailed metrics with change summaries stored in completed/ with timestamps": true,
 	},
 }
 
@@ -170,9 +166,23 @@ func getTemplateType(filePath string) string {
 	switch {
 	case strings.Contains(filePath, "backlog.md"):
 		return "backlog.md"
-	case strings.Contains(filePath, "metrics.md"):
-		return "metrics.md"
 	default:
 		return "unknown"
 	}
+}
+
+// extractText extracts text content from an AST node recursively
+func extractText(node ast.Node, source []byte) string {
+	var buf bytes.Buffer
+
+	ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if entering {
+			if text, ok := n.(*ast.Text); ok {
+				buf.Write(text.Segment.Value(source))
+			}
+		}
+		return ast.WalkContinue, nil
+	})
+
+	return strings.TrimSpace(buf.String())
 }

@@ -109,3 +109,24 @@ func (c *CmdGitClient) GetCommitMessage(commitHash string) (string, error) {
 	out, err := c.run("log", "-1", "--pretty=%B", commitHash)
 	return strings.TrimSpace(out), err
 }
+
+func (c *CmdGitClient) IsTracked(path string) (bool, error) {
+	// git ls-files --error-unmatch <file> returns 0 if tracked, 1 if not
+	cmd := exec.Command("git", "ls-files", "--error-unmatch", path)
+	cmd.Dir = c.workDir
+	err := cmd.Run()
+	if err != nil {
+		// If exit code is 1, it's not tracked.
+		// We treat this as false, not an error.
+		if exitError, ok := err.(*exec.ExitError); ok && exitError.ExitCode() == 1 {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (c *CmdGitClient) GetCommitParent(commitHash string) (string, error) {
+	out, err := c.run("rev-parse", commitHash+"^")
+	return strings.TrimSpace(out), err
+}

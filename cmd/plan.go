@@ -66,7 +66,7 @@ var planUpdateCmd = &cobra.Command{
 		}
 
 		if cmd.Flags().Changed("plan") {
-			spec.Plan, _ = cmd.Flags().GetStringSlice("plan")
+			spec.Plan, _ = cmd.Flags().GetStringArray("plan")
 		}
 		if cmd.Flags().Changed("verification") {
 			spec.Verification, _ = cmd.Flags().GetString("verification")
@@ -158,7 +158,7 @@ func init() {
 	planInitCmd.MarkFlagRequired("intent")
 
 	// Add flags for update
-	planUpdateCmd.Flags().StringSlice("plan", nil, "Plan steps")
+	planUpdateCmd.Flags().StringArray("plan", nil, "Plan steps")
 	planUpdateCmd.Flags().String("verification", "", "Verification command")
 
 	// Add flags for analyze and validate

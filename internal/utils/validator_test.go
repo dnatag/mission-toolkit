@@ -18,15 +18,8 @@ func TestValidateTemplate(t *testing.T) {
 			name:           "validate backlog template",
 			templatePath:   "../../internal/templates/mission/backlog.md",
 			expectValid:    true,
-			expectSections: 3, // DECOMPOSED INTENTS, REFACTORING OPPORTUNITIES, FUTURE ENHANCEMENTS
-			expectUnparsed: 5, // title + format instructions
-		},
-		{
-			name:           "validate metrics template",
-			templatePath:   "../../internal/templates/mission/metrics.md",
-			expectValid:    true,
-			expectSections: 8, // AGGREGATE STATISTICS, TRACK DISTRIBUTION, WET-DRY EVOLUTION, QUALITY METRICS, RECENT COMPLETIONS, PROCESS INSIGHTS, TECHNICAL LEARNINGS, RECOMMENDATIONS
-			expectUnparsed: 2, // title + description
+			expectSections: 4, // DECOMPOSED INTENTS, REFACTORING OPPORTUNITIES, FUTURE ENHANCEMENTS, COMPLETED
+			expectUnparsed: 4, // title + separator + 2 format instructions
 		},
 	}
 
@@ -51,10 +44,13 @@ func TestValidateTemplate(t *testing.T) {
 				}
 			}
 
-			// Log unparsed content for debugging
-			t.Logf("Unparsed content (%d items):", len(report.UnparsedContent))
-			for _, element := range report.UnparsedContent {
-				t.Logf("  %s (line %d): %s", element.Type, element.Line, element.Content)
+			if len(report.UnparsedContent) != tt.expectUnparsed {
+				t.Errorf("Expected %d unparsed items, got %d", tt.expectUnparsed, len(report.UnparsedContent))
+				// Log unparsed content for debugging
+				t.Logf("Unparsed content (%d items):", len(report.UnparsedContent))
+				for _, element := range report.UnparsedContent {
+					t.Logf("  %s (line %d): %s", element.Type, element.Line, element.Content)
+				}
 			}
 		})
 	}
@@ -115,11 +111,6 @@ func TestAllowedUnparsedContent(t *testing.T) {
 			content:    "Some random paragraph",
 			allowedMap: AllowedUnparsedContent["backlog.md"],
 			expected:   false,
-		},
-		{
-			content:    "# MISSION TOOLKIT METRICS SUMMARY",
-			allowedMap: AllowedUnparsedContent["metrics.md"],
-			expected:   true,
 		},
 	}
 
@@ -254,7 +245,6 @@ func TestGetTemplateType(t *testing.T) {
 		expected string
 	}{
 		{"internal/templates/mission/backlog.md", "backlog.md"},
-		{"internal/templates/mission/metrics.md", "metrics.md"},
 		{"/some/other/path/file.md", "unknown"},
 	}
 

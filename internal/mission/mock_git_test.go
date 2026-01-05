@@ -40,3 +40,11 @@ func (m *MockGitClient) SoftReset(commitHash string) error {
 func (m *MockGitClient) GetCommitMessage(commitHash string) (string, error) {
 	return m.commitMessage, m.commitError
 }
+
+func (m *MockGitClient) IsTracked(path string) (bool, error) {
+	return true, nil
+}
+
+func (m *MockGitClient) GetCommitParent(commitHash string) (string, error) {
+	return "mock-parent-hash", nil
+}

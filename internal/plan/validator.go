@@ -220,7 +220,7 @@ func (r *ValidationResult) ToJSON() (string, error) {
 
 // FormatValidationOutput creates standardized output with next_step guidance
 func (v *ValidatorService) FormatValidationOutput(result *ValidationResult) OutputResponse {
-	nextStep := "PROCEED to Step 7 (Generate Mission)."
+	nextStep := "PROCEED to Step 6 (Generate Mission)."
 	if !result.Valid {
 		nextStep = "FIX errors in plan.json and retry validation."
 	}

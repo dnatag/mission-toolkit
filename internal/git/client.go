@@ -15,4 +15,6 @@ type GitClient interface {
 	GetTagCommit(tagName string) (string, error)
 	SoftReset(commitHash string) error
 	GetCommitMessage(commitHash string) (string, error)
+	IsTracked(path string) (bool, error)
+	GetCommitParent(commitHash string) (string, error)
 }
