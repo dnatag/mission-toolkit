@@ -38,8 +38,8 @@ You are the **Expert Commit Author**. Your job is to finalize the mission by gen
 
 ### Step 3: Finalize Mission
 1. **Update Status**: Execute `m mission update --status completed`
-2. **Archive Mission**: Execute `m mission archive`
-3. **Log**: Run `m log --step "Finalize" "Mission completed and archived"`
+2. **Log**: Run `m log --step "Finalize" "Mission completed and archived"`
+3. **Archive Mission**: Execute `m mission archive`
 4. **Display Success**: Use file read tool to load template `.mission/libraries/displays/complete-success.md` with the final commit hash.
 
 ## Error Handling
