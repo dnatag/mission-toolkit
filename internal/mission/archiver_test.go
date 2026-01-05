@@ -102,10 +102,10 @@ func TestArchiver_CleanupObsoleteFiles(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	missionDir := ".mission"
 
-	// Create obsolete files
+	// Create obsolete files that should be cleaned up
 	err := fs.MkdirAll(missionDir, 0755)
 	require.NoError(t, err)
-	
+
 	filesToCreate := []string{"execution.log", "mission.md", "id", "plan.json"}
 	for _, filename := range filesToCreate {
 		err = afero.WriteFile(fs, filepath.Join(missionDir, filename), []byte("content"), 0644)
@@ -115,16 +115,16 @@ func TestArchiver_CleanupObsoleteFiles(t *testing.T) {
 	// Mock GitClient
 	mockGit := &MockGitClient{}
 
-	// Cleanup
+	// Execute cleanup
 	archiver := NewArchiver(fs, missionDir, mockGit)
 	err = archiver.CleanupObsoleteFiles()
 	require.NoError(t, err)
 
-	// Verify files were removed
+	// Verify all obsolete files were removed
 	for _, filename := range filesToCreate {
 		exists, err := afero.Exists(fs, filepath.Join(missionDir, filename))
 		require.NoError(t, err)
-		require.False(t, exists, "%s should be removed", filename)
+		require.False(t, exists, "%s should be removed after cleanup", filename)
 	}
 }
 

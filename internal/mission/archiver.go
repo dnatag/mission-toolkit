@@ -65,19 +65,29 @@ func (a *Archiver) Archive() error {
 	return nil
 }
 
-// CleanupObsoleteFiles removes obsolete mission files after successful archive
+// CleanupObsoleteFiles removes obsolete mission files after successful archive.
+// This function safely removes temporary mission files that are no longer needed
+// after the mission has been archived to the completed directory.
 func (a *Archiver) CleanupObsoleteFiles() error {
+	// Files to clean up after successful archive
 	filesToClean := []string{"execution.log", "mission.md", "id", "plan.json"}
-	
+
 	for _, filename := range filesToClean {
 		filePath := filepath.Join(a.missionDir, filename)
-		if exists, _ := afero.Exists(a.fs, filePath); exists {
+
+		// Check if file exists before attempting removal
+		exists, err := afero.Exists(a.fs, filePath)
+		if err != nil {
+			return fmt.Errorf("checking existence of %s: %w", filename, err)
+		}
+
+		if exists {
 			if err := a.fs.Remove(filePath); err != nil {
 				return fmt.Errorf("removing %s: %w", filename, err)
 			}
 		}
 	}
-	
+
 	return nil
 }
 

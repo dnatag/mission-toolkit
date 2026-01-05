@@ -121,9 +121,10 @@ var missionCreateCmd = &cobra.Command{
 }
 
 // missionArchiveCmd archives mission.md and execution.log to completed directory
+// and cleans up obsolete files
 var missionArchiveCmd = &cobra.Command{
 	Use:   "archive",
-	Short: "Archive mission.md and execution.log to completed directory",
+	Short: "Archive mission files to completed directory and clean up obsolete files",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		gitClient := git.NewCmdGitClient(".")
 		archiver := mission.NewArchiver(missionFs, missionDir, gitClient)
