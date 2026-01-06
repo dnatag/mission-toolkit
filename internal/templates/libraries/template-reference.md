@@ -6,38 +6,18 @@
 libraries/
 ├── analysis/           # Analysis guidance templates
 │   ├── clarification.md    # Clarification analysis criteria
-│   └── complexity.md       # Complexity assessment rules
+│   ├── domain.md           # Domain analysis criteria
+│   ├── duplication.md      # Duplication analysis criteria
+│   └── intent.md           # Intent analysis criteria
 ├── displays/           # User output templates
 │   ├── apply-failure.md    # ❌ MISSION FAILED
 │   ├── apply-success.md    # ✅ MISSION EXECUTED
-│   ├── complete-failure.md # ❌ MISSION FAILED (ARCHIVED)
 │   ├── complete-success.md # 🎉 MISSION COMPLETED
 │   ├── error-no-mission.md # ❌ ERROR: No Active Mission
+│   ├── error-mission-exists.md # ⚠️ EXISTING MISSION DETECTED
 │   ├── plan-atomic.md      # ⚛️ ATOMIC TASK DETECTED
 │   ├── plan-epic.md        # 📋 EPIC DECOMPOSED
-│   ├── plan-paused.md      # ⏸️ MISSION PAUSED
 │   └── plan-success.md     # ✅ MISSION CREATED
-├── logs/               # Execution logging templates
-│   └── execution.md        # Log entry format
-├── metrics/            # Metrics templates
-│   ├── aggregate.md        # Project-wide metrics
-│   ├── completion.md       # Individual mission metrics
-│   └── insights.md         # Process insights format
-├── missions/           # Mission file templates
-│   ├── dry.md             # DRY mission template
-│   └── wet.md             # WET mission template
-├── scripts/            # Operation templates and executable scripts
-│   ├── archive-completed.md # Archive to .mission/completed/ (template)
-│   ├── archive-current.sh  # Archive to .mission/paused/ (executable)
-│   ├── create-mission.md   # Create .mission/mission.md (template)
-│   ├── init-execution-log.md # Initialize execution log (template)
-│   ├── refresh-metrics.md  # Update metrics.md (template)
-│   ├── status-to-active.sh # Update mission status (executable)
-│   └── validate-planned.sh # Check mission status (executable)
-└── variables/          # Variable calculation rules
-    ├── file-list.md        # File estimation rules
-    ├── timestamps.md       # Date/time formatting
-    └── track-calculation.md # Track complexity logic
 ```
 
 ## Usage in Prompts
@@ -45,30 +25,23 @@ libraries/
 Clear, specific references:
 ```markdown
 # In m.plan.md
+**Intent Analysis**: Use `libraries/analysis/intent.md`
 **Clarification Analysis**: Use `libraries/analysis/clarification.md`
-**Complexity Analysis**: Use `libraries/analysis/complexity.md`
-**Archive Current**: Execute `libraries/scripts/archive-current.sh`
+**Duplication Analysis**: Use `libraries/analysis/duplication.md`
+**Domain Analysis**: Use `libraries/analysis/domain.md`
 **On Success**: Use template `libraries/displays/plan-success.md`
 **On Epic**: Use template `libraries/displays/plan-epic.md`
 **On Atomic**: Use template `libraries/displays/plan-atomic.md`
-**Mission Template**: Use `libraries/missions/wet.md`
-**Create Script**: Use `libraries/scripts/create-mission.md`
-**Log Initialization**: Use `libraries/scripts/init-execution-log.md`
+**On Mission Exists**: Use template `libraries/displays/error-mission-exists.md`
 
 # In m.apply.md
 **On Success**: Use template `libraries/displays/apply-success.md`
 **On Failure**: Use template `libraries/displays/apply-failure.md`
-**Status Script**: Execute `libraries/scripts/status-to-active.sh`
-**Validation Script**: Execute `libraries/scripts/validate-planned.sh`
-**Logging**: Use `libraries/logs/execution.md`
+**On No Mission**: Use template `libraries/displays/error-no-mission.md`
 
 # In m.complete.md
 **On Success**: Use template `libraries/displays/complete-success.md`
-**On Failure**: Use template `libraries/displays/complete-failure.md`
-**Archive Script**: Use `libraries/scripts/archive-completed.md`
-**Metrics Refresh**: Use `libraries/scripts/refresh-metrics.md`
-**Metrics Template**: Use `libraries/metrics/completion.md`
-**Logging**: Use `libraries/logs/execution.md`
+**On No Mission**: Use template `libraries/displays/error-no-mission.md`
 ```
 
 ## Variable Standardization
@@ -88,9 +61,7 @@ Consistent naming across all templates:
 
 All templates use `.mission/` root path when deployed:
 - Mission files: `.mission/mission.md`
-- Paused missions: `.mission/paused/`
-- Completed missions: `.mission/completed/`
-- Project files: `.mission/backlog.md`, `.mission/metrics.md`
+- Project files: `.mission/backlog.md`
 
 ## Benefits
 

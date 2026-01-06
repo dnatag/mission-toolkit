@@ -16,7 +16,7 @@ var missionTemplates embed.FS
 //go:embed prompts/*.md
 var promptTemplates embed.FS
 
-//go:embed libraries/**/*.md libraries/**/*.sh
+//go:embed libraries/**/*.md
 var libraryTemplates embed.FS
 
 // SupportedAITypes lists all supported AI types

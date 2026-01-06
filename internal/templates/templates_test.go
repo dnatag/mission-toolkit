@@ -34,7 +34,7 @@ func getAvailablePromptTemplates() ([]string, error) {
 }
 
 // generateExpectedFiles creates the expected file list for a given AI type
-func generateExpectedFiles(aiType, targetDir string, promptFiles []string) []string {
+func generateExpectedFiles(aiType string, promptFiles []string) []string {
 	var wantFiles []string
 
 	// Always include Mission Toolkit templates
@@ -93,7 +93,7 @@ func TestWriteTemplates(t *testing.T) {
 			}
 
 			// Generate expected files dynamically
-			wantFiles := generateExpectedFiles(tt.aiType, tt.targetDir, availableTemplates)
+			wantFiles := generateExpectedFiles(tt.aiType, availableTemplates)
 
 			for _, file := range wantFiles {
 				fullPath := filepath.Join(tt.targetDir, file)
@@ -221,7 +221,7 @@ func TestWriteLibraryTemplates(t *testing.T) {
 			}
 
 			// Check for expected subdirectories
-			expectedDirs := []string{"displays", "missions", "scripts", "metrics", "variables"}
+			expectedDirs := []string{"displays", "analysis"}
 			for _, dir := range expectedDirs {
 				dirPath := filepath.Join(libraryDir, dir)
 				exists, err := afero.DirExists(fs, dirPath)
@@ -236,8 +236,6 @@ func TestWriteLibraryTemplates(t *testing.T) {
 			// Check for specific template files and prefix replacement
 			testFiles := []string{
 				"displays/plan-success.md",
-				"missions/wet.md",
-				"scripts/create-mission.md",
 			}
 
 			for _, file := range testFiles {

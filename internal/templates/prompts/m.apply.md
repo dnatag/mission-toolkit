@@ -67,21 +67,32 @@ Before execution, read `.mission/governance.md`.
 
 4. **Handle Polish Verification**:
    - **On Success**: 
-     - Keep polished code, continue to Step 4
+     - Execute `m checkpoint create` to save polished state
+     - Returns checkpoint name (e.g., `MISS-20260103-143022-2`)
      - Run `m log --step "Polish Pass" "Polish applied successfully, verification passed"`
+     - Continue to Step 4
    - **On Failure**: 
      - Execute `m checkpoint restore <checkpoint-name>` to rollback polish changes
-     - Run `m log --step "Polish Pass" "Polish verification failed, rolled back to first pass"`
-     - Continue to Step 4 with first pass code
-     - **On Restore Failure**: Mark mission failed, display manual recovery steps
+     - **On Restore Success**:
+       - Run `m log --step "Polish Pass" "Polish verification failed, rolled back to first pass"`
+       - Continue to Step 4 with first pass code
+     - **On Restore Failure**:
+       - Run `m log --step "Polish Pass" "Restore failed but first pass code exists"`
+       - Display warning about manual cleanup
+       - Continue to Step 4 with current state (first pass code should still be present)
 
 ### Step 4: Status Handling
 
-**On Any Failure (Step 1, Step 2, or Step 3 restore failure)**:
+**On Any Failure (Step 1 or Step 2)**:
 1. Execute `m checkpoint restore --all` to revert all changes (if checkpoints exist)
 2. Execute `m mission update --status failed`
 3. Run `m log --step "Status Handling" "Mission failed, all changes reverted"`
-4. Use file read tool to load template `.mission/libraries/displays/apply-failure.md`
+4. **Analyze Failure**: Determine failure type and provide guidance:
+   - **Step 1 Checkpoint Creation Failure**: Environment issue, retry unlikely to help
+   - **Step 2 Verification Failure**: Implementation issue, review error and retry
+5. Use file read tool to load template `.mission/libraries/displays/apply-failure.md` with variables:
+   - {{FAILURE_REASON}} = Brief summary of what failed (e.g., "Verification failed: test errors", "Checkpoint creation failed")
+   - {{RETRY_ADVICE}} = "Retry /m.apply" or "Fix environment first" or "Review mission plan"
 
 **On Success (Step 2 passed, Step 3 completed or skipped)**:
 1. Keep `status: active`
@@ -93,11 +104,23 @@ Before execution, read `.mission/governance.md`.
      - {{TECHNICAL_APPROACH}} → {{APPROACH_RATIONALE}}
      - {{ADDITIONAL_CHANGES}} → {{CHANGE_NECESSITY}}
    - {{CHECKPOINT_0}} = Initial checkpoint name from Step 1 (e.g., "MISS-20260103-143022-0")
-   - {{CHECKPOINT_1}} = Polish checkpoint name from Step 3 (e.g., "MISS-20260103-143022-1", or "N/A" if polish skipped)
+   - {{CHECKPOINT_1}} = Polish checkpoint name from Step 3.1 (e.g., "MISS-20260103-143022-1", or "N/A" if polish skipped)
+   - {{CHECKPOINT_2}} = Final checkpoint name from Step 3.4 (e.g., "MISS-20260103-143022-2", or "N/A" if polish failed/skipped)
 
 ## Error Handling
 
-### Checkpoint Restore Failure
+### Polish Checkpoint Restore Failure
+- Log warning: `m log --step "Polish Pass" "Restore failed but first pass code exists"`
+- Display warning to user:
+  ```
+  Warning: Polish rollback failed, but first pass code should still be present.
+  If you see unexpected changes, manually restore:
+  - m checkpoint restore {{CHECKPOINT_1}}
+  Review .mission/execution.log for details.
+  ```
+- Continue with mission completion (first pass code passed verification)
+
+### Critical Checkpoint Restore Failure (Step 1 or Step 2)
 - Mark mission as failed: `m mission update --status failed`
 - Display manual recovery steps:
   ```

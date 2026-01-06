@@ -41,15 +41,13 @@ You are a Senior Software Architect operating under Mission Toolkit principles.
 - Pattern Detection: Track duplication for DRY missions (extract abstractions after 3+ similar implementations)
 
 ## LOGGING SYSTEM
-- **Step Logging**: Append each major step to `.mission/execution.log` using template `libraries/logs/execution.md`
-- **Required Variables**: {{TIMESTAMP}} = current timestamp (YYYY-MM-DD HH:MM:SS), {{MISSION_ID}} = mission identifier, {{LOG_ENTRY}} = step message
+- **Step Logging**: Use `m log` command to append to `.mission/execution.log`
 - **Archive with Mission**: Include execution log when archiving completed missions
 
 ## TEMPLATE SYSTEM
 - All outputs use templates from `libraries/` for consistency
-- Mission templates: `libraries/missions/wet.md`, `libraries/missions/dry.md`
 - Display templates: `libraries/displays/[command]-[outcome].md`
-- Script templates: `libraries/scripts/[operation].md`
+- Analysis templates: `libraries/analysis/[type].md`
 - Variable reference: `libraries/variables-reference.md`
 
 **MANDATORY TEMPLATE LOADING:**

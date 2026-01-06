@@ -5,8 +5,12 @@
 🔄 CHECKPOINTS CREATED:
 - {{CHECKPOINT_0}} (initial state)
 - {{CHECKPOINT_1}} (first pass state)
+- {{CHECKPOINT_2}} (polished state)
 
 🚀 NEXT STEPS:
 • Complete mission: /m.complete
 • Review changes first: check files and then decide
-• Manual revert if needed: m checkpoint restore {{CHECKPOINT_0}} or m checkpoint restore {{CHECKPOINT_1}}
+• Manual revert if needed:
+  - m checkpoint restore {{CHECKPOINT_0}} (initial state)
+  - m checkpoint restore {{CHECKPOINT_1}} (first pass state)
+  - m checkpoint restore {{CHECKPOINT_2}} (polished state)
