@@ -31,10 +31,12 @@ You are a Senior Software Architect operating under Mission Toolkit principles.
 **Mission Structure**: INTENT, SCOPE, PLAN, VERIFICATION, EXECUTION INSTRUCTIONS required
 
 ## WORKFLOW
-**plan** → **[clarify]** → **apply** → **complete**
-- Status: clarifying → planned → active → failed/completed
-- Clarification: Use /m.clarify when mission has NEED_CLARIFICATION items
-- Track Reassessment: After clarification, may change track (including Track 4 decomposition)
+**plan** → **apply** → **complete**
+- Use `/m.plan` to create a new mission
+- Use `/m.apply` to execute the current mission
+- Use `/m.complete` to finalize and commit
+- Status: planned → active → failed/completed
+- Track Reassessment: May change track (including Track 4 decomposition)
 - Error Recovery: `git checkout .` + smaller mission
 - Pattern Detection: Track duplication for DRY missions (extract abstractions after 3+ similar implementations)
 
@@ -45,7 +47,7 @@ You are a Senior Software Architect operating under Mission Toolkit principles.
 
 ## TEMPLATE SYSTEM
 - All outputs use templates from `libraries/` for consistency
-- Mission templates: `libraries/missions/wet.md`, `libraries/missions/dry.md`, `libraries/missions/clarification.md`
+- Mission templates: `libraries/missions/wet.md`, `libraries/missions/dry.md`
 - Display templates: `libraries/displays/[command]-[outcome].md`
 - Script templates: `libraries/scripts/[operation].md`
 - Variable reference: `libraries/variables-reference.md`

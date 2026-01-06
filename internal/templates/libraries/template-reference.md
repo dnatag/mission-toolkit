@@ -10,13 +10,10 @@ libraries/
 ├── displays/           # User output templates
 │   ├── apply-failure.md    # ❌ MISSION FAILED
 │   ├── apply-success.md    # ✅ MISSION EXECUTED
-│   ├── clarify-escalation.md # 🔄 TRACK ESCALATION
-│   ├── clarify-success.md  # ✅ CLARIFICATION COMPLETE
 │   ├── complete-failure.md # ❌ MISSION FAILED (ARCHIVED)
 │   ├── complete-success.md # 🎉 MISSION COMPLETED
 │   ├── error-no-mission.md # ❌ ERROR: No Active Mission
 │   ├── plan-atomic.md      # ⚛️ ATOMIC TASK DETECTED
-│   ├── plan-clarification.md # ❓ CLARIFICATION NEEDED
 │   ├── plan-epic.md        # 📋 EPIC DECOMPOSED
 │   ├── plan-paused.md      # ⏸️ MISSION PAUSED
 │   └── plan-success.md     # ✅ MISSION CREATED
@@ -27,7 +24,6 @@ libraries/
 │   ├── completion.md       # Individual mission metrics
 │   └── insights.md         # Process insights format
 ├── missions/           # Mission file templates
-│   ├── clarification.md    # Clarification mission template
 │   ├── dry.md             # DRY mission template
 │   └── wet.md             # WET mission template
 ├── scripts/            # Operation templates and executable scripts
@@ -53,18 +49,11 @@ Clear, specific references:
 **Complexity Analysis**: Use `libraries/analysis/complexity.md`
 **Archive Current**: Execute `libraries/scripts/archive-current.sh`
 **On Success**: Use template `libraries/displays/plan-success.md`
-**On Clarification**: Use template `libraries/displays/plan-clarification.md`
 **On Epic**: Use template `libraries/displays/plan-epic.md`
 **On Atomic**: Use template `libraries/displays/plan-atomic.md`
 **Mission Template**: Use `libraries/missions/wet.md`
 **Create Script**: Use `libraries/scripts/create-mission.md`
 **Log Initialization**: Use `libraries/scripts/init-execution-log.md`
-
-# In m.clarify.md
-**Complexity Reassessment**: Use `libraries/analysis/complexity.md`
-**Mission Update**: Use `libraries/missions/wet.md` or `libraries/missions/dry.md`
-**Success Display**: Use `libraries/displays/clarify-success.md`
-**Track 4 Escalation**: Use `libraries/displays/clarify-escalation.md`
 
 # In m.apply.md
 **On Success**: Use template `libraries/displays/apply-success.md`

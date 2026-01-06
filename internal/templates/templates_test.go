@@ -181,7 +181,7 @@ func TestSlashPrefixReplacement(t *testing.T) {
 			}
 
 			contentStr := string(content)
-			expectedPattern := tt.prefix + "m.clarify"
+			expectedPattern := tt.prefix + "m.apply"
 			if !strings.Contains(contentStr, expectedPattern) {
 				t.Errorf("Expected governance.md to contain '%s', but it doesn't. Content: %s", expectedPattern, contentStr)
 			}

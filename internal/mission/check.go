@@ -114,9 +114,6 @@ func (c *CheckService) handleExistingMission(status *Status) (*Status, error) {
 
 	// Generic status routing (no context specified)
 	switch mission.Status {
-	case "clarifying":
-		status.Message = "Mission is in clarifying state"
-		status.NextStep = "Run the m.clarify prompt to resolve questions."
 	case "planned", "active":
 		status.Message = "Mission is ready for execution or re-execution"
 		status.NextStep = "Run the m.apply prompt to execute this mission."

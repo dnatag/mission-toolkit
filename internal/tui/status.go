@@ -504,9 +504,6 @@ func (m Model) renderCurrentMission() string {
 	var nextSteps string
 
 	switch mission.Status {
-	case "clarifying":
-		statusStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FFA500"))
-		nextSteps = "Next: Use '/m.clarify' to provide answers to clarification questions"
 	case "planned":
 		statusStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00CED1"))
 		nextSteps = "Next: Run '/m.apply' to execute the mission"
