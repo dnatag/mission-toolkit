@@ -61,6 +61,7 @@ Before execution, read `.mission/governance.md`.
    - Performance optimizations
    - Error handling improvements
    - Documentation and comments where needed
+   - Test quality (robust coverage for new logic, bug fixes, critical paths)
 
 3. **Re-run Verification**: Execute the VERIFICATION command again
 

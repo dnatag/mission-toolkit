@@ -99,6 +99,7 @@ The Mission Toolkit workflow ensures you maintain ownership while leveraging AI 
 - Analyze intent for clarity and complexity
 - If ambiguous → route to m.clarify
 - If clear → create mission.md with INTENT, SCOPE, PLAN, VERIFICATION
+- **Test Strategy**: AI evaluates if test files should be included based on value (new logic, bugs) vs. noise (trivial changes).
 
 **Output**: `.mission/mission.md` ready for review
 
@@ -132,6 +133,7 @@ The Mission Toolkit workflow ensures you maintain ownership while leveraging AI 
 **Process** (automatic):
 1. Execute implementation steps
 2. Run polish pass (code quality improvements)
+   - **Quality-Driven Testing**: Review newly created tests. Ensure they are high-value (meaningful happy paths, critical edge cases) and robust. Remove low-value tests (e.g., trivial getters/setters).
 3. Generate conventional commit message
 4. Update mission.md with commit message
 
@@ -188,6 +190,12 @@ The Mission Toolkit workflow ensures you maintain ownership while leveraging AI 
 - Every mission archived with full context
 - Metrics tracked for process improvement
 - Patterns detected for future optimization
+
+### Quality-Driven Testing
+- **Scope-Matched**: Test coverage must match mission complexity.
+- **High-Value**: Focus on meaningful happy paths and critical edge cases.
+- **Essential**: Avoid testing for the sake of testing (e.g., trivial getters/setters).
+- **Quality**: Tests must be robust, readable, and maintainable.
 
 ## Common Paths
 

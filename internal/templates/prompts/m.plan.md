@@ -71,6 +71,8 @@ Before generating output, read `.mission/governance.md`.
 ### Step 3: Draft Spec Creation
 
 1.  **Identify Scope**: Determine which files need to be modified or created based on the `[REFINED_INTENT]`.
+    *   **Include tests** if: New logic, bug fixes, or critical paths (separate test files or in-file tests).
+    *   **Exclude tests** if: Trivial changes (typos, formatting, config).
 2.  **Determine Type**:
     *   If Duplication Check (Step 2) found a `refactor_opportunity`, set `type` to "DRY".
     *   Otherwise, set `type` to "WET".

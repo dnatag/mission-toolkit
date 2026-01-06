@@ -27,7 +27,7 @@ Transition to a **"Thick Client, Thin Agent"** architecture (Toolbox Approach).
 | **Clarification Check** | **AI** | Requires semantic understanding of ambiguity. | N/A (Prompt Logic) |
 | **Intent Analysis** | **AI** | Requires summarizing natural language. | N/A (Prompt Logic) |
 | **Complexity Analysis** | **CLI** | Deterministic rules based on file counts + domain flags. | `m plan analyze` |
-| **Test Coverage Check** | **CLI** | Heuristic check for missing test files (Agnostic). | `m plan analyze` |
+| **Test Coverage Check** | **AI** | Heuristic check for missing test files (Agnostic). | N/A (Prompt Logic) |
 | **Duplication Analysis** | **AI** | Semantic similarity check. | N/A (Prompt Logic) |
 | **Security/Scope Validation** | **CLI** | Strict file system and safety checks. | `m plan validate` |
 | **Mission Generation** | **CLI** | Strict file formatting and writing + Guideline Injection. | `m mission create` |
