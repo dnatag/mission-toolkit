@@ -33,6 +33,8 @@ func createTestModel() Model {
 			createTestMission("Test mission 2", "completed"),
 			createTestMission("Search test mission", "completed"),
 		},
+		totalCount:  3, // For lazy loading tests
+		loadedCount: 3,
 	}
 }
 
@@ -242,6 +244,7 @@ func TestGetTotalPages(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			model := createTestModel()
 			model.itemsPerPage = tt.itemsPerPage
+			model.totalCount = tt.missionsCount // Set totalCount for lazy loading
 
 			// Create missions for test
 			missions := make([]*mission.Mission, tt.missionsCount)
@@ -249,6 +252,7 @@ func TestGetTotalPages(t *testing.T) {
 				missions[i] = createTestMission("Test", "completed")
 			}
 			model.completedMissions = missions
+			model.loadedCount = tt.missionsCount
 
 			pages := model.getTotalPages()
 			assert.Equal(t, tt.expectedPages, pages)
@@ -481,6 +485,7 @@ func TestSearchModeToggle(t *testing.T) {
 func TestPaginationBoundaries(t *testing.T) {
 	model := createTestModel()
 	model.itemsPerPage = 2
+	model.totalCount = 3 // Set totalCount for lazy loading
 
 	// Test page boundaries
 	totalPages := model.getTotalPages()

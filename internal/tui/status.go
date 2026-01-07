@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/bubbletea"
@@ -54,6 +55,11 @@ type Model struct {
 	filteredMissions  []*mission.Mission
 	width             int
 	height            int
+	// Lazy loading state
+	totalCount  int  // Total number of completed missions
+	loadedCount int  // Number of missions currently loaded
+	loading     bool // Whether a load operation is in progress
+	loadError   error
 }
 
 func NewModel() Model {
@@ -67,7 +73,7 @@ func NewModel() Model {
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(
 		loadCurrentMission,
-		loadCompletedMissions,
+		loadInitialMissions,
 	)
 }
 
@@ -81,28 +87,90 @@ func loadCurrentMission() tea.Msg {
 	return currentMissionMsg{mission: m}
 }
 
-func loadCompletedMissions() tea.Msg {
+// loadInitialMissions loads the first batch of completed missions for lazy loading
+func loadInitialMissions() tea.Msg {
+	return loadCompletedMissionsBatch(0, 10)
+}
+
+// loadCompletedMissionsBatch loads a batch of missions from the filesystem
+func loadCompletedMissionsBatch(offset, limit int) tea.Msg {
 	fs := afero.NewOsFs()
 	reader := mission.NewReader(fs)
 
 	completedDir := ".mission/completed"
 	entries, err := os.ReadDir(completedDir)
 	if err != nil {
-		return completedMissionsMsg{err: err}
+		return initialMissionsMsg{err: err}
 	}
 
-	var missions []*mission.Mission
+	// Collect and sort mission file paths by name (newest first)
+	var missionFiles []string
 	for _, entry := range entries {
 		if !entry.IsDir() && strings.HasSuffix(entry.Name(), "-mission.md") {
-			path := filepath.Join(completedDir, entry.Name())
-			m, err := reader.Read(path)
-			if err == nil {
-				missions = append(missions, m)
-			}
+			missionFiles = append(missionFiles, entry.Name())
 		}
 	}
 
-	return completedMissionsMsg{missions: missions}
+	// Sort filenames in descending order (newest first)
+	sort.Slice(missionFiles, func(i, j int) bool {
+		return missionFiles[i] > missionFiles[j]
+	})
+
+	// Load missions starting from offset until we have enough or run out
+	var missions []*mission.Mission
+	loaded := 0
+	fileIndex := 0
+
+	// Skip files until we reach the offset
+	for fileIndex < len(missionFiles) && loaded < offset {
+		path := filepath.Join(completedDir, missionFiles[fileIndex])
+		_, err := reader.Read(path)
+		if err == nil {
+			loaded++
+		}
+		fileIndex++
+	}
+
+	// Load the requested batch
+	batchLoaded := 0
+	for fileIndex < len(missionFiles) && batchLoaded < limit {
+		path := filepath.Join(completedDir, missionFiles[fileIndex])
+		m, err := reader.Read(path)
+		if err == nil {
+			missions = append(missions, m)
+			batchLoaded++
+		}
+		fileIndex++
+	}
+
+	// Count total loadable missions
+	totalLoadable := 0
+	for _, filename := range missionFiles {
+		path := filepath.Join(completedDir, filename)
+		_, err := reader.Read(path)
+		if err == nil {
+			totalLoadable++
+		}
+	}
+
+	return initialMissionsMsg{
+		missions:    missions,
+		totalCount:  totalLoadable,
+		loadedCount: len(missions),
+		offset:      offset,
+	}
+}
+
+// loadMoreMissions loads the next batch of missions
+func loadMoreMissions(offset, limit int) tea.Msg {
+	result := loadCompletedMissionsBatch(offset, limit)
+	if msg, ok := result.(initialMissionsMsg); ok {
+		return loadMoreMissionsMsg{
+			missions:    msg.missions,
+			loadedCount: msg.loadedCount,
+		}
+	}
+	return loadMoreMissionsMsg{err: fmt.Errorf("failed to load more missions")}
 }
 
 type currentMissionMsg struct {
@@ -113,6 +181,21 @@ type currentMissionMsg struct {
 type completedMissionsMsg struct {
 	missions []*mission.Mission
 	err      error
+}
+
+// Lazy loading message types
+type initialMissionsMsg struct {
+	missions    []*mission.Mission
+	totalCount  int
+	loadedCount int
+	offset      int
+	err         error
+}
+
+type loadMoreMissionsMsg struct {
+	missions    []*mission.Mission
+	loadedCount int
+	err         error
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -136,6 +219,29 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case initialMissionsMsg:
+		if msg.err == nil {
+			m.completedMissions = msg.missions
+			m.totalCount = msg.totalCount
+			m.loadedCount = msg.loadedCount
+			m.loading = false
+			m.loadError = nil
+		} else {
+			m.loadError = msg.err
+		}
+		return m, nil
+
+	case loadMoreMissionsMsg:
+		if msg.err == nil {
+			m.completedMissions = append(m.completedMissions, msg.missions...)
+			m.loadedCount = m.loadedCount + msg.loadedCount
+			m.loading = false
+			m.loadError = nil
+		} else {
+			m.loadError = msg.err
+		}
+		return m, nil
+
 	case tea.KeyMsg:
 		// Handle text input for search first - prioritize in search mode
 		if m.searchMode {
@@ -155,8 +261,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "r":
 			if !m.searchMode && m.selectedMission == nil {
-				// Reload missions
-				return m, tea.Batch(loadCurrentMission, loadCompletedMissions)
+				// Reload missions with lazy loading
+				return m, tea.Batch(loadCurrentMission, loadInitialMissions)
 			}
 		case "/":
 			if m.selectedMission == nil {
@@ -205,6 +311,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if len(missions) > 0 {
 					pageSize := m.getPageSize()
 					m.selectedIndex = min(pageSize-1, m.selectedIndex+1)
+
+					// Trigger lazy load when scrolling to last item on page and more missions available
+					if !m.searchMode && !m.loading && m.loadedCount < m.totalCount {
+						// Check if we're at the last item of the currently loaded list
+						lastItemIndex := m.selectedIndex + (m.currentPage * m.itemsPerPage)
+						if lastItemIndex >= m.loadedCount-1 {
+							// Load more missions
+							m.loading = true
+							return m, func() tea.Msg { return loadMoreMissions(m.loadedCount, 10) }
+						}
+					}
 				}
 			}
 		case "left", "h":
@@ -272,12 +389,12 @@ func (m Model) View() string {
 	var headerText string
 	if m.searchMode {
 		if m.searchQuery == "" {
-			headerText = fmt.Sprintf("Search: _ (%d total missions)", len(m.completedMissions))
+			headerText = fmt.Sprintf("Search: _ (%d total missions)", m.totalCount)
 		} else {
-			headerText = fmt.Sprintf("Search: %s (%d of %d missions)", m.searchQuery, len(missions), len(m.completedMissions))
+			headerText = fmt.Sprintf("Search: %s (%d of %d missions)", m.searchQuery, len(missions), m.totalCount)
 		}
 	} else {
-		headerText = fmt.Sprintf("Completed Missions (%d)", len(m.completedMissions))
+		headerText = fmt.Sprintf("Completed Missions (%d)", m.totalCount)
 	}
 	sections = append(sections, headerText)
 	sections = append(sections, "")
@@ -354,11 +471,19 @@ func (m Model) matchesFuzzy(mission *mission.Mission, query string) bool {
 
 // getTotalPages calculates the total number of pages
 func (m Model) getTotalPages() int {
-	missions := m.getActiveMissions()
-	if len(missions) == 0 {
+	// In search mode, use actual filtered count
+	if m.searchMode {
+		missions := m.getActiveMissions()
+		if len(missions) == 0 {
+			return 1
+		}
+		return (len(missions) + m.itemsPerPage - 1) / m.itemsPerPage
+	}
+	// In normal mode, use totalCount for lazy loading pagination
+	if m.totalCount == 0 {
 		return 1
 	}
-	return (len(missions) + m.itemsPerPage - 1) / m.itemsPerPage
+	return (m.totalCount + m.itemsPerPage - 1) / m.itemsPerPage
 }
 
 // getPageSize returns the number of items on the current page
@@ -627,6 +752,13 @@ func (m Model) renderCompletedMissions() string {
 	totalPages := m.getTotalPages()
 	pageIndicator := fmt.Sprintf("\nPage %d of %d", m.currentPage+1, totalPages)
 	items = append(items, helpStyle.Render(pageIndicator))
+
+	// Add loading indicator if more missions are being loaded
+	if m.loading {
+		items = append(items, helpStyle.Render("Loading more missions..."))
+	} else if m.loadedCount < m.totalCount {
+		items = append(items, helpStyle.Render("Scroll down to load more..."))
+	}
 
 	return strings.Join(items, "\n")
 }
