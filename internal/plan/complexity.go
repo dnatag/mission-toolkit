@@ -151,7 +151,7 @@ func generateNextStep(track int) string {
 	case 1:
 		return "STOP. Use template libraries/displays/plan-atomic.md to provide a direct code suggestion."
 	case 2, 3:
-		return "PROCEED to Step 5 (Validation)."
+		return "PROCEED to Step 4 (Validation)."
 	case 4:
 		return "STOP. Decompose this intent into 3-5 sub-intents in .mission/backlog.md and use template libraries/displays/plan-epic.md."
 	default:

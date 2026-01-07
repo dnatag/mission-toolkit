@@ -10,18 +10,9 @@ $ARGUMENTS
 
 ## Interactive Prompt
 
-**CRITICAL:** Always check if `$ARGUMENTS` is empty or contains only whitespace first.
-
-**MANDATORY VALIDATION:**
-```
-if ($ARGUMENTS is empty OR contains only whitespace OR equals "$ARGUMENTS"):
-    ASK USER IMMEDIATELY
-    OUTPUT ONLY: "What is your intent or goal for this task?"
-    DO NOT PROCEED WITH ANY OTHER STEPS
-    WAIT FOR USER RESPONSE
-else:
-    Continue with execution steps
-```
+**MANDATORY VALIDATION:** Run `m check "$ARGUMENTS"`. Parse JSON output and check `next_step` field:
+- If `next_step` says "ASK_USER" → Output the message and STOP
+- If `next_step` says "PROCEED" → Continue with execution
 
 ## Prerequisites
 
@@ -62,11 +53,9 @@ Before generating output, read `.mission/governance.md`.
 ### Step 2: Context Analysis
 
 1.  **Analyze Context**:
+    *   **Scope**: Use file read tool to load template `.mission/libraries/analysis/scope.md`. Determine which files need to be modified or created, including test inclusion decisions.
     *   **Duplication**: Use file read tool to load template `.mission/libraries/analysis/duplication.md`. Scan for existing patterns.
     *   **Domains**: Use file read tool to load template `.mission/libraries/analysis/domain.md`. Select applicable domains.
-    *   **Scope**: Determine which files need to be modified or created based on `[REFINED_INTENT]`.
-        *   **Include tests** if: New logic, bug fixes, or critical paths.
-        *   **Exclude tests** if: Trivial changes.
 2.  **Determine Strategy (WET vs DRY)**:
     *   **If Duplication Detected**:
         1.  Execute `m backlog list` to check if refactoring is already tracked (match by pattern description).
