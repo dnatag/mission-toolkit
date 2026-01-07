@@ -317,3 +317,37 @@ func containsAt(s, substr string) bool {
 	}
 	return false
 }
+
+func TestIsEmptyOrWhitespace(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{"empty string", "", true},
+		{"whitespace only - spaces", "   ", true},
+		{"whitespace only - tabs", "\t\t\t", true},
+		{"whitespace only - newlines", "\n\n\n", true},
+		{"whitespace only - mixed", " \t\n\r", true},
+		{"whitespace only - form feed", "\f\f\f", true},
+		{"normal text", "hello", false},
+		{"text with leading spaces", "   hello", false},
+		{"text with trailing spaces", "hello   ", false},
+		{"text with leading and trailing spaces", "   hello   ", false},
+		{"text with internal whitespace", "hello world", false},
+		{"single space", " ", true},
+		{"single tab", "\t", true},
+		{"single newline", "\n", true},
+		{"zero", "0", false},
+		{"false string", "false", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsEmptyOrWhitespace(tt.input)
+			if result != tt.expected {
+				t.Errorf("IsEmptyOrWhitespace(%q) = %v, want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}

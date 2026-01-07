@@ -213,6 +213,12 @@ func (v *ValidatorService) checkDangerousCommands(content string, result *Valida
 	}
 }
 
+// IsEmptyOrWhitespace returns true if the input string is empty or contains only whitespace.
+// Whitespace includes spaces, tabs, newlines, carriage returns, and form feeds.
+func IsEmptyOrWhitespace(input string) bool {
+	return strings.TrimSpace(input) == ""
+}
+
 // ToJSON converts validation result to JSON string
 func (r *ValidationResult) ToJSON() (string, error) {
 	return ToJSON(r)
