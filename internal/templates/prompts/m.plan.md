@@ -40,7 +40,7 @@ You are the **Planner**. Your goal is to convert the user's intent into a formal
 **CRITICAL**: 
 - Do NOT create `.mission/mission.md` or `.mission/plan.json` manually
 - Do NOT edit JSON files directly
-- You MUST use CLI commands: `m plan init`, `m plan update`, `m plan analyze`, `m plan validate`, `m mission create`
+- You MUST use CLI commands: `m plan init`, `m plan update`, `m plan analyze`, `m plan validate`, `m mission create`, `m backlog`
 - AI provides values, CLI handles all file operations
 
 ## Execution Steps
@@ -52,70 +52,71 @@ Before generating output, read `.mission/governance.md`.
 1.  **Analyze Intent**: Use file read tool to load template `.mission/libraries/analysis/intent.md`. Use it to refine the user's request.
     *   **Decision**: If the output is "AMBIGUOUS", **STOP IMMEDIATELY**. Ask the user to clarify the specific reason for the ambiguity.
 2.  **Check Clarity**: Use file read tool to load template `.mission/libraries/analysis/clarification.md`. Run it to check for missing details.
-    *   **If output is "PROCEED" or "CAUTION""**: Set `[REFINED_INTENT]` and proceed to Step 2.
-    *   **If output contains "QUESTIONS:"**:
+    *   **If output is "✅ INTENT CLEAR"**: Set `[REFINED_INTENT]` and proceed to Step 2.
+    *   **If output is "⚠️ PROCEEDING WITH ASSUMPTIONS"**: Display assumptions to user, set `[REFINED_INTENT]`, and proceed to Step 2.
+    *   **If output is "🛑 CLARIFICATION NEEDED"**:
         1.  Display questions to user and **STOP**.
-        2.  The user will provide answers in their next turn. When you receive the answers, combine the original intent with the answers to form the `[REFINED_INTENT]` and restart this workflow from Step 2.
-3.  **Log**: Run `m log --step "Intent" "Intent analyzed and refined"```
+        2.  When user responds, combine original intent with answers to form `[REFINED_INTENT]` and restart from Step 2.
+3.  **Log**: Run `m log --step "Intent" "Intent analyzed and refined"`
 
-### Step 2: Contextualization
+### Step 2: Context Analysis
 
-1.  **Duplication Check**: Use file read tool to load template `.mission/libraries/analysis/duplication.md`. Use it to scan for existing patterns or redundant code.
-    *   **Action**: If duplication or refactoring opportunities are detected:
-        1.  Use file read tool to load `.mission/backlog.md`.
-        2.  Append the pattern and affected files to the `## REFACTORING OPPORTUNITIES` section.
-        3.  Note the findings for use in the Plan section later.
-2.  **Domain Identification**: Use file read tool to load template `.mission/libraries/analysis/domain.md`. Use it to select applicable domains.
-3.  **Log**: Run `m log --step "Context" "Duplication and domain analysis complete"`
+1.  **Analyze Context**:
+    *   **Duplication**: Use file read tool to load template `.mission/libraries/analysis/duplication.md`. Scan for existing patterns.
+    *   **Domains**: Use file read tool to load template `.mission/libraries/analysis/domain.md`. Select applicable domains.
+    *   **Scope**: Determine which files need to be modified or created based on `[REFINED_INTENT]`.
+        *   **Include tests** if: New logic, bug fixes, or critical paths.
+        *   **Exclude tests** if: Trivial changes.
+2.  **Determine Strategy (WET vs DRY)**:
+    *   **If Duplication Detected**:
+        1.  Execute `m backlog list` to check if refactoring is already tracked (match by pattern description).
+        2.  **If NOT in backlog**:
+            - Execute `m backlog add "Refactor [Pattern] in [Files]" --type refactor`.
+            - Set `[MISSION_TYPE]` to "WET" (Defer refactor).
+        3.  **If ALREADY in backlog**:
+            - Set `[MISSION_TYPE]` to "DRY" (Enforce refactor).
+    *   **If NO Duplication**: Set `[MISSION_TYPE]` to "WET".
+3.  Execute `m plan init --intent "[REFINED_INTENT]" --type [MISSION_TYPE] --scope [file1] --scope [file2] --domain [domain1] ...`
+4.  **Log**: Run `m log --step "Context" "Context analyzed and draft plan initialized"`
 
-### Step 3: Draft Spec Creation
-
-1.  **Identify Scope**: Determine which files need to be modified or created based on the `[REFINED_INTENT]`.
-    *   **Include tests** if: New logic, bug fixes, or critical paths (separate test files or in-file tests).
-    *   **Exclude tests** if: Trivial changes (typos, formatting, config).
-2.  **Determine Type**:
-    *   If Duplication Check (Step 2) found a `refactor_opportunity`, set `type` to "DRY".
-    *   Otherwise, set `type` to "WET".
-3.  **Create Draft Spec**: Execute `m plan init --intent "[REFINED_INTENT]" --type [WET|DRY] --scope [file1] --scope [file2] --domain [domain1] ...`
-4.  **Log**: Run `m log --step "Draft" "Created draft plan.json with intent and scope"`
-
-### Step 4: Complexity Analysis
+### Step 3: Complexity Analysis
 
 1.  **Run Analysis**: Execute `m plan analyze --file .mission/plan.json --update`.
 2.  **Validate JSON**: Ensure the CLI output is valid JSON. If not, report CLI error and stop.
 3.  **Follow Instructions**: Read the `next_step` field from the JSON output and **follow it literally**.
     *   **If `next_step` says STOP (Track 1)**:
         1.  Use file read tool to load template `.mission/libraries/displays/plan-atomic.md`.
-        2.  Output the filled template with `{{REFINED_INTENT}}` and a `{{SUGGESTED_EDIT}}`.
+        2.  Analyze the intent to generate a safe, specific edit suggestion.
+        3.  Output the filled template with `{{REFINED_INTENT}}` and `{{SUGGESTED_EDIT}}`.
     *   **If `next_step` says STOP (Track 4)**:
-        1.  Use file read tool to load `.mission/backlog.md`.
-        2.  Decompose the `[REFINED_INTENT]` into 3-5 atomic sub-intents.
-        3.  Append sub-intents to the `## DECOMPOSED INTENTS` section of `.mission/backlog.md`.
+        1.  Decompose `[REFINED_INTENT]` into atomic sub-intents.
+        2.  Execute `m backlog list` to verify no duplicates.
+        3.  Execute `m backlog add "[sub-intent 1]" "[sub-intent 2]" ... --type decomposed` (excluding duplicates).
         4.  Use file read tool to load template `.mission/libraries/displays/plan-epic.md`.
-        5.  Output the filled template.
-    *   **If `next_step` says PROCEED**: Continue to Step 5.
-    *   **If CLI command fails**: Report error and ask user to check CLI installation.
+        5.  Output the filled template with `{{SUB_INTENTS}}` populated with decomposed intents.
+    *   **If `next_step` says PROCEED**: Continue to Step 4.
 4.  **Log**: Run `m log --step "Analyze" "Complexity analysis complete. Track: [TRACK]"`
 
-### Step 5: Validation
+### Step 4: Validation
 
 1.  **Run Validation**: Execute `m plan validate --file .mission/plan.json`.
 2.  **Validate JSON**: Ensure the CLI output is valid JSON. If not, report CLI error and stop.
 3.  **Handle Output**:
-    *   If `valid: true`, proceed to Step 6.
+    *   If `valid: true`, proceed to Step 5.
     *   If `valid: false`, **STOP** and report the errors to the user.
-    *   **If CLI command fails**: Report error and ask user to check CLI installation.
 4.  **Log**: Run `m log --step "Validate" "Plan validation passed"`
 
-### Step 6: Finalize & Generate
+### Step 5: Finalize & Generate
 
-1.  **Develop Plan**: Create a step-by-step implementation plan.
-    *   **If Type is WET**: Add a note to the plan: "Note: Allow duplication for initial implementation (WET principle)".
-    *   **If Type is DRY**: Add a note to the plan: "Note: Refactor identified duplication into shared abstraction".
-2.  **Define Verification**: Create a safe verification command (e.g., `go test ./...`).
+1.  **Develop Plan**: Create a numbered, step-by-step implementation plan with clear actions.
+    *   **Format**: "1. [Action] in [File]", "2. [Action] in [File]", etc.
+    *   **If Type is WET**: Add note: "Note: Allow duplication for initial implementation (WET principle)".
+    *   **If Type is DRY**: Add note: "Note: Refactor identified duplication into shared abstraction".
+2.  **Define Verification**: Create a safe, executable verification command (e.g., `go test ./...`, `npm test`).
+    *   Must be non-destructive and project-appropriate.
 3.  **Update Spec**: Execute `m plan update --plan "[Step 1]" --plan "[Step 2]" ... --verification "[command]"`
 4.  **Generate**: Execute `m mission create --type final --file .mission/plan.json`.
-5.  **Validate Generation**: Ensure the CLI command succeeded and `.mission/mission.md` was created.
+5.  **Validate Generation**: Ensure CLI command succeeded and `.mission/mission.md` was created.
 6.  **Log**: Run `m log --step "Generate" "Mission generated successfully"`
 7.  **Final Output**: 
     1.  Use file read tool to load template `.mission/libraries/displays/plan-success.md`.
