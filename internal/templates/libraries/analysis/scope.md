@@ -31,6 +31,8 @@ Based on governance.md testability rules:
 - Documentation-only updates
 - Configuration changes without logic
 - Refactoring with existing comprehensive tests
+- Framework-heavy code (e.g., CLI definitions, UI wiring) lacking custom business logic
+- Trivial boilerplate or wiring code
 
 ## Output Format
 
@@ -122,5 +124,19 @@ Produce a structured list of files grouped by category:
   ],
   "config": [],
   "reasoning": "New utility requires tests; existing handler tests cover integration"
+}
+```
+
+### Example 5: Framework Wiring
+**Intent**: "Add new flag to CLI command"
+```json
+{
+  "primary": [
+    "cmd/init.go"
+  ],
+  "secondary": [],
+  "tests": [],
+  "config": [],
+  "reasoning": "Change is limited to framework configuration/wiring; no custom business logic to test"
 }
 ```

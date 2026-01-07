@@ -71,7 +71,7 @@ func (c *CheckService) CheckMissionState() (*Status, error) {
 	status.MissionID = missionID
 	status.Ready = true
 	status.Message = "Ready for new mission"
-	status.NextStep = "PROCEED to Step 1 (Intent Analysis)."
+	status.NextStep = "PROCEED to Step 1 (Intent Analysis)"
 	return status, nil
 }
 

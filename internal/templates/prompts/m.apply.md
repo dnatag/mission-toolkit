@@ -125,8 +125,8 @@ Before execution, read `.mission/governance.md`.
 - Display manual recovery steps:
   ```
   Checkpoint restore failed. Manual recovery required:
-  1. Run: git reset --hard HEAD
-  2. Run: git clean -fd
+  1. Run: git reset --soft HEAD
+  2. Review staged changes and unstage/discard as needed
   3. Review .mission/execution.log for details
   4. Re-run: /m.apply
   ```

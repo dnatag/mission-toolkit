@@ -20,7 +20,7 @@ $ARGUMENTS
 
 1. **Execute Check**: Run `m mission check --context plan` and parse JSON output
 2. **Validate Status**: Check `next_step` field:
-   - If `next_step` says "PROCEED to Step 2 (Intent Analysis)" → Continue with planning
+   - If `next_step` says "PROCEED to Step 1 (Intent Analysis)" → Continue with planning
    - If `next_step` says "STOP" → Display the message and halt
    - If mission exists → Use file read tool to load template `.mission/libraries/displays/error-mission-exists.md`
 
