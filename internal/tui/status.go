@@ -428,7 +428,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				missions := m.getActiveMissions()
 				if len(missions) > 0 {
-					m.selectedIndex = max(0, m.selectedIndex-1)
+					if m.selectedIndex > 0 {
+						// Move up within current page
+						m.selectedIndex = m.selectedIndex - 1
+					} else if !m.searchMode && m.currentPage > 0 {
+						// At top of page, go to previous page (bottom item)
+						m.currentPage = m.currentPage - 1
+						pageSize := m.getPageSize()
+						m.selectedIndex = pageSize - 1
+
+						// Trigger prefetch for adjacent pages
+						return m, m.triggerPrefetch()
+					}
 				}
 			}
 		case "down", "j":
@@ -441,23 +452,51 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if len(missions) > 0 {
 					pageSize := m.getPageSize()
 
-					// Check if moving down would trigger lazy loading of more missions
-					// This must be done before updating selectedIndex to avoid off-by-one errors
-					if !m.searchMode && !m.loading && m.loadedCount < m.totalCount {
-						// Calculate the absolute position after the proposed move
-						newSelectedIndex := min(pageSize-1, m.selectedIndex+1)
-						absoluteIndex := newSelectedIndex + (m.currentPage * m.itemsPerPage)
+					if m.selectedIndex < pageSize-1 {
+						// Check if moving down would trigger lazy loading of more missions
+						// This must be done before updating selectedIndex to avoid off-by-one errors
+						if !m.searchMode && !m.loading && m.loadedCount < m.totalCount {
+							// Calculate the absolute position after the proposed move
+							newSelectedIndex := m.selectedIndex + 1
+							absoluteIndex := newSelectedIndex + (m.currentPage * m.itemsPerPage)
 
-						// Trigger loading when we reach the last currently loaded mission
-						if absoluteIndex >= m.loadedCount-1 {
-							m.loading = true
-							m.selectedIndex = newSelectedIndex
-							return m, func() tea.Msg { return loadMoreMissions(m.loadedCount, 5) }
+							// Trigger loading when we reach the last currently loaded mission
+							if absoluteIndex >= m.loadedCount-1 {
+								m.loading = true
+								m.selectedIndex = newSelectedIndex
+								return m, func() tea.Msg { return loadMoreMissions(m.loadedCount, 5) }
+							}
+						}
+
+						// Move down within current page
+						m.selectedIndex = m.selectedIndex + 1
+					} else if !m.searchMode {
+						// At bottom of page, go to next page (top item)
+						totalPages := m.getTotalPages()
+						newPage := m.currentPage + 1
+
+						if newPage < totalPages {
+							// Check if moving to next page would trigger lazy loading
+							if !m.loading && m.loadedCount < m.totalCount {
+								// Calculate if the new page would need more missions
+								firstItemOnNewPage := newPage * m.itemsPerPage
+								if firstItemOnNewPage >= m.loadedCount {
+									// Store pending page change and load more missions
+									// This ensures page navigation completes after loading finishes
+									m.pendingPageChange = newPage
+									m.loading = true
+									return m, func() tea.Msg { return loadMoreMissions(m.loadedCount, 5) }
+								}
+							}
+
+							// No lazy loading needed, change page immediately
+							m.currentPage = newPage
+							m.selectedIndex = 0
+
+							// Trigger prefetch for adjacent pages
+							return m, m.triggerPrefetch()
 						}
 					}
-
-					// Update selection normally if no lazy loading was triggered
-					m.selectedIndex = min(pageSize-1, m.selectedIndex+1)
 				}
 			}
 		case "left", "h":
@@ -503,12 +542,51 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "pgup":
 			if m.selectedMission != nil {
+				// Scroll up in mission detail view
 				m.scrollOffset = max(0, m.scrollOffset-5)
+			} else if !m.searchMode {
+				// Navigate to previous page in mission list
+				missions := m.getActiveMissions()
+				if len(missions) > 0 {
+					m.currentPage = max(0, m.currentPage-1)
+					m.selectedIndex = 0
+
+					// Trigger prefetch for adjacent pages
+					return m, m.triggerPrefetch()
+				}
 			}
 		case "pgdn":
 			if m.selectedMission != nil {
+				// Scroll down in mission detail view
 				maxScroll := m.getMaxScrollOffset()
 				m.scrollOffset = min(maxScroll, m.scrollOffset+5)
+			} else if !m.searchMode {
+				// Navigate to next page in mission list with lazy loading support
+				missions := m.getActiveMissions()
+				if len(missions) > 0 {
+					totalPages := m.getTotalPages()
+					newPage := min(totalPages-1, m.currentPage+1)
+
+					// Check if moving to next page would trigger lazy loading
+					if !m.loading && m.loadedCount < m.totalCount {
+						// Calculate if the new page would need more missions
+						firstItemOnNewPage := newPage * m.itemsPerPage
+						if firstItemOnNewPage >= m.loadedCount {
+							// Store pending page change and load more missions
+							// This ensures page navigation completes after loading finishes
+							m.pendingPageChange = newPage
+							m.loading = true
+							return m, func() tea.Msg { return loadMoreMissions(m.loadedCount, 5) }
+						}
+					}
+
+					// No lazy loading needed, change page immediately
+					m.currentPage = newPage
+					m.selectedIndex = 0
+
+					// Trigger prefetch for adjacent pages
+					return m, m.triggerPrefetch()
+				}
 			}
 		case "enter":
 			if m.selectedMission == nil {

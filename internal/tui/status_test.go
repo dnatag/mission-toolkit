@@ -869,3 +869,199 @@ func TestNextPageNavigationWithoutLazyLoading(t *testing.T) {
 	assert.Equal(t, 0, m.selectedIndex, "Should reset selected index")
 	assert.NotNil(t, cmd, "Should trigger prefetch")
 }
+
+// Test scroll-based page navigation (pgup/pgdn)
+// Verifies that page up/down keys navigate between pages when in mission list view
+func TestScrollPageNavigation(t *testing.T) {
+	model := createTestModel()
+	model.itemsPerPage = 2
+	model.totalCount = 10
+	model.loadedCount = 6 // Enough missions for multiple pages
+	model.prefetchedPages = make(map[int][]*mission.Mission)
+	model.currentPage = 1
+	model.pendingPageChange = -1
+
+	// Create 6 loaded missions
+	missions := make([]*mission.Mission, 6)
+	for i := 0; i < 6; i++ {
+		missions[i] = createTestMission("Mission "+string(rune('A'+i)), "completed")
+	}
+	model.completedMissions = missions
+
+	tests := []struct {
+		name        string
+		key         string
+		expectPage  int
+		expectCmd   bool
+		description string
+	}{
+		{
+			name:        "PgUp navigation",
+			key:         "pgup",
+			expectPage:  0,
+			expectCmd:   true,
+			description: "Should navigate to previous page",
+		},
+		{
+			name:        "PgDn navigation",
+			key:         "pgdn",
+			expectPage:  2,
+			expectCmd:   true,
+			description: "Should navigate to next page",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset to page 1
+			model.currentPage = 1
+			model.selectedIndex = 0
+			model.loading = false
+			model.pendingPageChange = -1
+
+			msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(tt.key)}
+			updatedModel, cmd := model.Update(msg)
+
+			m := updatedModel.(Model)
+
+			assert.Equal(t, tt.expectPage, m.currentPage, tt.description)
+			assert.Equal(t, 0, m.selectedIndex, "Should reset selected index")
+			
+			if tt.expectCmd {
+				assert.NotNil(t, cmd, "Should trigger prefetch command")
+			}
+		})
+	}
+}
+
+// Test scroll navigation with lazy loading
+func TestScrollNavigationWithLazyLoading(t *testing.T) {
+	model := createTestModel()
+	model.itemsPerPage = 2
+	model.totalCount = 10
+	model.loadedCount = 4 // Only 4 missions loaded (pages 0,1)
+	model.prefetchedPages = make(map[int][]*mission.Mission)
+	model.currentPage = 1
+	model.pendingPageChange = -1
+
+	// Create 4 loaded missions
+	missions := make([]*mission.Mission, 4)
+	for i := 0; i < 4; i++ {
+		missions[i] = createTestMission("Mission "+string(rune('A'+i)), "completed")
+	}
+	model.completedMissions = missions
+
+	// Test pgdn navigation that should trigger lazy loading
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("pgdn")}
+	updatedModel, cmd := model.Update(msg)
+
+	m := updatedModel.(Model)
+
+	// Should trigger loading and set pending page change
+	assert.True(t, m.loading, "Should trigger loading")
+	assert.Equal(t, 2, m.pendingPageChange, "Should set pending page change to 2")
+	assert.Equal(t, 1, m.currentPage, "Current page should not change yet")
+	assert.NotNil(t, cmd, "Should return load command")
+}
+
+// Test scroll navigation in search mode (should not work)
+func TestScrollNavigationInSearchMode(t *testing.T) {
+	model := createTestModel()
+	model.itemsPerPage = 2
+	model.totalCount = 6
+	model.loadedCount = 6
+	model.currentPage = 1
+	model.searchMode = true // In search mode
+
+	// Create missions
+	missions := make([]*mission.Mission, 6)
+	for i := 0; i < 6; i++ {
+		missions[i] = createTestMission("Mission "+string(rune('A'+i)), "completed")
+	}
+	model.completedMissions = missions
+
+	// Test pgup in search mode - should not navigate
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("pgup")}
+	updatedModel, cmd := model.Update(msg)
+
+	m := updatedModel.(Model)
+
+	// Should not change page in search mode
+	assert.Equal(t, 1, m.currentPage, "Should not change page in search mode")
+	assert.Nil(t, cmd, "Should not return command in search mode")
+}
+
+// Test up/down arrow page navigation
+func TestArrowKeyPageNavigation(t *testing.T) {
+	model := createTestModel()
+	model.itemsPerPage = 2
+	model.totalCount = 6
+	model.loadedCount = 6 // All missions loaded
+	model.prefetchedPages = make(map[int][]*mission.Mission)
+	model.currentPage = 1
+	model.selectedIndex = 0
+
+	// Create 6 loaded missions
+	missions := make([]*mission.Mission, 6)
+	for i := 0; i < 6; i++ {
+		missions[i] = createTestMission("Mission "+string(rune('A'+i)), "completed")
+	}
+	model.completedMissions = missions
+
+	// Test up arrow at top of page - should go to previous page
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")}
+	updatedModel, cmd := model.Update(msg)
+
+	m := updatedModel.(Model)
+	assert.Equal(t, 0, m.currentPage, "Should navigate to previous page")
+	assert.Equal(t, 1, m.selectedIndex, "Should select bottom item of previous page")
+	assert.NotNil(t, cmd, "Should trigger prefetch")
+
+	// Reset to page 1, bottom item
+	model.currentPage = 1
+	model.selectedIndex = 1 // Bottom of page (2 items per page)
+
+	// Test down arrow at bottom of page - should go to next page
+	msg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")}
+	updatedModel, cmd = model.Update(msg)
+
+	m = updatedModel.(Model)
+	assert.Equal(t, 2, m.currentPage, "Should navigate to next page")
+	assert.Equal(t, 0, m.selectedIndex, "Should select top item of next page")
+	assert.NotNil(t, cmd, "Should trigger prefetch")
+}
+
+// Test up/down arrow within page navigation
+func TestArrowKeyWithinPageNavigation(t *testing.T) {
+	model := createTestModel()
+	model.itemsPerPage = 3
+	model.totalCount = 6
+	model.loadedCount = 6
+	model.currentPage = 1
+	model.selectedIndex = 1 // Middle item
+
+	// Create missions
+	missions := make([]*mission.Mission, 6)
+	for i := 0; i < 6; i++ {
+		missions[i] = createTestMission("Mission "+string(rune('A'+i)), "completed")
+	}
+	model.completedMissions = missions
+
+	// Test up arrow within page
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")}
+	updatedModel, cmd := model.Update(msg)
+
+	m := updatedModel.(Model)
+	assert.Equal(t, 1, m.currentPage, "Should stay on same page")
+	assert.Equal(t, 0, m.selectedIndex, "Should move up within page")
+	assert.Nil(t, cmd, "Should not trigger command for within-page movement")
+
+	// Test down arrow within page
+	msg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")}
+	updatedModel, cmd = m.Update(msg)
+
+	m2 := updatedModel.(Model)
+	assert.Equal(t, 1, m2.currentPage, "Should stay on same page")
+	assert.Equal(t, 1, m2.selectedIndex, "Should move down within page")
+	assert.Nil(t, cmd, "Should not trigger command for within-page movement")
+}
