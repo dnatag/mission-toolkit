@@ -1036,7 +1036,7 @@ func TestSearchModeNavigationInDetailView(t *testing.T) {
 	model := createTestModel()
 	model.searchMode = true
 	model.searchQuery = "test"
-	
+
 	// Create a mission with enough content to scroll
 	longMissionBody := `## INTENT
 This is a test mission with a very long intent that spans multiple lines to ensure we have enough content for scrolling in the detail view.
@@ -1058,7 +1058,7 @@ file6.go
 
 ## VERIFICATION
 go test ./...`
-	
+
 	longMission := &mission.Mission{
 		ID:     "test-long-id",
 		Status: "completed",
@@ -1066,41 +1066,41 @@ go test ./...`
 		Track:  2,
 		Body:   longMissionBody,
 	}
-	
+
 	model.selectedMission = longMission
 	model.scrollOffset = 0
 	model.viewportHeight = 10 // Small viewport to ensure scrolling is possible
 
 	// Test that navigation keys work in detail view even when in search mode
 	tests := []struct {
-		name        string
-		key         string
+		name         string
+		key          string
 		expectScroll int
-		description string
+		description  string
 	}{
 		{
-			name:        "Up arrow in detail view",
-			key:         "k",
+			name:         "Up arrow in detail view",
+			key:          "k",
 			expectScroll: 0, // Can't scroll up from 0
-			description: "Should handle up navigation in detail view",
+			description:  "Should handle up navigation in detail view",
 		},
 		{
-			name:        "Down arrow in detail view", 
-			key:         "j",
+			name:         "Down arrow in detail view",
+			key:          "j",
 			expectScroll: 1,
-			description: "Should handle down navigation in detail view",
+			description:  "Should handle down navigation in detail view",
 		},
 		{
-			name:        "Page up in detail view",
-			key:         "pgup",
+			name:         "Page up in detail view",
+			key:          "pgup",
 			expectScroll: 0, // Can't scroll up from 0
-			description: "Should handle page up in detail view",
+			description:  "Should handle page up in detail view",
 		},
 		{
-			name:        "Page down in detail view",
-			key:         "pgdn", 
+			name:         "Page down in detail view",
+			key:          "pgdn",
 			expectScroll: 5, // Scrolls by 5, but limited by maxScroll
-			description: "Should handle page down in detail view",
+			description:  "Should handle page down in detail view",
 		},
 	}
 
@@ -1108,19 +1108,19 @@ go test ./...`
 		t.Run(tt.name, func(t *testing.T) {
 			// Reset scroll offset
 			model.scrollOffset = 0
-			
+
 			msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(tt.key)}
 			updatedModel, cmd := model.Update(msg)
 
 			m := updatedModel.(Model)
-			
+
 			// For scroll down operations, check that scroll increased (limited by maxScroll)
 			if tt.key == "j" || tt.key == "pgdn" {
-				assert.Greater(t, m.scrollOffset, 0, tt.description + " - scroll should increase")
+				assert.Greater(t, m.scrollOffset, 0, tt.description+" - scroll should increase")
 			} else {
 				assert.Equal(t, tt.expectScroll, m.scrollOffset, tt.description)
 			}
-			
+
 			assert.True(t, m.searchMode, "Should remain in search mode")
 			assert.NotNil(t, m.selectedMission, "Should remain in detail view")
 			assert.Nil(t, cmd, "Should not return command for detail view navigation")

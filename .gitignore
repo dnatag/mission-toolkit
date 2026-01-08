@@ -7,6 +7,7 @@ m
 .vscode/
 
 # AI & Mission Runtime
+.opencode/
 .claude/
 CLAUDE.md
 .amazonq/
