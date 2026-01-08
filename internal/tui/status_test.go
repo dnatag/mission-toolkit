@@ -502,3 +502,186 @@ func TestPaginationBoundaries(t *testing.T) {
 	assert.Greater(t, len(missions), 0)
 	assert.LessOrEqual(t, len(missions), 2)
 }
+
+// Test lazy loading trigger functionality
+// This test verifies that the on-demand loading trigger works correctly
+// when users scroll to the end of currently loaded missions.
+func TestLazyLoadingTrigger(t *testing.T) {
+	model := createTestModel()
+	model.itemsPerPage = 2
+	model.totalCount = 10    // Total missions available
+	model.loadedCount = 4    // Currently loaded missions
+	model.loading = false
+	model.searchMode = false
+
+	// Create 4 loaded missions
+	missions := make([]*mission.Mission, 4)
+	for i := 0; i < 4; i++ {
+		missions[i] = createTestMission("Mission "+string(rune('A'+i)), "completed")
+	}
+	model.completedMissions = missions
+
+	tests := []struct {
+		name           string
+		currentPage    int
+		selectedIndex  int
+		shouldTrigger  bool
+		description    string
+	}{
+		{
+			name:          "First page, first item",
+			currentPage:   0,
+			selectedIndex: 0,
+			shouldTrigger: false,
+			description:   "absoluteIndex=0, not at end",
+		},
+		{
+			name:          "First page, second item",
+			currentPage:   0,
+			selectedIndex: 1,
+			shouldTrigger: false,
+			description:   "absoluteIndex=1 after move, not at end",
+		},
+		{
+			name:          "Second page, first item",
+			currentPage:   1,
+			selectedIndex: 0,
+			shouldTrigger: true,
+			description:   "absoluteIndex=3 after move, at last loaded mission (loadedCount-1)",
+		},
+		{
+			name:          "Second page, second item (last loaded)",
+			currentPage:   1,
+			selectedIndex: 1,
+			shouldTrigger: true,
+			description:   "absoluteIndex=3, at last loaded mission (loadedCount-1)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset model state
+			model.currentPage = tt.currentPage
+			model.selectedIndex = tt.selectedIndex
+			model.loading = false
+
+			// Simulate down key press
+			msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}}
+			updatedModel, cmd := model.Update(msg)
+
+			m := updatedModel.(Model)
+
+			if tt.shouldTrigger {
+				// Should trigger loading
+				assert.True(t, m.loading, "Loading should be triggered for %s", tt.description)
+				assert.NotNil(t, cmd, "Command should be returned for loading more missions")
+			} else {
+				// Should not trigger loading
+				assert.False(t, m.loading, "Loading should not be triggered for %s", tt.description)
+			}
+		})
+	}
+}
+
+// Test lazy loading trigger edge cases
+// Verifies that the trigger correctly handles boundary conditions
+// like all missions loaded, search mode, and already loading states.
+func TestLazyLoadingTriggerEdgeCases(t *testing.T) {
+	model := createTestModel()
+	model.itemsPerPage = 2
+	model.totalCount = 4
+	model.loadedCount = 4 // All missions loaded
+	model.loading = false
+	model.searchMode = false
+
+	// When all missions are loaded, should not trigger
+	model.currentPage = 1
+	model.selectedIndex = 1
+
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}}
+	updatedModel, cmd := model.Update(msg)
+
+	m := updatedModel.(Model)
+	assert.False(t, m.loading, "Should not trigger when all missions are loaded")
+	assert.Nil(t, cmd)
+
+	// Test search mode - should not trigger
+	model.searchMode = true
+	model.loadedCount = 2 // Less than total
+	
+	updatedModel, cmd = model.Update(msg)
+	m = updatedModel.(Model)
+	assert.False(t, m.loading, "Should not trigger in search mode")
+
+	// Test when already loading - should not trigger
+	model.searchMode = false
+	model.loading = true
+	
+	updatedModel, cmd = model.Update(msg)
+	m = updatedModel.(Model)
+	assert.True(t, m.loading, "Should remain in loading state")
+}
+
+// Test lazy loading trigger for next page navigation
+func TestLazyLoadingTriggerNextPage(t *testing.T) {
+	model := createTestModel()
+	model.itemsPerPage = 2
+	model.totalCount = 10    // Total missions available
+	model.loadedCount = 4    // Currently loaded missions (0,1,2,3)
+	model.loading = false
+	model.searchMode = false
+
+	// Create 4 loaded missions
+	missions := make([]*mission.Mission, 4)
+	for i := 0; i < 4; i++ {
+		missions[i] = createTestMission("Mission "+string(rune('A'+i)), "completed")
+	}
+	model.completedMissions = missions
+
+	tests := []struct {
+		name           string
+		currentPage    int
+		shouldTrigger  bool
+		description    string
+	}{
+		{
+			name:          "Page 0 to 1 - no trigger needed",
+			currentPage:   0,
+			shouldTrigger: false,
+			description:   "Page 1 starts at index 2, within loaded missions",
+		},
+		{
+			name:          "Page 1 to 2 - should trigger",
+			currentPage:   1,
+			shouldTrigger: true,
+			description:   "Page 2 starts at index 4, beyond loaded missions",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset model state
+			model.currentPage = tt.currentPage
+			model.selectedIndex = 0
+			model.loading = false
+
+			// Simulate right key press (next page)
+			msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}}
+			updatedModel, cmd := model.Update(msg)
+
+			m := updatedModel.(Model)
+
+			if tt.shouldTrigger {
+				// Should trigger loading
+				assert.True(t, m.loading, "Loading should be triggered for %s", tt.description)
+				assert.NotNil(t, cmd, "Command should be returned for loading more missions")
+				// Page should not change yet when loading is triggered
+				assert.Equal(t, tt.currentPage, m.currentPage, "Page should not change when loading is triggered")
+			} else {
+				// Should not trigger loading, page should change normally
+				assert.False(t, m.loading, "Loading should not be triggered for %s", tt.description)
+				assert.Equal(t, tt.currentPage+1, m.currentPage, "Page should advance normally")
+			}
+		})
+	}
+}

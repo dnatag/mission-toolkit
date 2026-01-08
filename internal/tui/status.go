@@ -310,18 +310,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				missions := m.getActiveMissions()
 				if len(missions) > 0 {
 					pageSize := m.getPageSize()
-					m.selectedIndex = min(pageSize-1, m.selectedIndex+1)
 
-					// Trigger lazy load when scrolling to last item on page and more missions available
+					// Check if moving down would trigger lazy loading of more missions
+					// This must be done before updating selectedIndex to avoid off-by-one errors
 					if !m.searchMode && !m.loading && m.loadedCount < m.totalCount {
-						// Check if we're at the last item of the currently loaded list
-						lastItemIndex := m.selectedIndex + (m.currentPage * m.itemsPerPage)
-						if lastItemIndex >= m.loadedCount-1 {
-							// Load more missions
+						// Calculate the absolute position after the proposed move
+						newSelectedIndex := min(pageSize-1, m.selectedIndex+1)
+						absoluteIndex := newSelectedIndex + (m.currentPage * m.itemsPerPage)
+
+						// Trigger loading when we reach the last currently loaded mission
+						if absoluteIndex >= m.loadedCount-1 {
 							m.loading = true
+							m.selectedIndex = newSelectedIndex
 							return m, func() tea.Msg { return loadMoreMissions(m.loadedCount, 10) }
 						}
 					}
+
+					// Update selection normally if no lazy loading was triggered
+					m.selectedIndex = min(pageSize-1, m.selectedIndex+1)
 				}
 			}
 		case "left", "h":
@@ -339,7 +345,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if len(missions) > 0 {
 					// Next page
 					totalPages := m.getTotalPages()
-					m.currentPage = min(totalPages-1, m.currentPage+1)
+					newPage := min(totalPages-1, m.currentPage+1)
+
+					// Check if moving to next page would trigger lazy loading
+					if !m.loading && m.loadedCount < m.totalCount {
+						// Calculate if the new page would need more missions
+						firstItemOnNewPage := newPage * m.itemsPerPage
+						if firstItemOnNewPage >= m.loadedCount {
+							// Load more missions before changing page
+							m.loading = true
+							return m, func() tea.Msg { return loadMoreMissions(m.loadedCount, 10) }
+						}
+					}
+
+					m.currentPage = newPage
 					m.selectedIndex = 0
 				}
 			}
