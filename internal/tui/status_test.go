@@ -926,7 +926,7 @@ func TestScrollPageNavigation(t *testing.T) {
 
 			assert.Equal(t, tt.expectPage, m.currentPage, tt.description)
 			assert.Equal(t, 0, m.selectedIndex, "Should reset selected index")
-			
+
 			if tt.expectCmd {
 				assert.NotNil(t, cmd, "Should trigger prefetch command")
 			}
@@ -1029,6 +1029,139 @@ func TestArrowKeyPageNavigation(t *testing.T) {
 	assert.Equal(t, 2, m.currentPage, "Should navigate to next page")
 	assert.Equal(t, 0, m.selectedIndex, "Should select top item of next page")
 	assert.NotNil(t, cmd, "Should trigger prefetch")
+}
+
+// Test search mode navigation behavior
+func TestSearchModeNavigationInDetailView(t *testing.T) {
+	model := createTestModel()
+	model.searchMode = true
+	model.searchQuery = "test"
+	
+	// Create a mission with enough content to scroll
+	longMissionBody := `## INTENT
+This is a test mission with a very long intent that spans multiple lines to ensure we have enough content for scrolling in the detail view.
+
+## SCOPE
+file1.go
+file2.go
+file3.go
+file4.go
+file5.go
+file6.go
+
+## PLAN
+- Step 1: Do something important
+- Step 2: Do another important thing
+- Step 3: Do yet another important thing
+- Step 4: Do one more important thing
+- Step 5: Do the final important thing
+
+## VERIFICATION
+go test ./...`
+	
+	longMission := &mission.Mission{
+		ID:     "test-long-id",
+		Status: "completed",
+		Type:   "WET",
+		Track:  2,
+		Body:   longMissionBody,
+	}
+	
+	model.selectedMission = longMission
+	model.scrollOffset = 0
+	model.viewportHeight = 10 // Small viewport to ensure scrolling is possible
+
+	// Test that navigation keys work in detail view even when in search mode
+	tests := []struct {
+		name        string
+		key         string
+		expectScroll int
+		description string
+	}{
+		{
+			name:        "Up arrow in detail view",
+			key:         "k",
+			expectScroll: 0, // Can't scroll up from 0
+			description: "Should handle up navigation in detail view",
+		},
+		{
+			name:        "Down arrow in detail view", 
+			key:         "j",
+			expectScroll: 1,
+			description: "Should handle down navigation in detail view",
+		},
+		{
+			name:        "Page up in detail view",
+			key:         "pgup",
+			expectScroll: 0, // Can't scroll up from 0
+			description: "Should handle page up in detail view",
+		},
+		{
+			name:        "Page down in detail view",
+			key:         "pgdn", 
+			expectScroll: 5, // Scrolls by 5, but limited by maxScroll
+			description: "Should handle page down in detail view",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset scroll offset
+			model.scrollOffset = 0
+			
+			msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(tt.key)}
+			updatedModel, cmd := model.Update(msg)
+
+			m := updatedModel.(Model)
+			
+			// For scroll down operations, check that scroll increased (limited by maxScroll)
+			if tt.key == "j" || tt.key == "pgdn" {
+				assert.Greater(t, m.scrollOffset, 0, tt.description + " - scroll should increase")
+			} else {
+				assert.Equal(t, tt.expectScroll, m.scrollOffset, tt.description)
+			}
+			
+			assert.True(t, m.searchMode, "Should remain in search mode")
+			assert.NotNil(t, m.selectedMission, "Should remain in detail view")
+			assert.Nil(t, cmd, "Should not return command for detail view navigation")
+		})
+	}
+}
+
+func TestSearchModeTextInputInDetailView(t *testing.T) {
+	model := createTestModel()
+	model.searchMode = true
+	model.searchQuery = "test"
+	model.selectedMission = createTestMission("Selected mission", "completed")
+
+	// Test that text input is NOT captured when viewing mission details
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}}
+	updatedModel, cmd := model.Update(msg)
+
+	m := updatedModel.(Model)
+	assert.Equal(t, "test", m.searchQuery, "Search query should not change in detail view")
+	assert.True(t, m.searchMode, "Should remain in search mode")
+	assert.NotNil(t, m.selectedMission, "Should remain in detail view")
+	assert.Nil(t, cmd, "Should not return command")
+}
+
+func TestSearchModeTextInputInMissionList(t *testing.T) {
+	model := createTestModel()
+	model.searchMode = true
+	model.searchQuery = "test"
+	model.selectedMission = nil // In mission list, not detail view
+
+	// Test that text input IS captured when in mission list
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}}
+	updatedModel, cmd := model.Update(msg)
+
+	m := updatedModel.(Model)
+	assert.Equal(t, "testa", m.searchQuery, "Search query should be updated in mission list")
+	assert.True(t, m.searchMode, "Should remain in search mode")
+	assert.Nil(t, m.selectedMission, "Should remain in mission list")
+	assert.Equal(t, 0, m.selectedIndex, "Should reset selected index")
+	assert.Equal(t, 0, m.currentPage, "Should reset current page")
+	assert.Nil(t, cmd, "Should not return command")
 }
 
 // Test up/down arrow within page navigation

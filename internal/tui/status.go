@@ -373,8 +373,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		// Handle text input for search first - prioritize in search mode
-		if m.searchMode {
+		// Handle text input for search only when in search mode AND in mission list (not detail view)
+		if m.searchMode && m.selectedMission == nil {
 			key := msg.String()
 			// Accept all printable ASCII characters (space through tilde)
 			if len(key) == 1 && key[0] >= 32 && key[0] <= 126 {
