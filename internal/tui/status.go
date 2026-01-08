@@ -88,8 +88,9 @@ func loadCurrentMission() tea.Msg {
 }
 
 // loadInitialMissions loads the first batch of completed missions for lazy loading
+// Uses a batch size of 5 to balance performance with memory usage
 func loadInitialMissions() tea.Msg {
-	return loadCompletedMissionsBatch(0, 10)
+	return loadCompletedMissionsBatch(0, 5)
 }
 
 // loadCompletedMissionsBatch loads a batch of missions from the filesystem
@@ -322,7 +323,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						if absoluteIndex >= m.loadedCount-1 {
 							m.loading = true
 							m.selectedIndex = newSelectedIndex
-							return m, func() tea.Msg { return loadMoreMissions(m.loadedCount, 10) }
+							return m, func() tea.Msg { return loadMoreMissions(m.loadedCount, 5) }
 						}
 					}
 
@@ -354,7 +355,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						if firstItemOnNewPage >= m.loadedCount {
 							// Load more missions before changing page
 							m.loading = true
-							return m, func() tea.Msg { return loadMoreMissions(m.loadedCount, 10) }
+							return m, func() tea.Msg { return loadMoreMissions(m.loadedCount, 5) }
 						}
 					}
 
