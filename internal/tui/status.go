@@ -63,14 +63,17 @@ type Model struct {
 	// Prefetch state
 	prefetchedPages map[int][]*mission.Mission // Cache of prefetched pages (limited to adjacent pages)
 	prefetching     bool                       // Whether a prefetch operation is in progress
+	// Navigation state
+	pendingPageChange int // Page to navigate to after loading completes (-1 = no pending change)
 }
 
 func NewModel() Model {
 	return Model{
-		selectedIndex:   0,
-		currentPage:     0,
-		itemsPerPage:    5,
-		prefetchedPages: make(map[int][]*mission.Mission),
+		selectedIndex:     0,
+		currentPage:       0,
+		itemsPerPage:      5,
+		prefetchedPages:   make(map[int][]*mission.Mission),
+		pendingPageChange: -1,
 	}
 }
 
@@ -340,11 +343,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.loading = false
 			m.loadError = nil
 
+			// Complete pending page change if any
+			// This ensures navigation completes after lazy loading finishes
+			if m.pendingPageChange >= 0 {
+				m.currentPage = m.pendingPageChange
+				m.selectedIndex = 0
+				m.pendingPageChange = -1
+			}
+
 			// Trigger aggressive prefetch when new missions are loaded
 			// This ensures next pages are ready even when total page count increases
 			return m, m.triggerAggressivePrefetch()
 		} else {
 			m.loadError = msg.err
+			// Clear pending page change on error
+			m.pendingPageChange = -1
 		}
 		return m, nil
 
@@ -472,12 +485,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						// Calculate if the new page would need more missions
 						firstItemOnNewPage := newPage * m.itemsPerPage
 						if firstItemOnNewPage >= m.loadedCount {
-							// Load more missions before changing page
+							// Store pending page change and load more missions
+							// This ensures page navigation completes after loading finishes
+							m.pendingPageChange = newPage
 							m.loading = true
 							return m, func() tea.Msg { return loadMoreMissions(m.loadedCount, 5) }
 						}
 					}
 
+					// No lazy loading needed, change page immediately
 					m.currentPage = newPage
 					m.selectedIndex = 0
 

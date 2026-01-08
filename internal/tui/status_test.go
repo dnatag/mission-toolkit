@@ -787,3 +787,85 @@ func TestAggressivePrefetch(t *testing.T) {
 	assert.NotNil(t, cmd, "Aggressive prefetch should return a command")
 	assert.True(t, model.prefetching, "Prefetching flag should be set")
 }
+
+// Test next page navigation with lazy loading and prefetch
+func TestNextPageNavigationWithLazyLoading(t *testing.T) {
+	model := createTestModel()
+	model.itemsPerPage = 2
+	model.totalCount = 10
+	model.loadedCount = 4 // Only 4 missions loaded (pages 0,1)
+	model.prefetchedPages = make(map[int][]*mission.Mission)
+	model.currentPage = 1
+	model.pendingPageChange = -1
+
+	// Create 4 loaded missions
+	missions := make([]*mission.Mission, 4)
+	for i := 0; i < 4; i++ {
+		missions[i] = createTestMission("Mission "+string(rune('A'+i)), "completed")
+	}
+	model.completedMissions = missions
+
+	// Test right navigation that should trigger lazy loading
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}}
+	updatedModel, cmd := model.Update(msg)
+
+	m := updatedModel.(Model)
+
+	// Should trigger loading and set pending page change
+	assert.True(t, m.loading, "Should trigger loading")
+	assert.Equal(t, 2, m.pendingPageChange, "Should set pending page change to 2")
+	assert.Equal(t, 1, m.currentPage, "Current page should not change yet")
+	assert.NotNil(t, cmd, "Should return load command")
+
+	// Simulate loadMoreMissionsMsg response
+	loadMsg := loadMoreMissionsMsg{
+		missions: []*mission.Mission{
+			createTestMission("Mission E", "completed"),
+			createTestMission("Mission F", "completed"),
+		},
+		loadedCount: 2,
+		err:         nil,
+	}
+
+	updatedModel2, cmd2 := m.Update(loadMsg)
+	m2 := updatedModel2.(Model)
+
+	// Should complete page change and trigger prefetch
+	assert.False(t, m2.loading, "Loading should be complete")
+	assert.Equal(t, -1, m2.pendingPageChange, "Pending page change should be cleared")
+	assert.Equal(t, 2, m2.currentPage, "Should navigate to page 2")
+	assert.Equal(t, 0, m2.selectedIndex, "Should reset selected index")
+	assert.Equal(t, 6, m2.loadedCount, "Should have 6 loaded missions")
+	assert.NotNil(t, cmd2, "Should trigger aggressive prefetch")
+}
+
+// Test next page navigation without lazy loading
+func TestNextPageNavigationWithoutLazyLoading(t *testing.T) {
+	model := createTestModel()
+	model.itemsPerPage = 2
+	model.totalCount = 6
+	model.loadedCount = 6 // All missions already loaded
+	model.prefetchedPages = make(map[int][]*mission.Mission)
+	model.currentPage = 1
+	model.pendingPageChange = -1
+
+	// Create 6 loaded missions
+	missions := make([]*mission.Mission, 6)
+	for i := 0; i < 6; i++ {
+		missions[i] = createTestMission("Mission "+string(rune('A'+i)), "completed")
+	}
+	model.completedMissions = missions
+
+	// Test right navigation that should NOT trigger lazy loading
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}}
+	updatedModel, cmd := model.Update(msg)
+
+	m := updatedModel.(Model)
+
+	// Should change page immediately and trigger prefetch
+	assert.False(t, m.loading, "Should not trigger loading")
+	assert.Equal(t, -1, m.pendingPageChange, "Should not set pending page change")
+	assert.Equal(t, 2, m.currentPage, "Should navigate to page 2 immediately")
+	assert.Equal(t, 0, m.selectedIndex, "Should reset selected index")
+	assert.NotNil(t, cmd, "Should trigger prefetch")
+}
