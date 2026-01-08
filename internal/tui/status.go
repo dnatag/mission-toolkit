@@ -60,13 +60,17 @@ type Model struct {
 	loadedCount int  // Number of missions currently loaded
 	loading     bool // Whether a load operation is in progress
 	loadError   error
+	// Prefetch state
+	prefetchedPages map[int][]*mission.Mission // Cache of prefetched pages (limited to adjacent pages)
+	prefetching     bool                       // Whether a prefetch operation is in progress
 }
 
 func NewModel() Model {
 	return Model{
-		selectedIndex: 0,
-		currentPage:   0,
-		itemsPerPage:  5,
+		selectedIndex:   0,
+		currentPage:     0,
+		itemsPerPage:    5,
+		prefetchedPages: make(map[int][]*mission.Mission),
 	}
 }
 
@@ -174,6 +178,93 @@ func loadMoreMissions(offset, limit int) tea.Msg {
 	return loadMoreMissionsMsg{err: fmt.Errorf("failed to load more missions")}
 }
 
+// prefetchPage loads missions for a specific page in the background
+func prefetchPage(page, itemsPerPage int) tea.Msg {
+	offset := page * itemsPerPage
+	result := loadCompletedMissionsBatch(offset, 5) // Use same batch size as current loading
+	if msg, ok := result.(initialMissionsMsg); ok {
+		return prefetchPageMsg{
+			page:     page,
+			missions: msg.missions,
+		}
+	}
+	return prefetchPageMsg{
+		page: page,
+		err:  fmt.Errorf("failed to prefetch page %d", page),
+	}
+}
+
+// triggerPrefetch starts prefetching for adjacent pages if not already cached
+// This improves user experience by preloading content for likely navigation targets
+func (m *Model) triggerPrefetch() tea.Cmd {
+	if m.prefetching || m.searchMode {
+		return nil
+	}
+
+	var cmds []tea.Cmd
+
+	// Prefetch next page if not cached and within bounds
+	nextPage := m.currentPage + 1
+	if _, exists := m.prefetchedPages[nextPage]; !exists && nextPage < m.getTotalPages() {
+		cmds = append(cmds, func() tea.Msg { return prefetchPage(nextPage, m.itemsPerPage) })
+	}
+
+	// Prefetch previous page if not cached and within bounds
+	prevPage := m.currentPage - 1
+	if _, exists := m.prefetchedPages[prevPage]; !exists && prevPage >= 0 {
+		cmds = append(cmds, func() tea.Msg { return prefetchPage(prevPage, m.itemsPerPage) })
+	}
+
+	if len(cmds) > 0 {
+		m.prefetching = true
+		return tea.Batch(cmds...)
+	}
+
+	return nil
+}
+
+// triggerAggressivePrefetch prefetches more aggressively after loading new missions
+// This ensures pages are ready even when total page count increases
+func (m *Model) triggerAggressivePrefetch() tea.Cmd {
+	if m.prefetching || m.searchMode {
+		return nil
+	}
+
+	var cmds []tea.Cmd
+
+	// Prefetch next 2 pages to account for newly available pages
+	for i := 1; i <= 2; i++ {
+		nextPage := m.currentPage + i
+		if _, exists := m.prefetchedPages[nextPage]; !exists && nextPage < m.getTotalPages() {
+			cmds = append(cmds, func() tea.Msg { return prefetchPage(nextPage, m.itemsPerPage) })
+		}
+	}
+
+	// Prefetch previous page if not cached and within bounds
+	prevPage := m.currentPage - 1
+	if _, exists := m.prefetchedPages[prevPage]; !exists && prevPage >= 0 {
+		cmds = append(cmds, func() tea.Msg { return prefetchPage(prevPage, m.itemsPerPage) })
+	}
+
+	if len(cmds) > 0 {
+		m.prefetching = true
+		return tea.Batch(cmds...)
+	}
+
+	return nil
+}
+
+// cleanupPrefetchCache removes cached pages that are no longer adjacent to current page
+// This prevents unbounded memory growth while maintaining performance for likely navigation
+func (m *Model) cleanupPrefetchCache() {
+	for page := range m.prefetchedPages {
+		// Keep pages within 2 positions of current page to account for aggressive prefetch
+		if page < m.currentPage-1 || page > m.currentPage+2 {
+			delete(m.prefetchedPages, page)
+		}
+	}
+}
+
 type currentMissionMsg struct {
 	mission *mission.Mission
 	err     error
@@ -197,6 +288,13 @@ type loadMoreMissionsMsg struct {
 	missions    []*mission.Mission
 	loadedCount int
 	err         error
+}
+
+// Prefetch message type
+type prefetchPageMsg struct {
+	page     int
+	missions []*mission.Mission
+	err      error
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -227,6 +325,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.loadedCount = msg.loadedCount
 			m.loading = false
 			m.loadError = nil
+
+			// Trigger initial prefetch for adjacent pages
+			return m, m.triggerPrefetch()
 		} else {
 			m.loadError = msg.err
 		}
@@ -238,8 +339,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.loadedCount = m.loadedCount + msg.loadedCount
 			m.loading = false
 			m.loadError = nil
+
+			// Trigger aggressive prefetch when new missions are loaded
+			// This ensures next pages are ready even when total page count increases
+			return m, m.triggerAggressivePrefetch()
 		} else {
 			m.loadError = msg.err
+		}
+		return m, nil
+
+	case prefetchPageMsg:
+		if msg.err == nil {
+			// Store prefetched missions in cache
+			m.prefetchedPages[msg.page] = msg.missions
+			m.prefetching = false
+
+			// Clean up cache to prevent memory growth - keep only adjacent pages
+			m.cleanupPrefetchCache()
 		}
 		return m, nil
 
@@ -338,6 +454,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// Previous page
 					m.currentPage = max(0, m.currentPage-1)
 					m.selectedIndex = 0
+
+					// Trigger prefetch for adjacent pages
+					return m, m.triggerPrefetch()
 				}
 			}
 		case "right", "l":
@@ -361,6 +480,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					m.currentPage = newPage
 					m.selectedIndex = 0
+
+					// Trigger prefetch for adjacent pages
+					return m, m.triggerPrefetch()
 				}
 			}
 		case "pgup":

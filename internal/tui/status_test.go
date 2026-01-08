@@ -509,8 +509,8 @@ func TestPaginationBoundaries(t *testing.T) {
 func TestLazyLoadingTrigger(t *testing.T) {
 	model := createTestModel()
 	model.itemsPerPage = 2
-	model.totalCount = 10    // Total missions available
-	model.loadedCount = 4    // Currently loaded missions
+	model.totalCount = 10 // Total missions available
+	model.loadedCount = 4 // Currently loaded missions
 	model.loading = false
 	model.searchMode = false
 
@@ -522,11 +522,11 @@ func TestLazyLoadingTrigger(t *testing.T) {
 	model.completedMissions = missions
 
 	tests := []struct {
-		name           string
-		currentPage    int
-		selectedIndex  int
-		shouldTrigger  bool
-		description    string
+		name          string
+		currentPage   int
+		selectedIndex int
+		shouldTrigger bool
+		description   string
 	}{
 		{
 			name:          "First page, first item",
@@ -608,7 +608,7 @@ func TestLazyLoadingTriggerEdgeCases(t *testing.T) {
 	// Test search mode - should not trigger
 	model.searchMode = true
 	model.loadedCount = 2 // Less than total
-	
+
 	updatedModel, cmd = model.Update(msg)
 	m = updatedModel.(Model)
 	assert.False(t, m.loading, "Should not trigger in search mode")
@@ -616,7 +616,7 @@ func TestLazyLoadingTriggerEdgeCases(t *testing.T) {
 	// Test when already loading - should not trigger
 	model.searchMode = false
 	model.loading = true
-	
+
 	updatedModel, cmd = model.Update(msg)
 	m = updatedModel.(Model)
 	assert.True(t, m.loading, "Should remain in loading state")
@@ -626,8 +626,8 @@ func TestLazyLoadingTriggerEdgeCases(t *testing.T) {
 func TestLazyLoadingTriggerNextPage(t *testing.T) {
 	model := createTestModel()
 	model.itemsPerPage = 2
-	model.totalCount = 10    // Total missions available
-	model.loadedCount = 4    // Currently loaded missions (0,1,2,3)
+	model.totalCount = 10 // Total missions available
+	model.loadedCount = 4 // Currently loaded missions (0,1,2,3)
 	model.loading = false
 	model.searchMode = false
 
@@ -639,10 +639,10 @@ func TestLazyLoadingTriggerNextPage(t *testing.T) {
 	model.completedMissions = missions
 
 	tests := []struct {
-		name           string
-		currentPage    int
-		shouldTrigger  bool
-		description    string
+		name          string
+		currentPage   int
+		shouldTrigger bool
+		description   string
 	}{
 		{
 			name:          "Page 0 to 1 - no trigger needed",
@@ -684,4 +684,106 @@ func TestLazyLoadingTriggerNextPage(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Test prefetch functionality
+func TestPrefetchFunctionality(t *testing.T) {
+	model := createTestModel()
+	model.itemsPerPage = 2
+	model.totalCount = 10
+	model.loadedCount = 6 // Enough missions loaded for multiple pages
+	model.prefetchedPages = make(map[int][]*mission.Mission)
+
+	// Create 6 loaded missions
+	missions := make([]*mission.Mission, 6)
+	for i := 0; i < 6; i++ {
+		missions[i] = createTestMission("Mission "+string(rune('A'+i)), "completed")
+	}
+	model.completedMissions = missions
+
+	// Test prefetch trigger
+	model.currentPage = 1 // Start on page 1
+	cmd := model.triggerPrefetch()
+
+	// Should return a command to prefetch adjacent pages
+	assert.NotNil(t, cmd, "Prefetch should return a command")
+	assert.True(t, model.prefetching, "Prefetching flag should be set")
+}
+
+// Test prefetch message handling
+func TestPrefetchMessageHandling(t *testing.T) {
+	model := createTestModel()
+	model.prefetchedPages = make(map[int][]*mission.Mission)
+	model.currentPage = 1 // Set current page so page 2 is adjacent and won't be cleaned up
+
+	// Test successful prefetch message
+	testMissions := []*mission.Mission{
+		createTestMission("Prefetched Mission 1", "completed"),
+		createTestMission("Prefetched Mission 2", "completed"),
+	}
+
+	msg := prefetchPageMsg{
+		page:     2,
+		missions: testMissions,
+		err:      nil,
+	}
+
+	updatedModel, cmd := model.Update(msg)
+	m := updatedModel.(Model)
+
+	assert.False(t, m.prefetching, "Prefetching flag should be cleared")
+	assert.Len(t, m.prefetchedPages[2], 2, "Prefetched missions should be cached")
+	assert.Equal(t, "Prefetched Mission 1", extractIntent(m.prefetchedPages[2][0].Body))
+	assert.Nil(t, cmd, "No command should be returned")
+}
+
+// Test prefetch trigger on loadMoreMissions
+func TestPrefetchOnLoadMore(t *testing.T) {
+	model := createTestModel()
+	model.itemsPerPage = 2
+	model.totalCount = 10
+	model.loadedCount = 4
+	model.prefetchedPages = make(map[int][]*mission.Mission)
+	model.currentPage = 1
+
+	// Test loadMoreMissionsMsg triggers prefetch
+	msg := loadMoreMissionsMsg{
+		missions: []*mission.Mission{
+			createTestMission("New Mission 1", "completed"),
+			createTestMission("New Mission 2", "completed"),
+		},
+		loadedCount: 2,
+		err:         nil,
+	}
+
+	updatedModel, cmd := model.Update(msg)
+	m := updatedModel.(Model)
+
+	assert.Equal(t, 6, m.loadedCount, "Loaded count should be updated")
+	assert.NotNil(t, cmd, "Should trigger prefetch command")
+	assert.False(t, m.loading, "Loading flag should be cleared")
+}
+
+// Test aggressive prefetch functionality
+func TestAggressivePrefetch(t *testing.T) {
+	model := createTestModel()
+	model.itemsPerPage = 2
+	model.totalCount = 10
+	model.loadedCount = 8 // Enough missions for multiple pages
+	model.prefetchedPages = make(map[int][]*mission.Mission)
+	model.currentPage = 1
+
+	// Create missions to simulate having enough for multiple pages
+	missions := make([]*mission.Mission, 8)
+	for i := 0; i < 8; i++ {
+		missions[i] = createTestMission("Mission "+string(rune('A'+i)), "completed")
+	}
+	model.completedMissions = missions
+
+	// Test aggressive prefetch
+	cmd := model.triggerAggressivePrefetch()
+
+	// Should return a command to prefetch next 2 pages and previous page
+	assert.NotNil(t, cmd, "Aggressive prefetch should return a command")
+	assert.True(t, model.prefetching, "Prefetching flag should be set")
 }
