@@ -95,8 +95,12 @@ func (c *CmdGitClient) DeleteTag(name string) error {
 }
 
 func (c *CmdGitClient) GetTagCommit(tagName string) (string, error) {
-	// Using `^{commit}` ensures we get the commit hash even for annotated tags
-	out, err := c.run("rev-parse", tagName+"^{commit}")
+	ref := tagName
+	if !strings.Contains(tagName, "^{") {
+		ref = tagName + "^{commit}"
+	}
+
+	out, err := c.run("rev-parse", ref)
 	return strings.TrimSpace(out), err
 }
 

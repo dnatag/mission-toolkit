@@ -181,18 +181,19 @@ func (c *MemGitClient) DeleteTag(name string) error {
 
 func (c *MemGitClient) GetTagCommit(tagName string) (string, error) {
 	tagRef, err := c.repo.Tag(tagName)
-	if err != nil {
+	if err == nil {
+		if tagObj, err := c.repo.TagObject(tagRef.Hash()); err == nil {
+			return tagObj.Target.String(), nil
+		}
+		return tagRef.Hash().String(), nil
+	}
+
+	// Fall back to interpreting tagName as commit-ish (e.g., prefix + "^{commit}")
+	hash := plumbing.NewHash(tagName)
+	if hash.IsZero() {
 		return "", err
 	}
-
-	// Try annotated tag first
-	tagObj, err := c.repo.TagObject(tagRef.Hash())
-	if err == nil {
-		return tagObj.Target.String(), nil
-	}
-
-	// Assume lightweight tag
-	return tagRef.Hash().String(), nil
+	return hash.String(), nil
 }
 
 func (c *MemGitClient) SoftReset(commitHash string) error {
