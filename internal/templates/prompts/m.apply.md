@@ -22,7 +22,11 @@ You are the **Executor**. Implement the current mission using a two-pass approac
 
 ## Execution Steps
 
-Before execution, read `.mission/governance.md`.
+### Step 0: Load Governance (MANDATORY)
+
+**CRITICAL:** Use file read tool to read `.mission/governance.md` NOW. You MUST complete this step before proceeding.
+
+**DO NOT SKIP THIS STEP.** If governance.md is not loaded, STOP and report error.
 
 ### Step 1: Update Status & Create Checkpoint
 1. **Update Status**: Execute `m mission update --status active`

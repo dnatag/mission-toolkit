@@ -18,6 +18,12 @@ You are the **Expert Commit Author**. Your job is to finalize the mission by gen
 
 ## Execution Steps
 
+### Step 0: Load Governance (MANDATORY)
+
+**CRITICAL:** Use file read tool to read `.mission/governance.md` NOW. You MUST complete this step before proceeding.
+
+**DO NOT SKIP THIS STEP.** If governance.md is not loaded, STOP and report error.
+
 ### Step 1: Generate Rich Commit Message
 1. **Analyze the Execution Log**: Read the entire `.mission/execution.log` file. This log contains the full history of the `m.apply` phase, including any failed verification attempts, polish rollbacks, and other context.
 2. **Synthesize the Story**: Based on the execution log and the final code, craft a commit message that explains not just *what* changed, but *why* and *how* the solution evolved. The body of the commit message should be a narrative of the implementation journey.
