@@ -35,17 +35,46 @@ If the intent is too vague to refine (e.g., "It doesn't work"), do NOT guess.
 - **Output**: "AMBIGUOUS: [Reason]"
 
 ## Output Format
-Produce a single string: `[Action] [Target] [Constraints]`
+
+Produce a JSON object with action and refined intent.
+
+```json
+{
+  "action": "PROCEED" | "AMBIGUOUS",
+  "refined_intent": "Add JWT authentication",
+  "reason": "Too vague"  // Only if AMBIGUOUS
+}
+```
 
 **Examples:**
 - Raw: "Can you make the login faster?"
-- Refined: "Optimize login handler performance to reduce latency < 200ms"
+  ```json
+  {
+    "action": "PROCEED",
+    "refined_intent": "Optimize login handler performance to reduce latency < 200ms"
+  }
+  ```
 
 - Raw: "I need a new api for users."
-- Refined: "Create User REST API endpoints with CRUD operations"
+  ```json
+  {
+    "action": "PROCEED",
+    "refined_intent": "Create User REST API endpoints with CRUD operations"
+  }
+  ```
 
 - Raw: "The auth is broken."
-- Refined: "Fix authentication failure in JWT middleware"
+  ```json
+  {
+    "action": "PROCEED",
+    "refined_intent": "Fix authentication failure in JWT middleware"
+  }
+  ```
 
 - Raw: "Make it better."
-- Refined: "AMBIGUOUS: Missing specific target or goal."
+  ```json
+  {
+    "action": "AMBIGUOUS",
+    "reason": "Missing specific target or goal"
+  }
+  ```

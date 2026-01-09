@@ -18,45 +18,47 @@ Scan user intent for ambiguous requirements that need clarification before missi
 
 *If these are relevant but undefined, you may need to clarify.*
 
-## Decision Logic & Output
+## Output Format
 
-Based on your analysis, choose ONE of the following outputs.
+Produce a JSON object with action and details.
 
-### A. Clarification Needed (STOP)
-If ANY [CRITICAL] details are missing that prevent you from defining the **Scope** or **Domain**, you MUST stop.
-
-**Output Format:**
-```
-🛑 CLARIFICATION NEEDED
-
-I need a few more details to plan this mission effectively:
-
-1. [CRITICAL] [Specific Question]
-2. [IMPORTANT] [Specific Question]
-
-Please provide these details so I can proceed.
+```json
+{
+  "action": "CLARIFY" | "ASSUMPTIONS" | "CLEAR",
+  "questions": ["Which auth method?"],  // Only if CLARIFY
+  "assumptions": ["Using JWT"]          // Only if ASSUMPTIONS
+}
 ```
 
-### B. Proceed with Assumptions (CAUTION)
-If only [HELPFUL] details are missing, you may proceed but must state your assumptions.
+**Examples:**
 
-**Output Format:**
+### A. Clarification Needed
+```json
+{
+  "action": "CLARIFY",
+  "questions": [
+    "Which authentication method? (JWT/OAuth/Session)",
+    "Should we add rate limiting?"
+  ]
+}
 ```
-⚠️ PROCEEDING WITH ASSUMPTIONS
 
-- Assuming [Assumption 1] based on [Reason]
-- Assuming [Assumption 2] based on [Reason]
-
-(Proceed to next step)
+### B. Proceed with Assumptions
+```json
+{
+  "action": "ASSUMPTIONS",
+  "assumptions": [
+    "Using JWT based on existing auth.go file",
+    "No rate limiting required (not mentioned)"
+  ]
+}
 ```
 
-### C. Intent Clear (PROCEED)
-If the request is clear and actionable.
-
-**Output Format:**
-```
-✅ INTENT CLEAR
-(Proceed to next step)
+### C. Intent Clear
+```json
+{
+  "action": "CLEAR"
+}
 ```
 
 ## Question Quality Standards

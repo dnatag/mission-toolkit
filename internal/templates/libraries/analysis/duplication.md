@@ -1,81 +1,63 @@
 # DUPLICATION ANALYSIS TEMPLATE
 
 ## Purpose
-Identify existing code patterns that are similar to the requested feature to prevent redundancy and promote DRY (Don't Repeat Yourself) principles.
+Identify existing code patterns similar to the requested feature. This informs the WET→DRY workflow decision.
 
 ## Analysis Steps
 
 ### 1. Semantic Search
-- **File Names**: Are there existing files with similar names? (e.g., `auth.go` vs `authentication.go`)
-- **Function Names**: Are there functions doing similar tasks? (e.g., `ValidateUser` vs `CheckUser`)
-- **Business Logic**: Is there logic that solves the same problem? (e.g., two different email validation regexes)
+Scan the codebase for similar implementations:
+
+- **File Names**: Existing files with similar names (e.g., `auth.go` vs `authentication.go`)
+- **Function Names**: Functions doing similar tasks (e.g., `ValidateUser` vs `CheckUser`)
+- **Business Logic**: Logic solving the same problem (e.g., multiple email validation implementations)
 
 ### 2. Pattern Recognition
-- **Boilerplate**: Is this a standard pattern (e.g., CRUD) that exists elsewhere?
-- **Utilities**: Can existing utility functions be reused instead of rewritten?
-- **Configuration**: Can existing config structs be reused?
+Identify reusable patterns:
 
-## Decision Logic & Output
+- **Boilerplate**: Standard patterns (CRUD, handlers) that exist elsewhere
+- **Utilities**: Existing utility functions that could be reused
+- **Configuration**: Existing config structures that could be extended
 
-Based on your analysis, choose ONE of the following outputs.
+### 3. Decision Logic
 
-### A. No Duplication Found
-If no significant duplication or reusable patterns are found:
+- **No duplication** → Report `duplication_detected: false`, empty patterns
+- **Duplication found** → Report `duplication_detected: true`, list specific patterns with file locations
+- **Mission type** → Always set to `"WET"` (CLI will check backlog and may override to `"DRY"`)
+
+## Output Format
+
+Produce a JSON object with duplication analysis.
+
+**Note**: This analysis does not include an `action` field because it always proceeds to the next step. The CLI handles mission type determination (WET/DRY) based on backlog state.
+
 ```json
 {
-  "status": "none",
-  "confidence": "high",
-  "recommendation": "Proceed with new implementation."
+  "duplication_detected": true | false,
+  "patterns": ["Description with file locations"],
+  "mission_type": "WET"
 }
 ```
 
-### B. Reusable Code Found
-If existing functions or utilities can be reused:
+## Examples
+
+### Example 1: No Duplication
 ```json
 {
-  "status": "reusable_code",
-  "confidence": "high",
-  "recommendation": "Incorporate existing utilities into the plan.",
-  "details": [
-    {
-      "file": "utils/validation.go",
-      "symbol": "ValidateEmail",
-      "action": "Reuse this function for email validation."
-    }
-  ]
+  "duplication_detected": false,
+  "patterns": [],
+  "mission_type": "WET"
 }
 ```
 
-### C. Refactoring Opportunity Found
-If similar but not identical logic exists, suggesting a refactor:
+### Example 2: Duplication Found
 ```json
 {
-  "status": "refactor_opportunity",
-  "confidence": "medium",
-  "recommendation": "Add a step to the plan to extract common logic.",
-  "details": [
-    {
-      "file": "users/handler.go",
-      "symbol": "CreateUser",
-      "action": "Extract database connection logic into a shared utility before implementing CreateProduct."
-    }
-  ]
-}
-```
-
-### D. Exact Match Found
-If the requested feature already exists:
-```json
-{
-  "status": "exact_match",
-  "confidence": "high",
-  "recommendation": "STOP. Inform the user that the feature already exists.",
-  "details": [
-    {
-      "file": "auth/jwt.go",
-      "symbol": "GenerateJWT",
-      "action": "The requested JWT generation function already exists."
-    }
-  ]
+  "duplication_detected": true,
+  "patterns": [
+    "Email validation regex exists in users/handler.go:45 and products/handler.go:78",
+    "Database connection logic duplicated in auth/db.go, users/db.go, and orders/db.go"
+  ],
+  "mission_type": "WET"
 }
 ```
