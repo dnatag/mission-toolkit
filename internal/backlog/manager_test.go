@@ -379,3 +379,170 @@ func TestBacklogManager_AddMultiple(t *testing.T) {
 		t.Errorf("AddMultiple with empty slice should not fail: %v", err)
 	}
 }
+
+func TestBacklogManager_Cleanup(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Add test items
+	if err := manager.Add("Task 1 (from Epic: Test Epic)", "decomposed"); err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+	if err := manager.Add("Task 2 (from Epic: Test Epic)", "decomposed"); err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+	if err := manager.Add("Refactor shared utils", "refactor"); err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+
+	// Complete all items
+	if err := manager.Complete("Task 1 (from Epic: Test Epic)"); err != nil {
+		t.Fatalf("Complete failed: %v", err)
+	}
+	if err := manager.Complete("Task 2 (from Epic: Test Epic)"); err != nil {
+		t.Fatalf("Complete failed: %v", err)
+	}
+	if err := manager.Complete("Refactor shared utils"); err != nil {
+		t.Fatalf("Complete failed: %v", err)
+	}
+
+	// Verify all items are in completed section
+	items, err := manager.List(true)
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 3 {
+		t.Errorf("Expected 3 completed items, got %d", len(items))
+	}
+
+	// Test cleanup all completed items
+	count, err := manager.Cleanup("")
+	if err != nil {
+		t.Fatalf("Cleanup failed: %v", err)
+	}
+	if count != 3 {
+		t.Errorf("Expected 3 items removed, got %d", count)
+	}
+
+	// Verify completed section is empty
+	items, err = manager.List(true)
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 0 {
+		t.Errorf("Expected 0 items after cleanup, got %d", len(items))
+	}
+}
+
+func TestBacklogManager_CleanupByType(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Add test items with specific markers
+	if err := manager.Add("Task 1 (from Epic: Test Epic)", "decomposed"); err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+	if err := manager.Add("Refactor logging module", "refactor"); err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+	if err := manager.Add("Regular task", "decomposed"); err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+
+	// Complete all items
+	if err := manager.Complete("Task 1 (from Epic: Test Epic)"); err != nil {
+		t.Fatalf("Complete failed: %v", err)
+	}
+	if err := manager.Complete("Refactor logging module"); err != nil {
+		t.Fatalf("Complete failed: %v", err)
+	}
+	if err := manager.Complete("Regular task"); err != nil {
+		t.Fatalf("Complete failed: %v", err)
+	}
+
+	// Cleanup only decomposed items (those with "(from Epic:" marker)
+	count, err := manager.Cleanup("decomposed")
+	if err != nil {
+		t.Fatalf("Cleanup failed: %v", err)
+	}
+	if count != 1 {
+		t.Errorf("Expected 1 decomposed item removed, got %d", count)
+	}
+
+	// Verify refactor item still exists
+	content, err := manager.readBacklogContent()
+	if err != nil {
+		t.Fatalf("Failed to read backlog: %v", err)
+	}
+	if !strings.Contains(content, "Refactor logging module") {
+		t.Error("Refactor item should still exist after decomposed cleanup")
+	}
+
+	// Cleanup refactor items
+	count, err = manager.Cleanup("refactor")
+	if err != nil {
+		t.Fatalf("Cleanup failed: %v", err)
+	}
+	if count != 1 {
+		t.Errorf("Expected 1 refactor item removed, got %d", count)
+	}
+}
+
+func TestBacklogManager_CleanupNoItems(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Ensure backlog exists
+	if err := manager.ensureBacklogExists(); err != nil {
+		t.Fatalf("ensureBacklogExists failed: %v", err)
+	}
+
+	// Cleanup with no completed items
+	count, err := manager.Cleanup("")
+	if err != nil {
+		t.Fatalf("Cleanup failed: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("Expected 0 items removed, got %d", count)
+	}
+}
+
+func TestBacklogManager_CleanupInvalidType(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Ensure backlog exists
+	if err := manager.ensureBacklogExists(); err != nil {
+		t.Fatalf("ensureBacklogExists failed: %v", err)
+	}
+
+	// Cleanup with invalid type
+	_, err := manager.Cleanup("invalid")
+	if err == nil {
+		t.Error("Cleanup with invalid type should fail")
+	}
+}
+
+func TestBacklogManager_matchesItemType(t *testing.T) {
+	manager := NewManager("")
+
+	tests := []struct {
+		item     string
+		itemType string
+		expected bool
+	}{
+		{"- [x] Task (from Epic: Test)", "decomposed", true},
+		{"- [x] Regular task", "decomposed", false},
+		{"- [x] Refactor shared code", "refactor", true},
+		{"- [x] Extract common utilities", "refactor", true},
+		{"- [x] Regular task", "refactor", false},
+		{"- [x] Any task", "future", false}, // future has no reliable marker
+	}
+
+	for _, tt := range tests {
+		result := manager.matchesItemType(tt.item, tt.itemType)
+		if result != tt.expected {
+			t.Errorf("matchesItemType(%q, %q) = %v, expected %v", tt.item, tt.itemType, result, tt.expected)
+		}
+	}
+}

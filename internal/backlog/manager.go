@@ -290,3 +290,96 @@ func (m *BacklogManager) getSectionHeader(itemType string) string {
 		return ""
 	}
 }
+
+// Cleanup removes completed items from the COMPLETED section of the backlog.
+// If itemType is provided, only removes completed items that match that type.
+// If itemType is empty, removes all completed items.
+// Returns the number of items removed.
+//
+// Type matching is heuristic-based:
+//   - "decomposed": matches items containing "(from Epic:" marker
+//   - "refactor": matches items containing "refactor" or "extract" (case-insensitive)
+//   - "future": cannot be reliably identified (returns 0 matches)
+func (m *BacklogManager) Cleanup(itemType string) (int, error) {
+	if itemType != "" {
+		if err := m.validateType(itemType); err != nil {
+			return 0, err
+		}
+	}
+
+	if err := m.ensureBacklogExists(); err != nil {
+		return 0, err
+	}
+
+	content, err := m.readBacklogContent()
+	if err != nil {
+		return 0, err
+	}
+
+	lines := strings.Split(content, "\n")
+	result := make([]string, 0, len(lines))
+	inCompletedSection := false
+	removedCount := 0
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if trimmed == "## COMPLETED" {
+			inCompletedSection = true
+			result = append(result, line)
+			continue
+		}
+
+		if strings.HasPrefix(trimmed, "## ") {
+			inCompletedSection = false
+			result = append(result, line)
+			continue
+		}
+
+		// Check if this is a completed item in the COMPLETED section
+		if inCompletedSection && strings.HasPrefix(trimmed, "- [x]") {
+			if itemType == "" {
+				// Remove all completed items
+				removedCount++
+				continue
+			}
+
+			// Filter by type using markers
+			if m.matchesItemType(trimmed, itemType) {
+				removedCount++
+				continue
+			}
+		}
+
+		result = append(result, line)
+	}
+
+	if removedCount > 0 {
+		if err := m.writeBacklogContent(strings.Join(result, "\n")); err != nil {
+			return 0, err
+		}
+	}
+
+	return removedCount, nil
+}
+
+// matchesItemType checks if a completed item matches the specified type.
+// Decomposed items contain "(from Epic:" marker.
+// This is a heuristic based on how items are typically added to the backlog.
+func (m *BacklogManager) matchesItemType(item, itemType string) bool {
+	switch itemType {
+	case "decomposed":
+		// Decomposed items typically have "(from Epic:" marker
+		return strings.Contains(item, "(from Epic:")
+	case "refactor":
+		// Refactor items typically have "Refactor" or "Extract" in the description
+		lowerItem := strings.ToLower(item)
+		return strings.Contains(lowerItem, "refactor") || strings.Contains(lowerItem, "extract")
+	case "future":
+		// Future items don't have specific markers, so we can't reliably identify them
+		// This will effectively not match any items unless explicitly marked
+		return false
+	default:
+		return false
+	}
+}

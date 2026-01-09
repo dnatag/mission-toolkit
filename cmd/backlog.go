@@ -81,9 +81,38 @@ var backlogCompleteCmd = &cobra.Command{
 	},
 }
 
+// backlogCleanupCmd removes completed items from the backlog
+var backlogCleanupCmd = &cobra.Command{
+	Use:   "cleanup",
+	Short: "Remove completed items from the backlog",
+	Long: `Remove completed items from the COMPLETED section of the backlog.
+
+By default, removes all completed items. Use --type to filter by item type.
+
+Examples:
+  m backlog cleanup                    # Remove all completed items
+  m backlog cleanup --type decomposed  # Remove only completed decomposed epic items`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		itemType, _ := cmd.Flags().GetString("type")
+
+		manager := backlog.NewManager(missionDir)
+		count, err := manager.Cleanup(itemType)
+		if err != nil {
+			return fmt.Errorf("cleaning up backlog: %w", err)
+		}
+
+		if count == 0 {
+			fmt.Println("No completed items to remove")
+		} else {
+			fmt.Printf("Removed %d completed item(s)\n", count)
+		}
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(backlogCmd)
-	backlogCmd.AddCommand(backlogListCmd, backlogAddCmd, backlogCompleteCmd)
+	backlogCmd.AddCommand(backlogListCmd, backlogAddCmd, backlogCompleteCmd, backlogCleanupCmd)
 
 	// Add flags
 	backlogListCmd.Flags().Bool("all", false, "Include completed items")
@@ -91,4 +120,5 @@ func init() {
 	backlogAddCmd.MarkFlagRequired("type")
 	backlogCompleteCmd.Flags().String("item", "", "Exact text of the item to complete")
 	backlogCompleteCmd.MarkFlagRequired("item")
+	backlogCleanupCmd.Flags().String("type", "", "Filter by item type (decomposed, refactor, future)")
 }
