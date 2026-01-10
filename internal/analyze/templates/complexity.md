@@ -1,5 +1,12 @@
 # COMPLEXITY ANALYSIS TEMPLATE
 
+## Current Mission Context
+
+**Intent:** {{.CurrentIntent}}
+
+**Scope:**
+{{.CurrentScope}}
+
 ## Purpose
 Identify applicable technical/business domains and determine the complexity track of the mission based on scope, intent, and domain context. This guides the planning strategy (Atomic vs. Standard vs. Epic).
 

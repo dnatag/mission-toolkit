@@ -1,5 +1,9 @@
 # DUPLICATION ANALYSIS TEMPLATE
 
+## Current Intent
+
+{{.CurrentIntent}}
+
 ## Purpose
 Identify existing code patterns similar to the requested feature. This informs the WET→DRY workflow decision.
 

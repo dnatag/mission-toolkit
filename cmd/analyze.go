@@ -80,7 +80,39 @@ var analyzeTestCmd = &cobra.Command{
 	},
 }
 
+// analyzeDuplicationCmd provides duplication analysis template with current intent
+var analyzeDuplicationCmd = &cobra.Command{
+	Use:   "duplication",
+	Short: "Provide duplication analysis template with current intent",
+	Long:  `Load duplication.md template and inject current intent from mission.md for LLM analysis.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		service := analyze.NewDuplicationService()
+		output, err := service.ProvideTemplate()
+		if err != nil {
+			return fmt.Errorf("providing duplication template: %w", err)
+		}
+		fmt.Print(output)
+		return nil
+	},
+}
+
+// analyzeComplexityCmd provides complexity analysis template with current intent and scope
+var analyzeComplexityCmd = &cobra.Command{
+	Use:   "complexity",
+	Short: "Provide complexity analysis template with current intent and scope",
+	Long:  `Load complexity.md template and inject current intent and scope from mission.md for LLM analysis.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		service := analyze.NewComplexityService()
+		output, err := service.ProvideTemplate()
+		if err != nil {
+			return fmt.Errorf("providing complexity template: %w", err)
+		}
+		fmt.Print(output)
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(analyzeCmd)
-	analyzeCmd.AddCommand(analyzeIntentCmd, analyzeClarifyCmd, analyzeScopeCmd, analyzeTestCmd)
+	analyzeCmd.AddCommand(analyzeIntentCmd, analyzeClarifyCmd, analyzeScopeCmd, analyzeTestCmd, analyzeDuplicationCmd, analyzeComplexityCmd)
 }
