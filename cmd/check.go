@@ -3,8 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
-	"github.com/dnatag/mission-toolkit/internal/plan"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +26,7 @@ Useful for AI prompt validation before proceeding with execution.`,
 		input := args[0]
 		result := &CheckResult{}
 
-		if plan.IsEmptyOrWhitespace(input) {
+		if strings.TrimSpace(input) == "" {
 			result.IsValid = false
 			result.Message = "Input is empty or whitespace"
 			result.NextStep = "ASK_USER: What is your intent or goal for this task?"

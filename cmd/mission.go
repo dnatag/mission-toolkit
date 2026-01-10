@@ -128,14 +128,16 @@ var missionIDCmd = &cobra.Command{
 	},
 }
 
-// missionCreateCmd creates mission.md from plan.json or with just intent
+// missionCreateCmd creates mission.md with intent
 var missionCreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create mission.md from plan.json or with intent",
+	Short: "Create mission.md with intent",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		intent, _ := cmd.Flags().GetString("intent")
-		missionType, _ := cmd.Flags().GetString("type")
-		planFile, _ := cmd.Flags().GetString("file")
+
+		if intent == "" {
+			return fmt.Errorf("--intent is required")
+		}
 
 		// Get mission ID
 		idService := mission.NewIDService(missionFs, missionDir)
@@ -147,23 +149,9 @@ var missionCreateCmd = &cobra.Command{
 		writer := mission.NewWriter(missionFs)
 		missionPath := missionDir + "/mission.md"
 
-		// If intent is provided, create initial mission with just INTENT
-		if intent != "" {
-			if err := writer.CreateWithIntent(missionPath, missionID, intent); err != nil {
-				return fmt.Errorf("creating mission with intent: %w", err)
-			}
-			fmt.Printf("Mission created: %s\n", missionPath)
-			return nil
+		if err := writer.CreateWithIntent(missionPath, missionID, intent); err != nil {
+			return fmt.Errorf("creating mission with intent: %w", err)
 		}
-
-		// Otherwise create from plan file
-		if planFile == "" {
-			planFile = ".mission/plan.json"
-		}
-		if err := writer.CreateFromPlanFile(planFile, missionPath, missionID, missionType); err != nil {
-			return fmt.Errorf("creating mission file: %w", err)
-		}
-
 		fmt.Printf("Mission created: %s\n", missionPath)
 		return nil
 	},
@@ -192,9 +180,26 @@ var missionArchiveCmd = &cobra.Command{
 	},
 }
 
+// missionFinalizeCmd validates and displays mission.md
+var missionFinalizeCmd = &cobra.Command{
+	Use:   "finalize",
+	Short: "Validate and display mission.md for review",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		finalizer := mission.NewFinalizeService(missionFs, missionDir)
+
+		result, err := finalizer.Finalize()
+		if err != nil {
+			return fmt.Errorf("finalizing mission: %w", err)
+		}
+
+		fmt.Print(result)
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(missionCmd)
-	missionCmd.AddCommand(missionCheckCmd, missionUpdateCmd, missionIDCmd, missionCreateCmd, missionArchiveCmd)
+	missionCmd.AddCommand(missionCheckCmd, missionUpdateCmd, missionIDCmd, missionCreateCmd, missionArchiveCmd, missionFinalizeCmd)
 
 	// Add flags
 	missionCheckCmd.Flags().StringP("context", "c", "", "Context for validation (apply or complete)")
@@ -204,6 +209,5 @@ func init() {
 	missionUpdateCmd.Flags().StringSlice("item", nil, "Items for list sections")
 	missionUpdateCmd.Flags().StringSlice("frontmatter", nil, "Frontmatter key=value pairs")
 	missionCreateCmd.Flags().String("intent", "", "Intent text for initial mission creation")
-	missionCreateCmd.Flags().StringP("type", "t", "", "Mission type (clarification or final)")
-	missionCreateCmd.Flags().StringP("file", "f", "", "Path to plan.json file (default: .mission/plan.json)")
+	missionCreateCmd.MarkFlagRequired("intent")
 }

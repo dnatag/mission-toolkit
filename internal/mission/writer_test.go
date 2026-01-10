@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dnatag/mission-toolkit/internal/plan"
 	"github.com/spf13/afero"
 )
 
@@ -154,60 +153,6 @@ go test ./...
 		if !strings.Contains(content, check) {
 			t.Errorf("UpdateStatus() should preserve '%s' in content", check)
 		}
-	}
-}
-
-func TestWriter_CreateFromPlan(t *testing.T) {
-	fs := afero.NewMemMapFs()
-	writer := NewWriter(fs)
-
-	spec := &plan.PlanSpec{
-		Intent: "Test mission intent",
-		Type:   "WET",
-		Scope: []string{
-			"file1.go",
-			"file2.go",
-		},
-		Plan: []string{
-			"1. Step one",
-			"2. Step two",
-		},
-		Verification: "go test ./...",
-	}
-
-	path := "mission.md"
-	err := writer.CreateFromPlan(path, "test-123", 2, spec)
-	if err != nil {
-		t.Fatalf("CreateFromPlan() error = %v", err)
-	}
-
-	// Read back and verify
-	reader := NewReader(fs)
-	mission, err := reader.Read(path)
-	if err != nil {
-		t.Fatalf("Failed to read created mission: %v", err)
-	}
-
-	if mission.ID != "test-123" {
-		t.Errorf("CreateFromPlan() ID = %v, want test-123", mission.ID)
-	}
-	if mission.Type != "WET" {
-		t.Errorf("CreateFromPlan() Type = %v, want WET", mission.Type)
-	}
-	if mission.Track != 2 {
-		t.Errorf("CreateFromPlan() Track = %v, want 2", mission.Track)
-	}
-	if mission.Status != "planned" {
-		t.Errorf("CreateFromPlan() Status = %v, want planned", mission.Status)
-	}
-	if !strings.Contains(mission.Body, "Test mission intent") {
-		t.Error("CreateFromPlan() should include intent in body")
-	}
-	if !strings.Contains(mission.Body, "file1.go") {
-		t.Error("CreateFromPlan() should include scope files in body")
-	}
-	if !strings.Contains(mission.Body, "go test") {
-		t.Error("CreateFromPlan() should include verification in body")
 	}
 }
 

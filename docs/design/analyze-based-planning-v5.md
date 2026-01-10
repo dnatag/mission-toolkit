@@ -1,7 +1,8 @@
 # Design: Analysis-Based Planning Architecture v5
 
-**Status**: DRAFT - Template-providing CLI + LLM-driven updates  
-**Supersedes**: v4 (CLI validates JSON)
+**Status**: ✅ IMPLEMENTED - Template-providing CLI + LLM-driven updates  
+**Supersedes**: v4 (CLI validates JSON)  
+**Implementation Date**: January 2026
 
 ## Problem Statement
 
@@ -578,38 +579,46 @@ m mission update --frontmatter track=3 type=WET domains="security"
 3. **Simple tool calls**: Each command has clear input/output
 4. **No complex orchestration**: LLM just follows template → extract → update pattern
 
-## Implementation Checklist
+## Implementation Status
 
-### CLI Commands
-- [ ] `m analyze intent "<input>"` - Return intent template + user input
-- [ ] `m analyze clarify` - Return clarification template + current intent
-- [ ] `m analyze scope` - Return scope template + current intent
-- [ ] `m analyze test` - Return test template + current context
-- [ ] `m analyze duplication` - Return duplication template + current context
-- [ ] `m analyze complexity` - Return complexity template + current context
-- [ ] `m analyze plan` - Return planning guidance + full context
-- [ ] `m mission create --intent <text>` - Create mission
-- [ ] `m mission update --section <name> --content <text>` - Update text section
-- [ ] `m mission update --section <name> --item <value>` - Update list section
-- [ ] `m mission update --frontmatter <key>=<value>` - Update metadata
-- [ ] `m mission finalize` - Validate and activate
+### CLI Commands - ✅ IMPLEMENTED
+- ✅ `m analyze intent "<input>"` - Return intent template + user input
+- ✅ `m analyze clarify` - Return clarification template + current intent
+- ✅ `m analyze scope` - Return scope template + current intent
+- ✅ `m analyze test` - Return test template + current context
+- ✅ `m analyze duplication` - Return duplication template + current context
+- ✅ `m analyze complexity` - Return complexity template + current context
+- ❌ `m analyze plan` - NOT NEEDED (LLM generates plan directly)
+- ✅ `m mission create --intent <text>` - Create initial mission.md
+- ✅ `m mission update --section <name> --content <text>` - Update text section
+- ✅ `m mission update --section <name> --item <value>` - Update list section
+- ✅ `m mission update --frontmatter <key>=<value>` - Update metadata
+- ✅ `m mission finalize` - Validate and display mission.md
 
-### Template System
-- [ ] Template loader (read from `.mission/libraries/analysis/`)
-- [ ] Context injection (read current mission.md state)
-- [ ] Template formatting (include context in output)
+### Template System - ✅ IMPLEMENTED
+- ✅ Template loader (embedded templates in internal/analyze/)
+- ✅ Context injection (mission.Reader extracts INTENT/SCOPE)
+- ✅ Template formatting (templates include {{.CurrentIntent}} variables)
 
-### Markdown Parser
-- [ ] Parse YAML frontmatter
-- [ ] Parse markdown sections
-- [ ] Update sections atomically
-- [ ] Append to lists
-- [ ] Replace text
+### Markdown Parser - ✅ IMPLEMENTED
+- ✅ Parse YAML frontmatter (internal/mission/reader.go)
+- ✅ Parse markdown sections (internal/mission/reader.go)
+- ✅ Update sections atomically (internal/mission/writer.go)
+- ✅ Append to lists (internal/mission/writer.go)
+- ✅ Replace text (internal/mission/writer.go)
 
-### Validation
-- [ ] Mission completeness check (finalize)
-- [ ] Section existence checks
-- [ ] Frontmatter field validation
+### Validation - ✅ IMPLEMENTED
+- ✅ Mission completeness check (internal/mission/finalize.go)
+- ✅ Section existence checks (FinalizeService.validateSections)
+- ✅ Frontmatter field validation (mission.Reader)
+
+## Implementation Notes
+
+**What Changed from Design:**
+1. **No `m analyze plan`**: LLM generates plan steps directly without needing a separate analyze command
+2. **No plan.json**: Mission.md is built incrementally through `m mission update` commands
+3. **Finalize displays, doesn't activate**: Status changes happen in m.apply, not m.mission finalize
+4. **Shared mission.Reader**: All analyze services use internal/mission/reader.go for INTENT/SCOPE extraction
 
 ## Key Insight
 
