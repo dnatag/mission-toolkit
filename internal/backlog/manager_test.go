@@ -133,6 +133,43 @@ func TestBacklogManager_Complete(t *testing.T) {
 	}
 }
 
+func TestBacklogManager_Complete_MissingCompletedSection(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Create backlog without COMPLETED section
+	backlogContent := `# Mission Backlog
+
+## DECOMPOSED INTENTS
+- [ ] Test item
+
+## REFACTORING OPPORTUNITIES
+
+## FUTURE ENHANCEMENTS
+`
+	if err := os.WriteFile(manager.backlogPath, []byte(backlogContent), 0644); err != nil {
+		t.Fatalf("Writing backlog failed: %v", err)
+	}
+
+	// Complete the item (should create COMPLETED section)
+	if err := manager.Complete("Test item"); err != nil {
+		t.Fatalf("Complete failed: %v", err)
+	}
+
+	// Verify COMPLETED section was created
+	content, err := manager.readBacklogContent()
+	if err != nil {
+		t.Fatalf("Reading backlog failed: %v", err)
+	}
+
+	if !strings.Contains(content, "## COMPLETED") {
+		t.Error("COMPLETED section was not created")
+	}
+	if !strings.Contains(content, "- [x] Test item (Completed:") {
+		t.Error("Completed item not found")
+	}
+}
+
 func TestBacklogManager_ensureBacklogExists(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)

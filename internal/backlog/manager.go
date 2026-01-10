@@ -193,10 +193,12 @@ func (m *BacklogManager) Complete(itemText string) error {
 // addToCompletedSection adds a completed item to the COMPLETED section
 func (m *BacklogManager) addToCompletedSection(lines []string, completedItem string) error {
 	result := make([]string, 0, len(lines)+1)
+	completedSectionFound := false
 
 	for i, line := range lines {
 		result = append(result, line)
 		if strings.TrimSpace(line) == "## COMPLETED" {
+			completedSectionFound = true
 			// Find the end of the completed section
 			j := i + 1
 			for j < len(lines) && !strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") && strings.TrimSpace(lines[j]) != "" {
@@ -209,6 +211,12 @@ func (m *BacklogManager) addToCompletedSection(lines []string, completedItem str
 			result = append(result, lines[j:]...)
 			return m.writeBacklogContent(strings.Join(result, "\n"))
 		}
+	}
+
+	// If COMPLETED section not found, create it at the end
+	if !completedSectionFound {
+		result = append(result, "", "## COMPLETED", "(History of completed backlog items)", completedItem)
+		return m.writeBacklogContent(strings.Join(result, "\n"))
 	}
 
 	return fmt.Errorf("COMPLETED section not found in backlog")
