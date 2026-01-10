@@ -77,7 +77,20 @@ func (s *Service) Create(missionID string) (string, error) {
 		return "", fmt.Errorf("creating checkpoint tag: %w", err)
 	}
 
+	// Create baseline tag on first checkpoint for easy diff viewing
+	if num == 1 {
+		if err := s.createBaselineTag(missionID, commitHash); err != nil {
+			return "", fmt.Errorf("creating baseline tag: %w", err)
+		}
+	}
+
 	return checkpointName, nil
+}
+
+// createBaselineTag creates a baseline tag for viewing cumulative mission changes
+func (s *Service) createBaselineTag(missionID, commitHash string) error {
+	baselineTag := fmt.Sprintf("%s-baseline", missionID)
+	return s.git.CreateTag(baselineTag, commitHash)
 }
 
 // Restore reverts working directory to specified checkpoint

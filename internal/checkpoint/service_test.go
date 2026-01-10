@@ -95,6 +95,66 @@ func TestService_Create(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestService_Create_CreatesBaselineTagOnFirstCheckpoint(t *testing.T) {
+	fs, repo := setupTestRepo(t)
+
+	missionID := "test-mission"
+	scopeFile := "test.txt"
+	createMissionFile(t, fs, missionID, []string{scopeFile})
+
+	err := afero.WriteFile(fs, scopeFile, []byte("test content"), 0644)
+	require.NoError(t, err)
+
+	gitClient := internalgit.NewMemGitClient(repo, fs)
+	svc := NewServiceWithGit(fs, ".mission", gitClient)
+
+	name, err := svc.Create(missionID)
+	require.NoError(t, err)
+	require.Equal(t, fmt.Sprintf("%s-1", missionID), name)
+
+	baselineTag := fmt.Sprintf("%s-baseline", missionID)
+	_, err = repo.Tag(baselineTag)
+	require.NoError(t, err)
+}
+
+func TestService_Create_DoesNotCreateBaselineTagOnSubsequentCheckpoints(t *testing.T) {
+	fs, repo := setupTestRepo(t)
+
+	missionID := "test-mission"
+	scopeFile := "test.txt"
+	createMissionFile(t, fs, missionID, []string{scopeFile})
+
+	err := afero.WriteFile(fs, scopeFile, []byte("test content"), 0644)
+	require.NoError(t, err)
+
+	gitClient := internalgit.NewMemGitClient(repo, fs)
+	svc := NewServiceWithGit(fs, ".mission", gitClient)
+
+	_, err = svc.Create(missionID)
+	require.NoError(t, err)
+
+	err = afero.WriteFile(fs, scopeFile, []byte("updated content"), 0644)
+	require.NoError(t, err)
+
+	name, err := svc.Create(missionID)
+	require.NoError(t, err)
+	require.Equal(t, fmt.Sprintf("%s-2", missionID), name)
+
+	tags, err := repo.Tags()
+	require.NoError(t, err)
+
+	baselineCount := 0
+	baselineTag := fmt.Sprintf("%s-baseline", missionID)
+	err = tags.ForEach(func(ref *plumbing.Reference) error {
+		if ref.Name().Short() == baselineTag {
+			baselineCount++
+		}
+		return nil
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, baselineCount, "baseline tag should only be created once")
+}
+
 func TestService_Create_OnlyScopeFiles(t *testing.T) {
 	fs, repo := setupTestRepo(t)
 
@@ -315,7 +375,7 @@ func TestService_Clear(t *testing.T) {
 	// Clear
 	count, err := svc.Clear(missionID)
 	require.NoError(t, err)
-	require.Equal(t, 2, count)
+	require.Equal(t, 3, count) // 2 checkpoints + 1 baseline tag
 
 	// Verify tags gone
 	tags, _ := gitClient.ListTags(missionID)
