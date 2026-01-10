@@ -40,6 +40,143 @@ func (w *Writer) UpdateStatus(path string, newStatus string) error {
 	return w.Write(path, mission)
 }
 
+// CreateWithIntent creates initial mission.md with just INTENT section
+func (w *Writer) CreateWithIntent(path string, missionID string, intent string) error {
+	mission := &Mission{
+		ID:        missionID,
+		Iteration: 1,
+		Status:    "planning",
+		Body:      fmt.Sprintf("## INTENT\n%s\n", intent),
+	}
+	return w.Write(path, mission)
+}
+
+// UpdateSection updates a text section (intent, verification)
+func (w *Writer) UpdateSection(path string, section string, content string) error {
+	mission, err := NewReader(w.fs).Read(path)
+	if err != nil {
+		return fmt.Errorf("reading mission: %w", err)
+	}
+
+	lines := strings.Split(mission.Body, "\n")
+	var result []string
+	sectionHeader := "## " + strings.ToUpper(section)
+	foundSection := false
+
+	for i, line := range lines {
+		if strings.TrimSpace(line) == sectionHeader {
+			foundSection = true
+			result = append(result, line)
+			result = append(result, content)
+
+			// Skip old content until next section or end
+			for j := i + 1; j < len(lines); j++ {
+				if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
+					result = append(result, "")
+					result = append(result, lines[j:]...)
+					break
+				}
+				if j == len(lines)-1 {
+					// Reached end without finding next section
+					break
+				}
+			}
+			break
+		}
+		result = append(result, line)
+	}
+
+	if !foundSection {
+		return fmt.Errorf("section %s not found", section)
+	}
+
+	mission.Body = strings.Join(result, "\n")
+	return w.Write(path, mission)
+}
+
+// UpdateList updates a list section (scope, plan)
+func (w *Writer) UpdateList(path string, section string, items []string) error {
+	mission, err := NewReader(w.fs).Read(path)
+	if err != nil {
+		return fmt.Errorf("reading mission: %w", err)
+	}
+
+	lines := strings.Split(mission.Body, "\n")
+	var result []string
+	sectionHeader := "## " + strings.ToUpper(section)
+	foundSection := false
+
+	for i, line := range lines {
+		if strings.TrimSpace(line) == sectionHeader {
+			result = append(result, line)
+			// Add items
+			if section == "plan" {
+				for _, item := range items {
+					result = append(result, "- [ ] "+item)
+				}
+			} else {
+				result = append(result, items...)
+			}
+			foundSection = true
+			// Skip old content until next section
+			for j := i + 1; j < len(lines); j++ {
+				if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
+					result = append(result, "")
+					result = append(result, lines[j:]...)
+					break
+				}
+			}
+			break
+		}
+		result = append(result, line)
+	}
+
+	if !foundSection {
+		// Add new section at end
+		result = append(result, "", sectionHeader)
+		if section == "plan" {
+			for _, item := range items {
+				result = append(result, "- [ ] "+item)
+			}
+		} else {
+			result = append(result, items...)
+		}
+	}
+
+	mission.Body = strings.Join(result, "\n")
+	return w.Write(path, mission)
+}
+
+// UpdateFrontmatter updates frontmatter fields
+func (w *Writer) UpdateFrontmatter(path string, pairs []string) error {
+	mission, err := NewReader(w.fs).Read(path)
+	if err != nil {
+		return fmt.Errorf("reading mission: %w", err)
+	}
+
+	for _, pair := range pairs {
+		parts := strings.SplitN(pair, "=", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid frontmatter pair: %s", pair)
+		}
+		key, value := parts[0], parts[1]
+
+		switch key {
+		case "track":
+			var track int
+			fmt.Sscanf(value, "%d", &track)
+			mission.Track = track
+		case "type":
+			mission.Type = value
+		case "domains":
+			// Store as type for now (would need Mission struct update for domains)
+			mission.Type = value
+		}
+	}
+
+	return w.Write(path, mission)
+}
+
 // CreateFromPlanFile creates a mission.md file from a plan.json file
 func (w *Writer) CreateFromPlanFile(planPath string, missionPath string, missionID string, missionType string) error {
 	data, err := afero.ReadFile(w.fs, planPath)

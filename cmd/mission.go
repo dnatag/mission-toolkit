@@ -49,23 +49,62 @@ var missionCheckCmd = &cobra.Command{
 	},
 }
 
-// missionUpdateCmd updates mission status
+// missionUpdateCmd updates mission status or sections
 var missionUpdateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Update mission status",
+	Short: "Update mission status or sections",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		status, _ := cmd.Flags().GetString("status")
-		if status == "" {
-			return fmt.Errorf("--status flag is required")
-		}
-
 		writer := mission.NewWriter(missionFs)
-		if err := writer.UpdateStatus(missionDir+"/mission.md", status); err != nil {
-			return fmt.Errorf("updating mission status: %w", err)
+		missionPath := missionDir + "/mission.md"
+
+		// Handle status update
+		if cmd.Flags().Changed("status") {
+			status, _ := cmd.Flags().GetString("status")
+			if err := writer.UpdateStatus(missionPath, status); err != nil {
+				return fmt.Errorf("updating mission status: %w", err)
+			}
+			fmt.Printf("Mission status updated to: %s\n", status)
+			return nil
 		}
 
-		fmt.Printf("Mission status updated to: %s\n", status)
-		return nil
+		// Handle section update
+		if cmd.Flags().Changed("section") {
+			section, _ := cmd.Flags().GetString("section")
+
+			// Text section update (intent, verification)
+			if cmd.Flags().Changed("content") {
+				content, _ := cmd.Flags().GetString("content")
+				if err := writer.UpdateSection(missionPath, section, content); err != nil {
+					return fmt.Errorf("updating section: %w", err)
+				}
+				fmt.Printf("Section '%s' updated\n", section)
+				return nil
+			}
+
+			// List section update (scope, plan)
+			if cmd.Flags().Changed("item") {
+				items, _ := cmd.Flags().GetStringSlice("item")
+				if err := writer.UpdateList(missionPath, section, items); err != nil {
+					return fmt.Errorf("updating list: %w", err)
+				}
+				fmt.Printf("Section '%s' updated with %d items\n", section, len(items))
+				return nil
+			}
+
+			return fmt.Errorf("--section requires either --content or --item")
+		}
+
+		// Handle frontmatter update
+		if cmd.Flags().Changed("frontmatter") {
+			frontmatter, _ := cmd.Flags().GetStringSlice("frontmatter")
+			if err := writer.UpdateFrontmatter(missionPath, frontmatter); err != nil {
+				return fmt.Errorf("updating frontmatter: %w", err)
+			}
+			fmt.Println("Frontmatter updated")
+			return nil
+		}
+
+		return fmt.Errorf("no update operation specified")
 	},
 }
 
@@ -89,16 +128,14 @@ var missionIDCmd = &cobra.Command{
 	},
 }
 
-// missionCreateCmd creates mission.md from plan.json
+// missionCreateCmd creates mission.md from plan.json or with just intent
 var missionCreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create mission.md from plan.json",
+	Short: "Create mission.md from plan.json or with intent",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		intent, _ := cmd.Flags().GetString("intent")
 		missionType, _ := cmd.Flags().GetString("type")
 		planFile, _ := cmd.Flags().GetString("file")
-		if planFile == "" {
-			planFile = ".mission/plan.json"
-		}
 
 		// Get mission ID
 		idService := mission.NewIDService(missionFs, missionDir)
@@ -107,10 +144,22 @@ var missionCreateCmd = &cobra.Command{
 			return fmt.Errorf("getting mission ID: %w", err)
 		}
 
-		// Create mission using Writer
 		writer := mission.NewWriter(missionFs)
 		missionPath := missionDir + "/mission.md"
 
+		// If intent is provided, create initial mission with just INTENT
+		if intent != "" {
+			if err := writer.CreateWithIntent(missionPath, missionID, intent); err != nil {
+				return fmt.Errorf("creating mission with intent: %w", err)
+			}
+			fmt.Printf("Mission created: %s\n", missionPath)
+			return nil
+		}
+
+		// Otherwise create from plan file
+		if planFile == "" {
+			planFile = ".mission/plan.json"
+		}
 		if err := writer.CreateFromPlanFile(planFile, missionPath, missionID, missionType); err != nil {
 			return fmt.Errorf("creating mission file: %w", err)
 		}
@@ -149,9 +198,12 @@ func init() {
 
 	// Add flags
 	missionCheckCmd.Flags().StringP("context", "c", "", "Context for validation (apply or complete)")
-	missionUpdateCmd.Flags().StringP("status", "s", "", "New mission status (required)")
-	missionUpdateCmd.MarkFlagRequired("status")
+	missionUpdateCmd.Flags().StringP("status", "s", "", "New mission status")
+	missionUpdateCmd.Flags().String("section", "", "Section to update (intent, verification, scope, plan)")
+	missionUpdateCmd.Flags().String("content", "", "Content for text sections")
+	missionUpdateCmd.Flags().StringSlice("item", nil, "Items for list sections")
+	missionUpdateCmd.Flags().StringSlice("frontmatter", nil, "Frontmatter key=value pairs")
+	missionCreateCmd.Flags().String("intent", "", "Intent text for initial mission creation")
 	missionCreateCmd.Flags().StringP("type", "t", "", "Mission type (clarification or final)")
 	missionCreateCmd.Flags().StringP("file", "f", "", "Path to plan.json file (default: .mission/plan.json)")
-	missionCreateCmd.MarkFlagRequired("type")
 }

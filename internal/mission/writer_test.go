@@ -210,3 +210,131 @@ func TestWriter_CreateFromPlan(t *testing.T) {
 		t.Error("CreateFromPlan() should include verification in body")
 	}
 }
+
+func TestWriter_CreateWithIntent(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writer := NewWriter(fs)
+
+	path := "/test/mission.md"
+	if err := writer.CreateWithIntent(path, "test-123", "Add user authentication"); err != nil {
+		t.Fatalf("CreateWithIntent failed: %v", err)
+	}
+
+	mission, err := NewReader(fs).Read(path)
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if mission.ID != "test-123" {
+		t.Errorf("Expected ID 'test-123', got '%s'", mission.ID)
+	}
+	if mission.Status != "planning" {
+		t.Errorf("Expected status 'planning', got '%s'", mission.Status)
+	}
+	if !strings.Contains(mission.Body, "Add user authentication") {
+		t.Error("Body missing intent text")
+	}
+}
+
+func TestWriter_UpdateSection(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writer := NewWriter(fs)
+
+	mission := &Mission{
+		ID:        "test-123",
+		Status:    "planning",
+		Iteration: 1,
+		Body:      "## INTENT\nOld intent\n\n## SCOPE\nfile.go\n",
+	}
+
+	path := "/test/mission.md"
+	if err := writer.Write(path, mission); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	if err := writer.UpdateSection(path, "intent", "New intent"); err != nil {
+		t.Fatalf("UpdateSection failed: %v", err)
+	}
+
+	updated, err := NewReader(fs).Read(path)
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if !strings.Contains(updated.Body, "New intent") {
+		t.Error("Body missing updated intent")
+	}
+	if strings.Contains(updated.Body, "Old intent") {
+		t.Error("Body still contains old intent")
+	}
+}
+
+func TestWriter_UpdateList(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writer := NewWriter(fs)
+
+	mission := &Mission{
+		ID:        "test-123",
+		Status:    "planning",
+		Iteration: 1,
+		Body:      "## INTENT\nTest\n\n## SCOPE\n",
+	}
+
+	path := "/test/mission.md"
+	if err := writer.Write(path, mission); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	items := []string{"file1.go", "file2.go"}
+	if err := writer.UpdateList(path, "scope", items); err != nil {
+		t.Fatalf("UpdateList failed: %v", err)
+	}
+
+	updated, err := NewReader(fs).Read(path)
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if !strings.Contains(updated.Body, "file1.go") {
+		t.Error("Body missing file1.go")
+	}
+	if !strings.Contains(updated.Body, "file2.go") {
+		t.Error("Body missing file2.go")
+	}
+}
+
+func TestWriter_UpdateFrontmatter(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writer := NewWriter(fs)
+
+	mission := &Mission{
+		ID:        "test-123",
+		Status:    "planning",
+		Track:     2,
+		Type:      "WET",
+		Iteration: 1,
+		Body:      "## INTENT\nTest\n",
+	}
+
+	path := "/test/mission.md"
+	if err := writer.Write(path, mission); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	pairs := []string{"track=3", "type=DRY"}
+	if err := writer.UpdateFrontmatter(path, pairs); err != nil {
+		t.Fatalf("UpdateFrontmatter failed: %v", err)
+	}
+
+	updated, err := NewReader(fs).Read(path)
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if updated.Track != 3 {
+		t.Errorf("Expected track 3, got %d", updated.Track)
+	}
+	if updated.Type != "DRY" {
+		t.Errorf("Expected type 'DRY', got '%s'", updated.Type)
+	}
+}
