@@ -32,7 +32,23 @@ var analyzeIntentCmd = &cobra.Command{
 	},
 }
 
+// analyzeClarifyCmd provides clarification analysis template with current intent
+var analyzeClarifyCmd = &cobra.Command{
+	Use:   "clarify",
+	Short: "Provide clarification analysis template with current intent",
+	Long:  `Load clarification.md template and inject current intent from mission.md for LLM analysis.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		service := analyze.NewClarifyService()
+		output, err := service.ProvideTemplate()
+		if err != nil {
+			return fmt.Errorf("providing clarification template: %w", err)
+		}
+		fmt.Print(output)
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(analyzeCmd)
-	analyzeCmd.AddCommand(analyzeIntentCmd)
+	analyzeCmd.AddCommand(analyzeIntentCmd, analyzeClarifyCmd)
 }
