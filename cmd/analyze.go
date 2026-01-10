@@ -64,7 +64,23 @@ var analyzeScopeCmd = &cobra.Command{
 	},
 }
 
+// analyzeTestCmd provides test analysis template with current intent and scope
+var analyzeTestCmd = &cobra.Command{
+	Use:   "test",
+	Short: "Provide test analysis template with current intent and scope",
+	Long:  `Load test.md template and inject current intent and scope from mission.md for LLM analysis.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		service := analyze.NewTestService()
+		output, err := service.ProvideTemplate()
+		if err != nil {
+			return fmt.Errorf("providing test template: %w", err)
+		}
+		fmt.Print(output)
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(analyzeCmd)
-	analyzeCmd.AddCommand(analyzeIntentCmd, analyzeClarifyCmd, analyzeScopeCmd)
+	analyzeCmd.AddCommand(analyzeIntentCmd, analyzeClarifyCmd, analyzeScopeCmd, analyzeTestCmd)
 }
