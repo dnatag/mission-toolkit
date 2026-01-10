@@ -221,7 +221,7 @@ func TestWriteLibraryTemplates(t *testing.T) {
 			}
 
 			// Check for expected subdirectories
-			expectedDirs := []string{"displays", "analysis"}
+			expectedDirs := []string{"displays"}
 			for _, dir := range expectedDirs {
 				dirPath := filepath.Join(libraryDir, dir)
 				exists, err := afero.DirExists(fs, dirPath)

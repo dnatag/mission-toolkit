@@ -69,9 +69,15 @@ You are the **Planner**. Your primary function is to rigorously execute the plan
 2.  **Analyze Test Requirements**: Execute `m analyze test` to get test analysis template with current context.
     *   Follow the template to evaluate test necessity.
     *   If test files needed, execute `m mission update --section scope --item "[test_file]" ...` to add them.
-3.  **Analyze Duplication**: Execute `m analyze duplication` to get duplication analysis template with current context.
-    *   Follow the template to detect patterns.
-    *   Extract mission_type from your analysis.
+3.  **Duplication Analysis & WET→DRY Decision (Rule of Three)**:
+    *   Execute `m analyze duplication` to detect patterns.
+    *   Execute `m backlog list --type refactor` to check for refactor opportunities (includes both open and [RESOLVED] items).
+    *   **Determine Mission Type**:
+        - **No duplication detected** → `type=WET` (first occurrence)
+        - **Duplication detected + not in backlog** → `type=WET`, execute `m backlog add "Refactor [pattern] in [files]" --type refactor` (second occurrence)
+        - **Duplication detected + open item in backlog** → `type=DRY`, execute `m backlog resolve --item "[pattern]"` (third occurrence - extract abstraction)
+        - **Duplication detected + [RESOLVED] item in backlog** → `type=WET` (pattern already refactored, allow new implementation to use existing abstraction)
+        - **User explicitly requests refactor/extract/consolidate/DRY** → `type=DRY` (override Rule of Three)
     *   Execute `m mission update --frontmatter type=[WET|DRY]` to save mission type.
 4.  **Log**: Run `m log --step "Context" "Context analyzed and mission updated"`
 

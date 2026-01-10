@@ -20,9 +20,10 @@ var backlogListCmd = &cobra.Command{
 	Short: "List backlog items",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		all, _ := cmd.Flags().GetBool("all")
+		itemType, _ := cmd.Flags().GetString("type")
 
 		manager := backlog.NewManager(missionDir)
-		items, err := manager.List(all)
+		items, err := manager.List(all, itemType)
 		if err != nil {
 			return fmt.Errorf("listing backlog: %w", err)
 		}
@@ -110,15 +111,45 @@ Examples:
 	},
 }
 
+// backlogResolveCmd marks a refactor opportunity as resolved via DRY conversion
+var backlogResolveCmd = &cobra.Command{
+	Use:   "resolve",
+	Short: "Mark a refactor opportunity as resolved via DRY conversion",
+	Long: `Mark a refactor opportunity as resolved via DRY conversion.
+
+This marks the item in-place with [RESOLVED] prefix and timestamp, allowing future
+duplication detection to recognize this pattern has been addressed.
+
+Example:
+  m backlog resolve --item "Refactor email validation in handlers"`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		item, _ := cmd.Flags().GetString("item")
+		if item == "" {
+			return fmt.Errorf("--item flag is required")
+		}
+
+		manager := backlog.NewManager(missionDir)
+		if err := manager.Resolve(item); err != nil {
+			return fmt.Errorf("marking item as resolved: %w", err)
+		}
+
+		fmt.Printf("Marked as resolved: %s\n", item)
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(backlogCmd)
-	backlogCmd.AddCommand(backlogListCmd, backlogAddCmd, backlogCompleteCmd, backlogCleanupCmd)
+	backlogCmd.AddCommand(backlogListCmd, backlogAddCmd, backlogCompleteCmd, backlogResolveCmd, backlogCleanupCmd)
 
 	// Add flags
 	backlogListCmd.Flags().Bool("all", false, "Include completed items")
+	backlogListCmd.Flags().String("type", "", "Filter by item type (decomposed, refactor, future)")
 	backlogAddCmd.Flags().String("type", "", "Item type (decomposed, refactor, future)")
 	backlogAddCmd.MarkFlagRequired("type")
 	backlogCompleteCmd.Flags().String("item", "", "Exact text of the item to complete")
 	backlogCompleteCmd.MarkFlagRequired("item")
+	backlogResolveCmd.Flags().String("item", "", "Exact text of the refactor item to mark as resolved")
+	backlogResolveCmd.MarkFlagRequired("item")
 	backlogCleanupCmd.Flags().String("type", "", "Filter by item type (decomposed, refactor, future)")
 }

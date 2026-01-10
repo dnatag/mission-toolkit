@@ -23,8 +23,14 @@ func NewManager(missionDir string) *BacklogManager {
 	}
 }
 
-// List returns backlog items, optionally including completed items
-func (m *BacklogManager) List(includeCompleted bool) ([]string, error) {
+// List returns backlog items, optionally including completed items and filtering by type
+func (m *BacklogManager) List(includeCompleted bool, itemType string) ([]string, error) {
+	if itemType != "" {
+		if err := m.validateType(itemType); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := m.ensureBacklogExists(); err != nil {
 		return nil, err
 	}
@@ -38,32 +44,45 @@ func (m *BacklogManager) List(includeCompleted bool) ([]string, error) {
 	var items []string
 	scanner := bufio.NewScanner(file)
 	inCompletedSection := false
+	currentSection := ""
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 
 		if line == "## COMPLETED" {
 			inCompletedSection = true
+			currentSection = ""
 			continue
 		}
 
 		if strings.HasPrefix(line, "## ") {
 			inCompletedSection = false
+			currentSection = line
 			continue
 		}
 
 		if strings.HasPrefix(line, "- [ ]") || strings.HasPrefix(line, "- [x]") {
-			if strings.HasPrefix(line, "- [x]") && !includeCompleted {
-				continue
-			}
+			// Skip completed items unless includeCompleted is true
 			if inCompletedSection && !includeCompleted {
 				continue
 			}
+
+			// Filter by type if specified
+			if itemType != "" && !m.isInSection(currentSection, itemType) {
+				continue
+			}
+
 			items = append(items, line)
 		}
 	}
 
 	return items, scanner.Err()
+}
+
+// isInSection checks if the current section matches the item type
+func (m *BacklogManager) isInSection(sectionHeader, itemType string) bool {
+	expectedHeader := m.getSectionHeader(itemType)
+	return sectionHeader == expectedHeader
 }
 
 // Add adds a new item to the specified section
@@ -239,6 +258,7 @@ func (m *BacklogManager) createBacklogFile() error {
 
 ## REFACTORING OPPORTUNITIES
 *This section lists technical debt and refactoring opportunities identified by the AI during planning or execution.*
+*Items marked with [RESOLVED] have been addressed via DRY conversion and should not be refactored again.*
 
 ## FUTURE ENHANCEMENTS
 *This section is for user-defined ideas and future feature requests.*
@@ -297,6 +317,58 @@ func (m *BacklogManager) getSectionHeader(itemType string) string {
 	default:
 		return ""
 	}
+}
+
+// Resolve marks a refactor opportunity as resolved via DRY conversion.
+// This marks the item in-place with [RESOLVED] prefix and timestamp.
+func (m *BacklogManager) Resolve(itemText string) error {
+	if err := m.ensureBacklogExists(); err != nil {
+		return err
+	}
+
+	content, err := m.readBacklogContent()
+	if err != nil {
+		return err
+	}
+
+	lines := strings.Split(content, "\n")
+	result := make([]string, 0, len(lines))
+	itemFound := false
+	inRefactorSection := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		// Track if we're in REFACTORING OPPORTUNITIES section
+		if trimmed == "## REFACTORING OPPORTUNITIES" {
+			inRefactorSection = true
+			result = append(result, line)
+			continue
+		}
+		if strings.HasPrefix(trimmed, "## ") {
+			inRefactorSection = false
+			result = append(result, line)
+			continue
+		}
+
+		// Find and mark the item in REFACTORING OPPORTUNITIES
+		if inRefactorSection && strings.HasPrefix(trimmed, "- [ ]") && strings.Contains(trimmed, itemText) {
+			timestamp := time.Now().Format("2006-01-02")
+			itemDesc := strings.TrimPrefix(trimmed, "- [ ] ")
+			resolvedItem := fmt.Sprintf("- [x] [RESOLVED] %s (DRY: %s)", itemDesc, timestamp)
+			result = append(result, resolvedItem)
+			itemFound = true
+			continue
+		}
+
+		result = append(result, line)
+	}
+
+	if !itemFound {
+		return fmt.Errorf("refactor item not found: %s", itemText)
+	}
+
+	return m.writeBacklogContent(strings.Join(result, "\n"))
 }
 
 // Cleanup removes completed items from the COMPLETED section of the backlog.

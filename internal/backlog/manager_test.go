@@ -12,7 +12,7 @@ func TestBacklogManager_List(t *testing.T) {
 	manager := NewManager(tempDir)
 
 	// Test with non-existent backlog (should create it)
-	items, err := manager.List(false)
+	items, err := manager.List(false, "")
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -29,7 +29,7 @@ func TestBacklogManager_List(t *testing.T) {
 	}
 
 	// Test listing open items
-	items, err = manager.List(false)
+	items, err = manager.List(false, "")
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -43,7 +43,7 @@ func TestBacklogManager_List(t *testing.T) {
 	}
 
 	// Test listing open items (should be 1)
-	items, err = manager.List(false)
+	items, err = manager.List(false, "")
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestBacklogManager_List(t *testing.T) {
 	}
 
 	// Test listing all items (should be 2)
-	items, err = manager.List(true)
+	items, err = manager.List(true, "")
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -243,7 +243,7 @@ func TestBacklogManager_AddToEmptySection(t *testing.T) {
 	}
 
 	// Verify item was added correctly
-	items, err := manager.List(false)
+	items, err := manager.List(false, "")
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -260,7 +260,7 @@ func TestBacklogManager_AddToEmptySection(t *testing.T) {
 	}
 
 	// Verify both items exist
-	items, err = manager.List(false)
+	items, err = manager.List(false, "")
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -309,7 +309,7 @@ func TestBacklogManager_ExistingBacklogWithEmptySections(t *testing.T) {
 	}
 
 	// Verify all items were added
-	items, err := manager.List(false)
+	items, err := manager.List(false, "")
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -380,7 +380,7 @@ func TestBacklogManager_AddMultiple(t *testing.T) {
 	}
 
 	// Verify count
-	storedItems, err := manager.List(false)
+	storedItems, err := manager.List(false, "")
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -444,7 +444,7 @@ func TestBacklogManager_Cleanup(t *testing.T) {
 	}
 
 	// Verify all items are in completed section
-	items, err := manager.List(true)
+	items, err := manager.List(true, "")
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -462,7 +462,7 @@ func TestBacklogManager_Cleanup(t *testing.T) {
 	}
 
 	// Verify completed section is empty
-	items, err = manager.List(true)
+	items, err = manager.List(true, "")
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -581,5 +581,110 @@ func TestBacklogManager_matchesItemType(t *testing.T) {
 		if result != tt.expected {
 			t.Errorf("matchesItemType(%q, %q) = %v, expected %v", tt.item, tt.itemType, result, tt.expected)
 		}
+	}
+}
+
+func TestBacklogManager_ListWithTypeFilter(t *testing.T) {
+	dir := t.TempDir()
+	manager := NewManager(dir)
+
+	// Add items to different sections
+	if err := manager.Add("Refactor auth logic", "refactor"); err != nil {
+		t.Fatalf("Failed to add refactor item: %v", err)
+	}
+	if err := manager.Add("Sub-task from epic", "decomposed"); err != nil {
+		t.Fatalf("Failed to add decomposed item: %v", err)
+	}
+	if err := manager.Add("Add metrics", "future"); err != nil {
+		t.Fatalf("Failed to add future item: %v", err)
+	}
+
+	// Test filtering by refactor
+	items, err := manager.List(false, "refactor")
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Errorf("Expected 1 refactor item, got %d", len(items))
+	}
+
+	// Test filtering by decomposed
+	items, err = manager.List(false, "decomposed")
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Errorf("Expected 1 decomposed item, got %d", len(items))
+	}
+
+	// Test filtering by future
+	items, err = manager.List(false, "future")
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Errorf("Expected 1 future item, got %d", len(items))
+	}
+
+	// Test no filter (should get all 3)
+	items, err = manager.List(false, "")
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 3 {
+		t.Errorf("Expected 3 items, got %d", len(items))
+	}
+}
+
+func TestBacklogManager_Resolve(t *testing.T) {
+	dir := t.TempDir()
+	manager := NewManager(dir)
+
+	// Add a refactor item
+	refactorItem := "Refactor email validation in handlers"
+	if err := manager.Add(refactorItem, "refactor"); err != nil {
+		t.Fatalf("Failed to add refactor item: %v", err)
+	}
+
+	// Mark it as resolved
+	if err := manager.Resolve(refactorItem); err != nil {
+		t.Fatalf("Resolve failed: %v", err)
+	}
+
+	// Verify item is marked as [RESOLVED] in-place
+	items, err := manager.List(false, "refactor")
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("Expected 1 item, got %d", len(items))
+	}
+
+	item := items[0]
+	if !strings.Contains(item, "[RESOLVED]") {
+		t.Errorf("Expected [RESOLVED] marker in item: %s", item)
+	}
+	if !strings.Contains(item, refactorItem) {
+		t.Errorf("Expected original text in item: %s", item)
+	}
+	if !strings.Contains(item, "(DRY:") {
+		t.Errorf("Expected DRY timestamp in item: %s", item)
+	}
+	if !strings.HasPrefix(item, "- [x]") {
+		t.Errorf("Expected item to be marked as completed: %s", item)
+	}
+}
+
+func TestBacklogManager_ResolveNonExistentItem(t *testing.T) {
+	dir := t.TempDir()
+	manager := NewManager(dir)
+
+	// Try to mark non-existent item as resolved
+	err := manager.Resolve("Non-existent item")
+	if err == nil {
+		t.Error("Expected error for non-existent item, got nil")
+	}
+	if !strings.Contains(err.Error(), "not found") {
+		t.Errorf("Expected 'not found' error, got: %v", err)
 	}
 }
