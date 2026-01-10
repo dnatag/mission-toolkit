@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/dnatag/mission-toolkit/internal/checkpoint"
 	"github.com/dnatag/mission-toolkit/internal/mission"
@@ -40,6 +41,14 @@ var checkpointCreateCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Checkpoint created: %s\n", checkpointName)
+
+		// Display baseline tag info if this is the first checkpoint
+		if strings.HasSuffix(checkpointName, "-1") {
+			baselineTag := missionID + "-baseline"
+			fmt.Printf("\n📌 Baseline tag created: %s\n", baselineTag)
+			fmt.Printf("   View cumulative changes: git diff %s\n", baselineTag)
+		}
+
 		return nil
 	},
 }
