@@ -7,5 +7,6 @@
 
 🚀 NEXT STEPS:
 • Execute: /m.apply
+• Refine: Chat to revise mission plan
 • Modify: Edit .mission/mission.md directly
 • Cancel: Delete .mission/mission.md
