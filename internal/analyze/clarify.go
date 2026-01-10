@@ -5,9 +5,9 @@ import (
 	_ "embed"
 	"fmt"
 	"path/filepath"
-	"strings"
 	"text/template"
 
+	"github.com/dnatag/mission-toolkit/internal/mission"
 	"github.com/spf13/afero"
 )
 
@@ -33,7 +33,10 @@ func NewClarifyServiceWithFS(fs afero.Fs) *ClarifyService {
 
 // ProvideTemplate loads clarification.md template and injects current intent from mission.md
 func (s *ClarifyService) ProvideTemplate() (string, error) {
-	intent, err := s.readCurrentIntent()
+	reader := mission.NewReader(s.fs)
+	missionPath := filepath.Join(".mission", "mission.md")
+
+	intent, err := reader.ReadIntent(missionPath)
 	if err != nil {
 		return "", fmt.Errorf("reading current intent: %w", err)
 	}
@@ -50,38 +53,4 @@ func (s *ClarifyService) ProvideTemplate() (string, error) {
 	}
 
 	return buf.String(), nil
-}
-
-// readCurrentIntent reads the INTENT section from .mission/mission.md
-func (s *ClarifyService) readCurrentIntent() (string, error) {
-	missionPath := filepath.Join(".mission", "mission.md")
-	content, err := afero.ReadFile(s.fs, missionPath)
-	if err != nil {
-		return "", fmt.Errorf("reading mission.md: %w", err)
-	}
-
-	lines := strings.Split(string(content), "\n")
-	inIntentSection := false
-	var intentLines []string
-
-	for _, line := range lines {
-		if strings.HasPrefix(line, "## INTENT") {
-			inIntentSection = true
-			continue
-		}
-		// Stop at next section
-		if inIntentSection && strings.HasPrefix(line, "## ") {
-			break
-		}
-		// Collect non-empty lines in INTENT section
-		if inIntentSection && strings.TrimSpace(line) != "" {
-			intentLines = append(intentLines, line)
-		}
-	}
-
-	if len(intentLines) == 0 {
-		return "", fmt.Errorf("no intent found in mission.md")
-	}
-
-	return strings.TrimSpace(strings.Join(intentLines, " ")), nil
 }

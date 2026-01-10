@@ -52,33 +52,3 @@ func TestScopeService_ProvideTemplate_MissingMission(t *testing.T) {
 		t.Error("Expected error for missing mission.md")
 	}
 }
-
-func TestScopeService_readCurrentIntent(t *testing.T) {
-	fs := afero.NewMemMapFs()
-
-	missionContent := `---
-id: test-123
----
-
-## INTENT
-Fix authentication bug in login handler
-
-## SCOPE
-handler.go`
-
-	if err := afero.WriteFile(fs, ".mission/mission.md", []byte(missionContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	service := NewScopeServiceWithFS(fs)
-	intent, err := service.readCurrentIntent()
-
-	if err != nil {
-		t.Fatalf("readCurrentIntent failed: %v", err)
-	}
-
-	expected := "Fix authentication bug in login handler"
-	if intent != expected {
-		t.Errorf("Expected intent %q, got %q", expected, intent)
-	}
-}

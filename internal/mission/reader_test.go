@@ -492,3 +492,98 @@ Test with extra metadata
 		})
 	}
 }
+
+func TestReader_ReadIntent(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	reader := NewReader(fs)
+
+	content := `---
+id: test-123
+status: planned
+---
+
+## INTENT
+Add user authentication
+
+## SCOPE
+auth.go`
+
+	afero.WriteFile(fs, "mission.md", []byte(content), 0644)
+
+	intent, err := reader.ReadIntent("mission.md")
+	if err != nil {
+		t.Fatalf("ReadIntent failed: %v", err)
+	}
+
+	expected := "Add user authentication"
+	if intent != expected {
+		t.Errorf("Expected intent %q, got %q", expected, intent)
+	}
+}
+
+func TestReader_ReadScope(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	reader := NewReader(fs)
+
+	content := `---
+id: test-123
+status: planned
+---
+
+## INTENT
+Add user authentication
+
+## SCOPE
+auth.go
+handler.go
+middleware.go`
+
+	afero.WriteFile(fs, "mission.md", []byte(content), 0644)
+
+	scope, err := reader.ReadScope("mission.md")
+	if err != nil {
+		t.Fatalf("ReadScope failed: %v", err)
+	}
+
+	if !contains(scope, "auth.go") {
+		t.Error("Scope missing auth.go")
+	}
+	if !contains(scope, "handler.go") {
+		t.Error("Scope missing handler.go")
+	}
+	if !contains(scope, "middleware.go") {
+		t.Error("Scope missing middleware.go")
+	}
+}
+
+func TestReader_ReadIntent_MissingSection(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	reader := NewReader(fs)
+
+	content := `---
+id: test-123
+---
+
+## SCOPE
+auth.go`
+
+	afero.WriteFile(fs, "mission.md", []byte(content), 0644)
+
+	_, err := reader.ReadIntent("mission.md")
+	if err == nil {
+		t.Error("Expected error for missing INTENT section")
+	}
+}
+
+func contains(s, substr string) bool {
+	return len(s) > 0 && len(substr) > 0 && (s == substr || len(s) >= len(substr) && (s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || containsMiddle(s, substr)))
+}
+
+func containsMiddle(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}

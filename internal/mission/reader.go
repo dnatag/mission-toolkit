@@ -154,3 +154,50 @@ func (r *Reader) GetMissionStatus(path string) (string, error) {
 	}
 	return mission.Status, nil
 }
+
+// ReadIntent extracts the INTENT section from a mission file
+func (r *Reader) ReadIntent(path string) (string, error) {
+	mission, err := r.Read(path)
+	if err != nil {
+		return "", fmt.Errorf("reading mission file: %w", err)
+	}
+	return extractSection(mission.Body, "INTENT")
+}
+
+// ReadScope extracts the SCOPE section from a mission file
+func (r *Reader) ReadScope(path string) (string, error) {
+	mission, err := r.Read(path)
+	if err != nil {
+		return "", fmt.Errorf("reading mission file: %w", err)
+	}
+	return extractSection(mission.Body, "SCOPE")
+}
+
+// extractSection extracts a section from mission body
+func extractSection(body, sectionName string) (string, error) {
+	lines := strings.Split(body, "\n")
+	inSection := false
+	var sectionLines []string
+
+	for _, line := range lines {
+		if strings.HasPrefix(line, "## "+sectionName) {
+			inSection = true
+			continue
+		}
+		if inSection && strings.HasPrefix(line, "## ") {
+			break
+		}
+		if inSection && strings.TrimSpace(line) != "" {
+			sectionLines = append(sectionLines, line)
+		}
+	}
+
+	if len(sectionLines) == 0 {
+		return "", fmt.Errorf("no %s found in mission", strings.ToLower(sectionName))
+	}
+
+	if sectionName == "INTENT" {
+		return strings.TrimSpace(strings.Join(sectionLines, " ")), nil
+	}
+	return strings.Join(sectionLines, "\n"), nil
+}
