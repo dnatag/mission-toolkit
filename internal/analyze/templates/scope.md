@@ -1,5 +1,8 @@
 # SCOPE ANALYSIS TEMPLATE
 
+## Current Intent
+{{.CurrentIntent}}
+
 ## Purpose
 Determine which implementation files need to be modified or created based on the user's intent.
 

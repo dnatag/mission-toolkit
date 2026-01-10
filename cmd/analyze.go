@@ -48,7 +48,23 @@ var analyzeClarifyCmd = &cobra.Command{
 	},
 }
 
+// analyzeScopeCmd provides scope analysis template with current intent
+var analyzeScopeCmd = &cobra.Command{
+	Use:   "scope",
+	Short: "Provide scope analysis template with current intent",
+	Long:  `Load scope.md template and inject current intent from mission.md for LLM analysis.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		service := analyze.NewScopeService()
+		output, err := service.ProvideTemplate()
+		if err != nil {
+			return fmt.Errorf("providing scope template: %w", err)
+		}
+		fmt.Print(output)
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(analyzeCmd)
-	analyzeCmd.AddCommand(analyzeIntentCmd, analyzeClarifyCmd)
+	analyzeCmd.AddCommand(analyzeIntentCmd, analyzeClarifyCmd, analyzeScopeCmd)
 }
