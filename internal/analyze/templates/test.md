@@ -9,70 +9,65 @@
 
 ## Test Analysis Instructions
 
-### Step 1: Analyze Intent and Existing Code
+### Step 1: Check for Existing Test Files (MANDATORY)
 
-**Read the Intent:**
-- What functionality is being added or modified?
-- What is the expected behavior?
-- What are the inputs and outputs?
+**CRITICAL:** You MUST check for test files corresponding to ALL implementation files in scope.
 
-**Read Existing Scope Files (if they exist):**
-- Use file read tool to examine each scope file
-- What existing functions/types are present?
-- What patterns and conventions are established?
-- What dependencies and error handling exist?
+For EACH implementation file in scope (exclude test files, docs, configs):
 
-**For New Files:**
-- What functionality will this file provide based on intent?
-- What similar files exist that show the expected pattern?
+1. **Derive test filename by language:**
+   - **Go**: `X.go` → `X_test.go`
+   - **Python**: `X.py` → `test_X.py` or `X_test.py`
+   - **JavaScript/TypeScript**: `X.js` → `X.test.js` or `X.spec.js`
+   - **Java**: `X.java` → `XTest.java` (in `src/test/java/`)
+   - **Rust**: `#[cfg(test)]` inline modules or `tests/X.rs`
+   - **Other**: Search for files containing "test" and the base filename
 
-### Step 2: Predict Implementation Characteristics
+2. **MANDATORY CHECK:** Use file read tool to verify if test file exists
+   - **Report result:** "✅ EXISTS" or "❌ NOT FOUND" for each file
+   - **No skipping:** You must check ALL implementation files, even if you plan to exclude them later
 
-Based on intent and existing code patterns:
-- What logic complexity is expected? (simple | moderate | complex)
-- What external dependencies will be involved? (filesystem, network, database, other packages)
-- What error conditions are likely? (file not found, invalid input, network failure)
-- What edge cases should be handled? (empty input, nil values, boundary conditions)
+**Example Output Format:**
+```
+cmd/mission.go → cmd/mission_test.go: ❌ NOT FOUND
+internal/mission/writer.go → internal/mission/writer_test.go: ✅ EXISTS
+```
 
-### Step 3: Categorize Test Necessity
+### Step 2: Analyze the Changes
 
-**REQUIRES TESTS (High Priority):**
-- Business logic with conditional branches or loops
-- Functions that handle errors or validate input
-- Code that transforms, parses, or processes data
-- Integration with external dependencies (use mocks/fakes)
-- Bug fixes (regression tests to prevent recurrence)
-- Critical paths that affect system behavior
+**Read existing scope files** to understand what's being modified:
+- What functionality is being added/changed?
+- What's the logic complexity? (simple | moderate | complex)
+- What dependencies are involved? (filesystem, network, database)
 
-**SKIP TESTS (Low Value):**
-- Simple getters/setters with no logic
-- Trivial constructors that only assign fields
-- Pass-through functions with no transformation
-- Pure delegation to other tested functions
+### Step 3: Decide What Needs Testing
 
-### Step 4: Design Test Cases
+For EACH implementation file:
 
-For each scope file requiring tests:
+**Decision Matrix:**
 
-**File: [filename]**
-- **Expected Function/Method:** [name based on intent]
-- **Why Test?** [business logic | error handling | data transformation | integration | bug fix]
-- **Test Cases:**
-  1. [Happy path: expected input → expected output]
-  2. [Edge case: boundary condition → expected behavior]
-  3. [Error case: invalid input → expected error]
-- **Test Data/Mocks:** [fixtures, mock dependencies, sample inputs]
-- **Assertions:** [what to verify for correctness]
+| Change Type | Test File Exists? | Action |
+|-------------|------------------|--------|
+| **Substantive** | Yes | Add test file to scope |
+| **Substantive** | No | Create new test file |
+| **Trivial** | Yes or No | Skip test file |
 
-### Step 5: Test File Strategy
+**Substantive Changes:**
+- Logic with branches/loops
+- Error handling or validation  
+- Data transformation/parsing
+- External dependencies
+- Bug fixes
 
-- Which test files need creation? (e.g., `filename_test.go`)
-- What test helpers or fixtures are needed?
-- What mocking strategy? (interfaces for dependencies, in-memory filesystems, test doubles)
-- How to structure tests? (table-driven, subtests, setup/teardown)
+**Trivial Changes:**
+- Simple getters/setters
+- Field additions
+- Pass-through functions
 
-### Step 6: Verification Approach
+**Output:** List test files to add to scope or create.
 
-- What verification command will prove tests work? (e.g., `go test ./...`)
-- What is minimum acceptable coverage for new logic?
-- Are integration tests needed beyond unit tests?
+---
+
+**Optional: If test files are needed, consider:**
+- Test approach: table-driven, mocks, fixtures
+- Verification command: `go test ./...`, `npm test`, etc.
