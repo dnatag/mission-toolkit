@@ -11,10 +11,10 @@ This document is the master reference for all `m` CLI commands available for use
   - `--ai-type`: AI assistant type (q, claude, kiro, opencode)
 - **Output**: Creates `.mission/` directory with governance files and AI-specific prompt templates
 
-### `m status`
-- **Purpose**: Display current and completed mission status with interactive TUI
-- **Usage**: `m status`
-- **Output**: Interactive terminal UI showing mission details, progress, and next steps
+### `m dashboard`
+- **Purpose**: Display comprehensive mission dashboard with execution logs in interactive TUI
+- **Usage**: `m dashboard`
+- **Output**: Interactive terminal UI with split-pane view showing mission details, execution logs, and commit history
 
 ### `m version`
 - **Purpose**: Show version information

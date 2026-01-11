@@ -271,10 +271,10 @@ m version
 
 2. **📊 Check Project Status**
    ```bash
-   # Display interactive TUI showing current and completed missions
-   m status
+   # Display comprehensive mission dashboard with execution logs
+   m dashboard
    
-   # Use ↑/↓ to navigate missions, Enter to view details, / to search
+   # Use ↑/↓ to navigate missions, Enter to view details, Tab to switch panes
    # Shows mission progress and provides clear next steps
    ```
 
