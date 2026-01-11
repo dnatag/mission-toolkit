@@ -50,14 +50,16 @@ You are the **Planner**. Your primary function is to rigorously execute the plan
 1.  **Analyze Intent**: Execute `m analyze intent "$ARGUMENTS"` to get intent analysis template with user input.
     *   Follow the template to refine the user's request.
     *   **Decision**: If the output is "AMBIGUOUS", **STOP IMMEDIATELY**. Ask the user to clarify the specific reason for the ambiguity.
-2.  **Check Clarity**: Execute `m analyze clarify` to get clarification template with current intent.
+2.  **Create Mission**: Execute `m mission create --intent "[REFINED_INTENT]"` to create initial mission.md.
+3.  **Check Clarity**: Execute `m analyze clarify` to get clarification template with current intent.
     *   Follow the template to check for missing details.
-    *   **If output is "✅ INTENT CLEAR"**: Set `[REFINED_INTENT]` and proceed to Step 2.
-    *   **If output is "⚠️ PROCEEDING WITH ASSUMPTIONS"**: Display assumptions to user, set `[REFINED_INTENT]`, and proceed to Step 2.
+    *   **If output is "✅ INTENT CLEAR"**: Proceed to Step 2.
+    *   **If output is "⚠️ PROCEEDING WITH ASSUMPTIONS"**: Display assumptions to user and proceed to Step 2.
     *   **If output is "🛑 CLARIFICATION NEEDED"**:
         1.  Display questions to user and **STOP**.
-        2.  When user responds, combine original intent with answers to form `[REFINED_INTENT]` and restart from Step 2.
-3.  **Create Mission**: Execute `m mission create --intent "[REFINED_INTENT]"` to create initial mission.md.
+        2.  When user responds, combine original intent with answers to form `[REFINED_INTENT]`.
+        3.  Execute `m mission update --section intent --content "[REFINED_INTENT]"` to update mission with refined intent.
+        4.  Proceed to Step 2.
 4.  **Log**: Run `m log --step "Intent" "Intent analyzed and refined"`
 
 ### Step 2: Context Analysis
