@@ -92,8 +92,8 @@ func (w *Writer) UpdateSection(path string, section string, content string) erro
 	return w.Write(path, mission)
 }
 
-// UpdateList updates a list section (scope, plan)
-func (w *Writer) UpdateList(path string, section string, items []string) error {
+// UpdateList updates a list section (scope, plan) with optional append mode
+func (w *Writer) UpdateList(path string, section string, items []string, appendMode bool) error {
 	mission, err := NewReader(w.fs).Read(path)
 	if err != nil {
 		return fmt.Errorf("reading mission: %w", err)
@@ -107,23 +107,19 @@ func (w *Writer) UpdateList(path string, section string, items []string) error {
 	for i, line := range lines {
 		if strings.TrimSpace(line) == sectionHeader {
 			result = append(result, line)
-			// Add items
-			if section == "plan" {
-				for _, item := range items {
-					result = append(result, "- [ ] "+item)
-				}
-			} else {
-				result = append(result, items...)
+
+			if appendMode {
+				// Preserve existing items and add new ones
+				existingItems := w.extractExistingItems(lines, i+1)
+				result = append(result, existingItems...)
 			}
+
+			// Add new items with appropriate formatting
+			w.addFormattedItems(&result, section, items)
+
 			foundSection = true
-			// Skip old content until next section
-			for j := i + 1; j < len(lines); j++ {
-				if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
-					result = append(result, "")
-					result = append(result, lines[j:]...)
-					break
-				}
-			}
+			// Skip to next section
+			w.skipToNextSection(&result, lines, i+1)
 			break
 		}
 		result = append(result, line)
@@ -132,17 +128,47 @@ func (w *Writer) UpdateList(path string, section string, items []string) error {
 	if !foundSection {
 		// Add new section at end
 		result = append(result, "", sectionHeader)
-		if section == "plan" {
-			for _, item := range items {
-				result = append(result, "- [ ] "+item)
-			}
-		} else {
-			result = append(result, items...)
-		}
+		w.addFormattedItems(&result, section, items)
 	}
 
 	mission.Body = strings.Join(result, "\n")
 	return w.Write(path, mission)
+}
+
+// extractExistingItems collects existing items from a section
+func (w *Writer) extractExistingItems(lines []string, startIndex int) []string {
+	var existingItems []string
+	for j := startIndex; j < len(lines); j++ {
+		if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
+			break
+		}
+		if strings.TrimSpace(lines[j]) != "" {
+			existingItems = append(existingItems, lines[j])
+		}
+	}
+	return existingItems
+}
+
+// addFormattedItems adds items with proper formatting based on section type
+func (w *Writer) addFormattedItems(result *[]string, section string, items []string) {
+	if section == "plan" {
+		for _, item := range items {
+			*result = append(*result, "- [ ] "+item)
+		}
+	} else {
+		*result = append(*result, items...)
+	}
+}
+
+// skipToNextSection skips content until the next section and appends remaining lines
+func (w *Writer) skipToNextSection(result *[]string, lines []string, startIndex int) {
+	for j := startIndex; j < len(lines); j++ {
+		if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
+			*result = append(*result, "")
+			*result = append(*result, lines[j:]...)
+			break
+		}
+	}
 }
 
 // UpdateFrontmatter updates frontmatter fields

@@ -84,7 +84,8 @@ var missionUpdateCmd = &cobra.Command{
 			// List section update (scope, plan)
 			if cmd.Flags().Changed("item") {
 				items, _ := cmd.Flags().GetStringSlice("item")
-				if err := writer.UpdateList(missionPath, section, items); err != nil {
+				appendMode, _ := cmd.Flags().GetBool("append")
+				if err := writer.UpdateList(missionPath, section, items, appendMode); err != nil {
 					return fmt.Errorf("updating list: %w", err)
 				}
 				fmt.Printf("Section '%s' updated with %d items\n", section, len(items))
@@ -207,6 +208,7 @@ func init() {
 	missionUpdateCmd.Flags().String("section", "", "Section to update (intent, verification, scope, plan)")
 	missionUpdateCmd.Flags().String("content", "", "Content for text sections")
 	missionUpdateCmd.Flags().StringSlice("item", nil, "Items for list sections")
+	missionUpdateCmd.Flags().Bool("append", false, "Append items instead of replacing all existing items")
 	missionUpdateCmd.Flags().StringSlice("frontmatter", nil, "Frontmatter key=value pairs")
 	missionCreateCmd.Flags().String("intent", "", "Intent text for initial mission creation")
 	missionCreateCmd.MarkFlagRequired("intent")

@@ -231,7 +231,7 @@ func TestWriter_UpdateList(t *testing.T) {
 	}
 
 	items := []string{"file1.go", "file2.go"}
-	if err := writer.UpdateList(path, "scope", items); err != nil {
+	if err := writer.UpdateList(path, "scope", items, false); err != nil {
 		t.Fatalf("UpdateList failed: %v", err)
 	}
 
@@ -245,6 +245,48 @@ func TestWriter_UpdateList(t *testing.T) {
 	}
 	if !strings.Contains(updated.Body, "file2.go") {
 		t.Error("Body missing file2.go")
+	}
+}
+
+func TestWriter_UpdateListAppend(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writer := NewWriter(fs)
+
+	mission := &Mission{
+		ID:        "test-123",
+		Status:    "planning",
+		Iteration: 1,
+		Body:      "## INTENT\nTest\n\n## SCOPE\nexisting1.go\nexisting2.go\n",
+	}
+
+	path := "/test/mission.md"
+	if err := writer.Write(path, mission); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	// Test append mode
+	newItems := []string{"new1.go", "new2.go"}
+	if err := writer.UpdateList(path, "scope", newItems, true); err != nil {
+		t.Fatalf("UpdateList append failed: %v", err)
+	}
+
+	updated, err := NewReader(fs).Read(path)
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	// Should contain both existing and new items
+	if !strings.Contains(updated.Body, "existing1.go") {
+		t.Error("Body missing existing1.go")
+	}
+	if !strings.Contains(updated.Body, "existing2.go") {
+		t.Error("Body missing existing2.go")
+	}
+	if !strings.Contains(updated.Body, "new1.go") {
+		t.Error("Body missing new1.go")
+	}
+	if !strings.Contains(updated.Body, "new2.go") {
+		t.Error("Body missing new2.go")
 	}
 }
 
