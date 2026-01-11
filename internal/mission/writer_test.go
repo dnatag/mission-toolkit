@@ -214,6 +214,47 @@ func TestWriter_UpdateSection(t *testing.T) {
 	}
 }
 
+func TestWriter_UpdateSectionCreatesNew(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writer := NewWriter(fs)
+
+	mission := &Mission{
+		ID:        "test-123",
+		Status:    "planning",
+		Iteration: 1,
+		Body:      "## INTENT\nTest intent\n\n## SCOPE\nfile.go\n",
+	}
+
+	path := "/test/mission.md"
+	if err := writer.Write(path, mission); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	// Update non-existent section - should create it
+	if err := writer.UpdateSection(path, "verification", "go test ./..."); err != nil {
+		t.Fatalf("UpdateSection failed to create new section: %v", err)
+	}
+
+	updated, err := NewReader(fs).Read(path)
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if !strings.Contains(updated.Body, "## VERIFICATION") {
+		t.Error("Body missing new VERIFICATION section header")
+	}
+	if !strings.Contains(updated.Body, "go test ./...") {
+		t.Error("Body missing verification content")
+	}
+	// Should preserve existing content
+	if !strings.Contains(updated.Body, "Test intent") {
+		t.Error("Body missing original intent")
+	}
+	if !strings.Contains(updated.Body, "file.go") {
+		t.Error("Body missing original scope")
+	}
+}
+
 func TestWriter_UpdateList(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	writer := NewWriter(fs)

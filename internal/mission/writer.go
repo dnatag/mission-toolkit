@@ -85,7 +85,9 @@ func (w *Writer) UpdateSection(path string, section string, content string) erro
 	}
 
 	if !foundSection {
-		return fmt.Errorf("section %s not found", section)
+		// Add new section at end
+		result = append(result, "", sectionHeader)
+		result = append(result, content)
 	}
 
 	mission.Body = strings.Join(result, "\n")

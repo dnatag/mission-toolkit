@@ -6,7 +6,7 @@
 {{CHANGE_DETAILS}}
 
 🔍 VIEW CHANGES:
-• All changes: git diff {{CHECKPOINT_0}}-baseline
+• All changes: git diff {{MISSION_ID}}-baseline
 • First pass only: git diff {{CHECKPOINT_0}} {{CHECKPOINT_1}}
 • Polish changes: git diff {{CHECKPOINT_1}} {{CHECKPOINT_2}}
 
