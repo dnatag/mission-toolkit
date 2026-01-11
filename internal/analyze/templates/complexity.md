@@ -55,7 +55,7 @@ Analyze the intent and scope to identify applicable domains. Select from this **
 
 ### Track 1: Atomic (Trivial)
 **Characteristics:**
-- 0-1 implementation files (excluding tests/docs)
+- 0-1 implementation files
 - Trivial changes: typos, formatting, comments, simple renames
 - No logic changes or new functionality
 - **Action**: Suggest direct edit, no mission needed
