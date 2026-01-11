@@ -37,73 +37,59 @@ You are the **Planner**. Your primary function is to rigorously execute the plan
     - AI reads `.mission/` files; `m` CLI writes them
     - Use `m` commands for all mission state modifications
     - Parse JSON output and follow conditional logic
+3.  **TEMPLATE INTERPRETATION**
+    - `m analyze *` commands output JSON with `template_path` in `.mission/templates/`
+    - Parse JSON, use file read tool to load the template file, follow its instructions
+    - Never display template content to user - it's for your analysis only
+    - `m mission *` and `m backlog *` commands output JSON for programmatic parsing
 
 ## Execution Steps
 
-### Step 0: Load Governance (MANDATORY)
+### Step 0: Setup & Load Governance (MANDATORY)
 
-**CRITICAL:** Use file read tool to read `.mission/governance.md` NOW. You MUST complete this step before proceeding.
+1. **Setup Templates**: Execute `mkdir -p .mission/templates` to create template directory
+2. **Load Governance**: Use file read tool to read `.mission/governance.md` NOW. You MUST complete this step before proceeding.
 
-**DO NOT SKIP THIS STEP.** If governance.md is not loaded, STOP and report error.
+**DO NOT SKIP THESE STEPS.** If governance.md is not loaded, STOP and report error.
 
 ### Step 1: Intent & Clarification
 
-1.  **Analyze Intent**: Execute `m analyze intent "$ARGUMENTS"` to get intent analysis template with user input.
-    *   Follow the template to refine the user's request.
-    *   **Decision**: If the output is "AMBIGUOUS", **STOP IMMEDIATELY**. Ask the user to clarify the specific reason for the ambiguity.
-2.  **Create Mission**: Execute `m mission create --intent "[REFINED_INTENT]"` to create initial mission.md.
-3.  **Check Clarity**: Execute `m analyze clarify` to get clarification template with current intent.
-    *   Follow the template to check for missing details.
-    *   **If output is "✅ INTENT CLEAR"**: Proceed to Step 2.
-    *   **If output is "⚠️ PROCEEDING WITH ASSUMPTIONS"**: Display assumptions to user and proceed to Step 2.
-    *   **If output is "🛑 CLARIFICATION NEEDED"**:
-        1.  Display questions to user and **STOP**.
-        2.  When user responds, combine original intent with answers to form `[REFINED_INTENT]`.
-        3.  Execute `m mission update --section intent --content "[REFINED_INTENT]"` to update mission with refined intent.
-        4.  Proceed to Step 2.
-4.  **Log**: Run `m log --step "Intent" "Intent analyzed and refined"`
+1.  **Analyze Intent**: `m analyze intent "$ARGUMENTS"` → Parse JSON, read `template_path`, follow template
+    *   If analysis concludes "AMBIGUOUS" → **STOP**, ask user to clarify
+2.  **Create Mission**: `m mission create --intent "[REFINED_INTENT]"`
+3.  **Check Clarity**: `m analyze clarify` → Parse JSON, read `template_path`, follow template
+    *   "✅ INTENT CLEAR" → Proceed to Step 2
+    *   "⚠️ PROCEEDING WITH ASSUMPTIONS" → Display assumptions, proceed to Step 2
+    *   "🛑 CLARIFICATION NEEDED" → Display questions, **STOP**. When user responds, `m mission update --section intent --content "[REFINED_INTENT]"`, then proceed
+4.  **Log**: `m log --step "Intent" "Intent analyzed and refined"`
 
 ### Step 2: Context Analysis
 
-1.  **Analyze Scope**: Execute `m analyze scope` to get scope analysis template with current intent.
-    *   Follow the template to determine which files need to be modified or created.
-    *   Extract files from your analysis.
-    *   Execute `m mission update --section scope --item "[file1]" --item "[file2]" ...` to save scope.
-2.  **Analyze Test Requirements**: Execute `m analyze test` to get test analysis template with current context.
-    *   Follow the template to evaluate test necessity.
-    *   If test files needed, execute `m mission update --section scope --append --item "[test_file]" ...` to add them.
+1.  **Analyze Scope**: `m analyze scope` → Parse JSON, read `template_path`, follow template
+    *   `m mission update --section scope --item "[file1]" --item "[file2]" ...`
+2.  **Analyze Test Requirements**: `m analyze test` → Parse JSON, read `template_path`, follow template
+    *   If needed: `m mission update --section scope --append --item "[test_file]" ...`
 3.  **Duplication Analysis & WET→DRY Decision (Rule of Three)**:
-    *   Execute `m analyze duplication` to detect patterns.
-    *   Execute `m backlog list --type refactor` to check for refactor opportunities (includes both open and [RESOLVED] items).
+    *   `m analyze duplication` → Parse JSON, read `template_path`, follow template
+    *   `m backlog list --type refactor` → Parse JSON for refactor opportunities
     *   **Determine Mission Type**:
-        - **No duplication detected** → `type=WET` (first occurrence)
-        - **Duplication detected + not in backlog** → `type=WET`, execute `m backlog add "Refactor [pattern] in [files]" --type refactor` (second occurrence)
-        - **Duplication detected + open item in backlog** → `type=DRY`, execute `m backlog resolve --item "[pattern]"` (third occurrence - extract abstraction)
-        - **Duplication detected + [RESOLVED] item in backlog** → `type=WET` (pattern already refactored, allow new implementation to use existing abstraction)
-        - **User explicitly requests refactor/extract/consolidate/DRY** → `type=DRY` (override Rule of Three)
-    *   Execute `m mission update --frontmatter type=[WET|DRY]` to save mission type.
-4.  **Log**: Run `m log --step "Context" "Context analyzed and mission updated"`
+        - No duplication → `type=WET`
+        - Duplication + not in backlog → `type=WET`, `m backlog add "Refactor [pattern]" --type refactor`
+        - Duplication + open in backlog → `type=DRY`, `m backlog resolve --item "[pattern]"`
+        - Duplication + [RESOLVED] in backlog → `type=WET`
+        - User requests refactor → `type=DRY`
+    *   `m mission update --frontmatter type=[WET|DRY]`
+4.  **Log**: `m log --step "Context" "Context analyzed and mission updated"`
 
 ### Step 3: Complexity Analysis
 
-1.  **Run Analysis**: Execute `m analyze complexity` to get complexity analysis template with current context.
-2.  **Follow Template**: Analyze domains and calculate track following the template.
-3.  **Update Mission**: Execute `m mission update --frontmatter track=[N] domains="[list]"` to save complexity metadata.
-4.  **Follow Instructions**: React to the analysis result:
-    *   **If Track 1 (Atomic)**:
-        1. Extract `suggested_edit` from your analysis JSON
-        2. Use file read tool to load template `.mission/libraries/displays/plan-atomic.md`
-        3. Fill template with `{{REFINED_INTENT}}` and `{{SUGGESTED_EDIT}}`
-        4. Display filled template and **STOP**
-    *   **If Track 4 (Epic)**:
-        1. Decompose `[REFINED_INTENT]` into atomic sub-intents
-        2. Execute `m backlog list` to verify no duplicates
-        3. Execute `m backlog add "[sub-intent 1]" "[sub-intent 2]" ... --type decomposed` (excluding duplicates)
-        4. Use file read tool to load template `.mission/libraries/displays/plan-epic.md`
-        5. Fill template with `{{SUB_INTENTS}}` list
-        6. Display filled template and **STOP**
-    *   **If Track 2 or 3**: Continue to Step 4.
-5.  **Log**: Run `m log --step "Analyze" "Complexity analysis complete. Track: [TRACK]"`
+1.  **Run Analysis**: `m analyze complexity` → Parse JSON, read `template_path`, follow template
+2.  **Update Mission**: `m mission update --frontmatter track=[N] domains="[list]"`
+3.  **React Based on Track**:
+    *   **Track 1 (Atomic)**: Load `.mission/libraries/displays/plan-atomic.md`, fill with `{{REFINED_INTENT}}` and `{{SUGGESTED_EDIT}}`, display, **STOP**
+    *   **Track 4 (Epic)**: Decompose intent, `m backlog list` (parse JSON), `m backlog add "[sub-intent]" ... --type decomposed`, load `.mission/libraries/displays/plan-epic.md`, fill with `{{SUB_INTENTS}}`, display, **STOP**
+    *   **Track 2 or 3**: Continue to Step 4
+4.  **Log**: `m log --step "Analyze" "Complexity analysis complete. Track: [TRACK]"`
 
 ### Step 4: Plan and Validation
 
@@ -124,7 +110,8 @@ You are the **Planner**. Your primary function is to rigorously execute the plan
     *   If `action: PROCEED` → Mission is valid, continue.
     *   If `action: INVALID` → Display errors and **STOP**.
 3.  **Log**: Run `m log --step "Generate" "Mission generated successfully"`
-4.  **Final Output**: 
+4.  **Cleanup**: Execute `rm -rf .mission/templates` to remove dynamic templates
+5.  **Final Output**: 
     1.  Use file read tool to load template `.mission/libraries/displays/plan-success.md`.
     2.  Output the filled template with variables:
         - `{{TRACK}}`: From mission frontmatter.

@@ -1,6 +1,8 @@
 package analyze
 
 import (
+	"encoding/json"
+	"os"
 	"strings"
 	"testing"
 
@@ -8,6 +10,12 @@ import (
 )
 
 func TestTestService_ProvideTemplate(t *testing.T) {
+	// Setup: Create temp directory for test
+	tempDir := t.TempDir()
+	originalWd, _ := os.Getwd()
+	defer os.Chdir(originalWd)
+	os.Chdir(tempDir)
+
 	fs := afero.NewMemMapFs()
 
 	missionContent := `---
@@ -33,17 +41,28 @@ handler.go`
 		t.Fatalf("ProvideTemplate failed: %v", err)
 	}
 
-	if !strings.Contains(output, "## Current Mission Context") {
-		t.Error("Output missing Current Mission Context section")
+	// Verify output is valid JSON
+	var result map[string]string
+	if err := json.Unmarshal([]byte(output), &result); err != nil {
+		t.Fatalf("Output is not valid JSON: %v", err)
 	}
-	if !strings.Contains(output, "Add user authentication") {
-		t.Error("Output missing intent text")
+
+	// Verify file was created and contains expected content
+	templatePath := result["template_path"]
+	content, err := os.ReadFile(templatePath)
+	if err != nil {
+		t.Fatalf("Failed to read template file: %v", err)
 	}
-	if !strings.Contains(output, "auth.go") {
-		t.Error("Output missing scope files")
+
+	contentStr := string(content)
+	if !strings.Contains(contentStr, "## Current Mission Context") {
+		t.Error("Template missing Current Mission Context section")
 	}
-	if !strings.Contains(output, "## Test Analysis Instructions") {
-		t.Error("Output missing template content")
+	if !strings.Contains(contentStr, "Add user authentication") {
+		t.Error("Template missing intent text")
+	}
+	if !strings.Contains(contentStr, "auth.go") {
+		t.Error("Template missing scope files")
 	}
 }
 

@@ -1,4 +1,4 @@
-# COMPLEXITY ANALYSIS TEMPLATE
+# COMPLEXITY ANALYSIS TEMPLATE (IMPROVED)
 
 ## Current Mission Context
 
@@ -8,193 +8,237 @@
 {{.CurrentScope}}
 
 ## Purpose
-Identify applicable technical/business domains and determine the complexity track of the mission based on scope, intent, and domain context. This guides the planning strategy (Atomic vs. Standard vs. Epic).
+Determine mission complexity using a multi-factor scoring system that considers file count, domain criticality, and change characteristics.
 
-## Step 1: Identify Domains
+## Step 1: Count Files with Weights
 
-Analyze the intent and scope to identify applicable domains. Select from this **strict list** (do not invent new ones):
+Count ALL files in scope with different weights:
 
-### Valid Domains
+**Implementation Files (1.0x weight):**
+- Source code files with business logic
+- Examples: `*.go`, `*.js`, `*.py`, `*.java` (non-test)
 
-**Security** (`security`)
-- Triggers: Authentication, authorization, cryptography, PII handling, secrets management, input sanitization
-- Examples: "Add login", "Encrypt password", "Fix SQL injection"
+**Test Files (0.5x weight):**
+- Unit tests: `*_test.go`, `*.test.js`, `*.spec.ts`
+- Integration tests: `*_integration_test.go`
+- E2E tests: `*.e2e.js`
 
-**Performance** (`performance`)
-- Triggers: Latency requirements, throughput optimization, memory management, caching, database indexing, concurrency
-- Examples: "Speed up API", "Reduce memory usage", "Add Redis cache"
+**Documentation/Config (0.25x weight):**
+- Documentation: `*.md`, `*.txt`
+- Config files: `*.yaml`, `*.json`, `*.toml` (if they contain logic/complexity)
 
-**Complex Algorithms** (`complex-algo`)
-- Triggers: Mathematical models, AI/ML, recursion, state machines, graph algorithms, custom data structures
-- Examples: "Implement recommendation engine", "Pathfinding logic", "Parser implementation"
+**Excluded (0x weight):**
+- Pure config with no logic (simple key-value pairs)
+- Generated files
+- Vendored dependencies
 
-**High Risk** (`high-risk`)
-- Triggers: Financial transactions, payments, data deletion (bulk), critical infrastructure, public API changes
-- Examples: "Process refund", "Delete user account", "Change API signature"
+**Calculation:**
+```
+Weighted File Count = (Implementation Files × 1.0) + (Test Files × 0.5) + (Docs/Config × 0.25)
+```
 
-**Cross-Cutting** (`cross-cutting`)
-- Triggers: Changes affecting multiple distinct modules, logging infrastructure, configuration management, error handling strategies
-- Examples: "Update logging format everywhere", "Refactor config loading", "Global error handler"
+**File Count Score:**
+- 0-0.9 weighted files → 0 points (Track 1 candidate)
+- 1.0-3.9 weighted files → 1 point
+- 4.0-6.9 weighted files → 2 points
+- 7.0-12.4 weighted files → 3 points
+- 12.5+ weighted files → 5 points (auto Track 4)
 
-**Real-Time** (`real-time`)
-- Triggers: WebSockets, streaming, event-driven architecture, polling
-- Examples: "Live chat", "Stock ticker", "Notification stream"
+## Step 2: Identify Critical Domains
 
-**Compliance** (`compliance`)
-- Triggers: GDPR, audit logs, legal requirements, accessibility (WCAG)
-- Examples: "Add consent banner", "Export user data", "Audit trail"
+Select ALL applicable domains and sum their weights:
 
-**Decision Logic:**
-- Default: If none apply, domains list is empty `[]`
-- Multiple: Select ALL that apply (e.g., `["security", "high-risk"]`)
-- Threshold: If unsure, err on the side of caution and include the domain
+### High-Impact Domains (2 points each)
+- **Security** (`security`) - Auth, crypto, PII, secrets, input sanitization
+- **High-Risk** (`high-risk`) - Payments, data deletion, critical infrastructure
+- **Complex-Algo** (`complex-algo`) - AI/ML, graph algorithms, custom data structures
 
-## Step 2: Determine Complexity Track
+### Medium-Impact Domains (1 point each)
+- **Performance** (`performance`) - Latency, caching, concurrency
+- **Cross-Cutting** (`cross-cutting`) - Multi-module changes, global infrastructure
+- **Compliance** (`compliance`) - GDPR, audit logs, accessibility
 
-### Complexity Tracks
+### Low-Impact Domains (0.5 points each)
+- **Real-Time** (`real-time`) - WebSockets, streaming, events
+- **Standard** (`standard`) - CRUD, simple business logic (default if none apply)
 
-### Track 1: Atomic (Trivial)
-**Characteristics:**
-- 0-1 implementation files
-- Trivial changes: typos, formatting, comments, simple renames
-- No logic changes or new functionality
-- **Action**: Suggest direct edit, no mission needed
+## Step 3: Identify Change Characteristics
 
-### Track 2: Standard (Routine)
-**Characteristics:**
-- 2-5 implementation files
-- Standard patterns: CRUD operations, new endpoint, add field
-- Single module/package scope
-- Low-medium risk
-- **Action**: Create standard mission with step-by-step plan
+Add points for complexity indicators:
 
-### Track 3: Robust (Complex)
-**Characteristics:**
-- 6-9 implementation files OR
-- 2-5 files + critical domain (security, performance, etc.)
-- Cross-module changes
-- High risk or complex orchestration
-- **Action**: Create robust mission with detailed verification
+**+1 point each:**
+- Breaking changes (API signature changes, removed features)
+- Data migration required (schema changes, data transformation)
+- External integrations (third-party APIs, webhooks)
+- State management changes (session, cache, database state)
 
-### Track 4: Epic (Architectural)
-**Characteristics:**
-- 10+ implementation files OR
-- Massive scope (entire subsystem, major refactor)
-- Too large for single mission
-- **Action**: Decompose into sub-intents, add to backlog, STOP
+**+0.5 points each:**
+- New dependencies added
+- Configuration changes required
+- Multiple environments affected (dev, staging, prod)
 
-## Analysis Factors
+## Step 4: Calculate Final Track
 
-### 1. Implementation Files
-Count files in scope, EXCLUDING:
-- Test files (`*_test.go`, `*.test.js`, etc.)
-- Documentation (`*.md`, `*.txt`)
+**Total Score = File Count Score + Domain Score + Characteristics Score**
 
-### 2. Domain Multipliers
-Add +1 to the track (max Track 4) for EACH domain identified in Step 1.
-All domains are considered critical and act as multipliers.
+**Track Mapping:**
+- 0 points AND single file → Track 1 (Atomic)
+- 1-2 points → Track 2 (Standard)
+- 3-4 points → Track 3 (Robust)
+- 5+ points → Track 4 (Epic)
 
-### 3. Calculation Logic
-1. **Count Implementation Files**:
-   - Exclude: test files, docs, config-only files
-   - Count: source code files that contain logic
-
-2. **Determine Base Track**:
-   - 0-1 files → Track 1
-   - 2-5 files → Track 2
-   - 6-9 files → Track 3
-   - 10+ files → Track 4
-
-3. **Apply Domain Multipliers**:
-   - If Base Track is 4 → Final Track is 4 (no adjustment)
-   - Else:
-     - Apply special case: If Track 1 + any domain → Upgrade to Track 2 first
-     - Then: Final Track = Base Track + count of domains from Step 1
-     - Cap Final Track at 4
+**Special Rules:**
+- If Weighted File Count ≥ 12.5 → Track 4 regardless of other factors
+- If Total Score = 0 AND single file AND trivial intent → Track 1 with suggested edit
+- If scope is ONLY test files AND no breaking changes → Cap at Track 3
+- **Critical**: If weighted count > 1.0 (multiple files) → Minimum Track 2
 
 ## Output Format
-
-Produce a JSON object with track, action, and reasoning.
 
 ```json
 {
   "track": 1 | 2 | 3 | 4,
   "action": "ATOMIC_EDIT" | "PROCEED" | "DECOMPOSE",
   "reasoning": "Explanation of track determination",
-  "factors": {
-    "implementation_files": 3,
-    "base_track": 2,
-    "domain_multipliers": 1,
-    "domains": ["security"],
+  "scoring": {
+    "file_count": {
+      "files": 3,
+      "score": 1
+    },
+    "domains": {
+      "identified": ["security"],
+      "score": 2
+    },
+    "characteristics": {
+      "identified": ["breaking_changes"],
+      "score": 1
+    },
+    "total_score": 4,
     "final_track": 3
   },
-  "suggested_edit": "In auth.go line 42, change 'userName' to 'username'"  // Only if action is ATOMIC_EDIT
+  "suggested_edit": "..."  // Only if action is ATOMIC_EDIT
 }
 ```
 
-**Action Mapping:**
-- Track 1 → `ATOMIC_EDIT` (provide suggested_edit for LLM to display)
-- Track 2-3 → `PROCEED` (continue to planning)
-- Track 4 → `DECOMPOSE` (CLI will handle decomposition)
+## Examples
 
-**Examples:**
-
-**Case 1:**
-Intent: "Fix typo in README"
-Scope: ["README.md"]
-Domains: []
-Result:
+**Case 1: Fix Typo (Single File)**
+Intent: "Fix typo in user.go"
+Scope: ["user.go"]
 ```json
 {
   "track": 1,
   "action": "ATOMIC_EDIT",
-  "reasoning": "0 implementation files (README.md excluded). Trivial documentation change.",
-  "factors": {
-    "implementation_files": 0,
-    "base_track": 1,
-    "domain_multipliers": 0,
-    "domains": [],
+  "reasoning": "1.0 weighted file (single impl), trivial change, 0 points → Track 1",
+  "scoring": {
+    "file_count": {
+      "implementation": 1,
+      "test": 0,
+      "docs": 0,
+      "weighted_total": 1.0,
+      "score": 0
+    },
+    "domains": {"identified": [], "score": 0},
+    "characteristics": {"identified": [], "score": 0},
+    "total_score": 0,
     "final_track": 1
   },
-  "suggested_edit": "In README.md line 15, change 'authentification' to 'authentication'"
+  "suggested_edit": "In user.go line 42, change 'userName' to 'username'"
 }
 ```
 
-**Case 2:**
-Intent: "Add JWT authentication"
-Scope: ["auth.go", "middleware.go", "main.go"]
-Domains: ["security"]
-Result:
+**Case 2: Fix Single Test**
+Intent: "Fix flaky test in user_test.go"
+Scope: ["user_test.go"]
 ```json
 {
-  "track": 3,
+  "track": 1,
+  "action": "ATOMIC_EDIT",
+  "reasoning": "0.5 weighted file (single test), 0 points → Track 1",
+  "scoring": {
+    "file_count": {
+      "implementation": 0,
+      "test": 1,
+      "docs": 0,
+      "weighted_total": 0.5,
+      "score": 0
+    },
+    "domains": {"identified": [], "score": 0},
+    "characteristics": {"identified": [], "score": 0},
+    "total_score": 0,
+    "final_track": 1
+  },
+  "suggested_edit": "In user_test.go line 15, add time.Sleep(10ms) before assertion"
+}
+```
+
+**Case 3: Add Validation + Test (Multiple Files)**
+Intent: "Add email validation"
+Scope: ["user.go", "user_test.go"]
+```json
+{
+  "track": 2,
   "action": "PROCEED",
-  "reasoning": "3 implementation files (Base Track 2) + 1 domain multiplier (security) = Track 3.",
-  "factors": {
-    "implementation_files": 3,
-    "base_track": 2,
-    "domain_multipliers": 1,
-    "domains": ["security"],
-    "final_track": 3
+  "reasoning": "1.5 weighted files (1 impl + 1 test), multiple files → minimum Track 2. Score: 1pt → Track 2",
+  "scoring": {
+    "file_count": {
+      "implementation": 1,
+      "test": 1,
+      "docs": 0,
+      "weighted_total": 1.5,
+      "score": 1
+    },
+    "domains": {"identified": ["standard"], "score": 0},
+    "characteristics": {"identified": [], "score": 0},
+    "total_score": 1,
+    "final_track": 2
   }
 }
 ```
 
-**Case 3:**
-Intent: "Rewrite entire payment system"
-Scope: [12 files]
-Domains: ["security", "compliance"]
-Result:
+**Case 4: Refactor 3 Tests**
+Intent: "Refactor test helpers"
+Scope: ["helper_test.go", "setup_test.go", "fixtures_test.go"]
+```json
+{
+  "track": 2,
+  "action": "PROCEED",
+  "reasoning": "1.5 weighted files (3 tests × 0.5), multiple files → minimum Track 2. Score: 1pt → Track 2",
+  "scoring": {
+    "file_count": {
+      "implementation": 0,
+      "test": 3,
+      "docs": 0,
+      "weighted_total": 1.5,
+      "score": 1
+    },
+    "domains": {"identified": ["standard"], "score": 0},
+    "characteristics": {"identified": [], "score": 0},
+    "total_score": 1,
+    "final_track": 2
+  }
+}
+```
+
+**Case 4: Payment System Rewrite**
+Intent: "Rewrite payment processing"
+Scope: [8 implementation files, 4 test files, 1 config]
 ```json
 {
   "track": 4,
   "action": "DECOMPOSE",
-  "reasoning": "12 implementation files exceeds Track 4 threshold (10+). Requires decomposition.",
-  "factors": {
-    "implementation_files": 12,
-    "base_track": 4,
-    "domain_multipliers": 2,
-    "domains": ["security", "compliance"],
+  "reasoning": "10.25 weighted files (8×1.0 + 4×0.5 + 1×0.25) = 3pts + security (2pts) + high-risk (2pts) + compliance (1pt) + data migration (1pt) = 9pts → Track 4",
+  "scoring": {
+    "file_count": {
+      "implementation": 8,
+      "test": 4,
+      "docs": 1,
+      "weighted_total": 10.25,
+      "score": 3
+    },
+    "domains": {"identified": ["security", "high-risk", "compliance"], "score": 5},
+    "characteristics": {"identified": ["data_migration", "external_integrations"], "score": 2},
+    "total_score": 10,
     "final_track": 4
   }
 }

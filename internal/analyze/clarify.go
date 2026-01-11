@@ -52,5 +52,5 @@ func (s *ClarifyService) ProvideTemplate() (string, error) {
 		return "", fmt.Errorf("executing template: %w", err)
 	}
 
-	return buf.String(), nil
+	return FormatOutput(buf.String())
 }

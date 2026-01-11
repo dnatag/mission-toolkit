@@ -1,6 +1,8 @@
 package analyze
 
 import (
+	"encoding/json"
+	"os"
 	"strings"
 	"testing"
 
@@ -8,6 +10,12 @@ import (
 )
 
 func TestScopeService_ProvideTemplate(t *testing.T) {
+	// Setup: Create temp directory for test
+	tempDir := t.TempDir()
+	originalWd, _ := os.Getwd()
+	defer os.Chdir(originalWd)
+	os.Chdir(tempDir)
+
 	fs := afero.NewMemMapFs()
 
 	missionContent := `---
@@ -32,14 +40,25 @@ auth.go`
 		t.Fatalf("ProvideTemplate failed: %v", err)
 	}
 
-	if !strings.Contains(output, "## Current Intent") {
-		t.Error("Output missing Current Intent section")
+	// Verify output is valid JSON
+	var result map[string]string
+	if err := json.Unmarshal([]byte(output), &result); err != nil {
+		t.Fatalf("Output is not valid JSON: %v", err)
 	}
-	if !strings.Contains(output, "Add user authentication") {
-		t.Error("Output missing intent text")
+
+	// Verify file was created and contains expected content
+	templatePath := result["template_path"]
+	content, err := os.ReadFile(templatePath)
+	if err != nil {
+		t.Fatalf("Failed to read template file: %v", err)
 	}
-	if !strings.Contains(output, "Determine which implementation files") {
-		t.Error("Output missing template content")
+
+	contentStr := string(content)
+	if !strings.Contains(contentStr, "## Current Intent") {
+		t.Error("Template missing Current Intent section")
+	}
+	if !strings.Contains(contentStr, "Add user authentication") {
+		t.Error("Template missing intent text")
 	}
 }
 

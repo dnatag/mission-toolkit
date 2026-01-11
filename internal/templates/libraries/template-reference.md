@@ -9,6 +9,7 @@ libraries/
 │   ├── apply-success.md       # ✅ MISSION EXECUTED
 │   ├── complete-failure.md    # ❌ COMPLETION FAILED
 │   ├── complete-success.md    # 🎉 MISSION COMPLETED
+│   ├── error-mission-exists.md # ❌ ERROR: Mission Already Exists
 │   ├── error-no-mission.md    # ❌ ERROR: No Active Mission
 │   ├── plan-atomic.md         # ⚛️ ATOMIC TASK DETECTED
 │   ├── plan-epic.md           # 📋 EPIC DECOMPOSED
@@ -42,6 +43,7 @@ prompts/
 
 ### Error States
 - **error-no-mission.md**: No active mission found
+- **error-mission-exists.md**: Active mission already exists
 
 ## Usage in Prompts
 
@@ -60,6 +62,7 @@ m analyze complexity
 - Track 4 (Epic): Use `.mission/libraries/displays/plan-epic.md`
 - Track 2/3 (Success): Use `.mission/libraries/displays/plan-success.md`
 - Paused: Use `.mission/libraries/displays/plan-paused.md`
+- Mission Exists: Use `.mission/libraries/displays/error-mission-exists.md`
 ```
 
 ### In m.apply.md
@@ -102,6 +105,7 @@ Common variables:
 {{MISSION_CONTENT}}    # Full mission markdown
 {{MISSION_ID}}         # Track-Type-Timestamp
 {{REFINED_INTENT}}     # Clarified user intent
+{{NEW_INTENT}}         # New intent when mission exists
 {{SUB_INTENTS}}        # List of decomposed sub-intents
 {{SUGGESTED_EDIT}}     # Atomic edit suggestion
 ```
