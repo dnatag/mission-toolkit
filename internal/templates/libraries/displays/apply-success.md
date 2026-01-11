@@ -2,6 +2,14 @@
 - All PLAN steps completed
 - VERIFICATION passed
 
+📝 CHANGE SUMMARY:
+{{CHANGE_DETAILS}}
+
+🔍 VIEW CHANGES:
+• All changes: git diff {{CHECKPOINT_0}}-baseline
+• First pass only: git diff {{CHECKPOINT_0}} {{CHECKPOINT_1}}
+• Polish changes: git diff {{CHECKPOINT_1}} {{CHECKPOINT_2}}
+
 🔄 CHECKPOINTS CREATED:
 - {{CHECKPOINT_0}} (initial state)
 - {{CHECKPOINT_1}} (first pass state)
