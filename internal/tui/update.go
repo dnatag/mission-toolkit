@@ -1,0 +1,241 @@
+package tui
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/charmbracelet/bubbletea"
+	"github.com/dnatag/mission-toolkit/internal/mission"
+	"github.com/spf13/afero"
+)
+
+// Update handles all state updates for the dashboard
+func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		m.viewportHeight = max(5, msg.Height-10)
+		m.calculatePaneWidths()
+		return m, nil
+
+	case currentMissionMsg:
+		if msg.err == nil && msg.mission != nil {
+			m.currentMission = msg.mission
+			// Start refresh ticker for active missions
+			if msg.mission.Status == "active" {
+				return m, m.startRefreshTicker()
+			}
+		}
+		return m, nil
+
+	case initialMissionsMsg:
+		if msg.err == nil {
+			m.completedMissions = msg.missions
+			m.totalCount = msg.totalCount
+			m.loadedCount = msg.loadedCount
+			m.loading = false
+			m.loadError = nil
+		} else {
+			m.loadError = msg.err
+		}
+		return m, nil
+
+	case refreshTickMsg:
+		// Refresh execution log for active missions
+		if m.currentMission != nil && m.currentMission.Status == "active" {
+			return m, tea.Batch(
+				loadExecutionLog(m.currentMission.ID, true),
+				tea.Tick(time.Second*2, func(t time.Time) tea.Msg {
+					return refreshTickMsg{time: t}
+				}),
+			)
+		}
+		return m, nil
+
+	case executionLogMsg:
+		if msg.err == nil {
+			m.executionLog = msg.content
+			m.executionLogLoaded = true
+		}
+		return m, nil
+
+	case commitMsg:
+		if msg.err == nil {
+			m.commitMessage = msg.content
+			m.commitLoaded = true
+		}
+		return m, nil
+
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		case "tab":
+			if m.selectedMission != nil {
+				// Cycle through panes for detailed view
+				if m.selectedMission.Status == "completed" {
+					// 3-pane layout for completed missions
+					m.currentPane = Pane((int(m.currentPane) + 1) % 3)
+				} else {
+					// 2-pane layout for active missions
+					m.currentPane = Pane((int(m.currentPane) + 1) % 2)
+				}
+
+				// Load content when switching to panes
+				var cmd tea.Cmd
+				if m.currentPane == ExecutionLogPane && !m.executionLogLoaded {
+					cmd = loadExecutionLog(m.selectedMission.ID, m.selectedMission.Status == "active")
+				} else if m.currentPane == CommitPane && !m.commitLoaded && m.selectedMission.Status == "completed" {
+					cmd = loadCommitMessage(m.selectedMission.ID)
+				}
+				return m, cmd
+			}
+		case "esc":
+			if m.selectedMission != nil {
+				m.selectedMission = nil
+				m.currentPane = MissionPane
+				m.executionLogLoaded = false
+				m.commitLoaded = false
+				m.scrollOffset = 0
+			}
+		case "enter":
+			if m.selectedMission == nil {
+				pageMissions := m.getCurrentPageMissions()
+				if len(pageMissions) > 0 && m.selectedIndex < len(pageMissions) {
+					m.selectedMission = pageMissions[m.selectedIndex]
+					m.scrollOffset = 0
+					m.currentPane = MissionPane
+					// Load execution log immediately for selected mission
+					return m, loadExecutionLog(m.selectedMission.ID, m.selectedMission.Status == "active")
+				}
+			}
+		case "up", "k":
+			if m.selectedMission == nil && len(m.completedMissions) > 0 && m.selectedIndex > 0 {
+				m.selectedIndex--
+			}
+		case "down", "j":
+			if m.selectedMission == nil {
+				pageMissions := m.getCurrentPageMissions()
+				if len(pageMissions) > 0 && m.selectedIndex < len(pageMissions)-1 {
+					m.selectedIndex++
+				}
+			}
+		}
+	}
+
+	return m, nil
+}
+
+// loadExecutionLog loads the execution log for the current or selected mission
+func loadExecutionLog(missionID string, isActive bool) tea.Cmd {
+	return func() tea.Msg {
+		var logPath string
+		if isActive {
+			logPath = ".mission/execution.log"
+		} else {
+			logPath = fmt.Sprintf(".mission/completed/%s-execution.log", missionID)
+		}
+
+		content, err := os.ReadFile(logPath)
+		if err != nil {
+			return executionLogMsg{content: "No execution log available"}
+		}
+
+		return executionLogMsg{content: string(content)}
+	}
+}
+
+// loadCommitMessage loads the commit message for a completed mission
+func loadCommitMessage(missionID string) tea.Cmd {
+	return func() tea.Msg {
+		content := fmt.Sprintf("Mission %s completed\n\nHash: %s\nDate: %s",
+			missionID,
+			"abc123...",
+			time.Now().Format("2006-01-02 15:04"))
+		return commitMsg{content: content}
+	}
+}
+
+// loadCurrentMission loads the current active mission
+func loadCurrentMission() tea.Msg {
+	fs := afero.NewOsFs()
+	reader := mission.NewReader(fs)
+	m, err := reader.Read(".mission/mission.md")
+	if err != nil {
+		return currentMissionMsg{err: err}
+	}
+	return currentMissionMsg{mission: m}
+}
+
+// loadInitialMissions loads the first batch of completed missions
+func loadInitialMissions() tea.Msg {
+	return loadCompletedMissionsBatch(0, 5)
+}
+
+// loadCompletedMissionsBatch loads a batch of completed missions
+func loadCompletedMissionsBatch(offset, limit int) tea.Msg {
+	fs := afero.NewOsFs()
+	reader := mission.NewReader(fs)
+
+	completedDir := ".mission/completed"
+	entries, err := os.ReadDir(completedDir)
+	if err != nil {
+		return initialMissionsMsg{err: err}
+	}
+
+	var missionFiles []string
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), "-mission.md") {
+			missionFiles = append(missionFiles, entry.Name())
+		}
+	}
+
+	sort.Slice(missionFiles, func(i, j int) bool {
+		return missionFiles[i] > missionFiles[j]
+	})
+
+	var missions []*mission.Mission
+	loaded := 0
+	fileIndex := 0
+
+	for fileIndex < len(missionFiles) && loaded < offset {
+		path := filepath.Join(completedDir, missionFiles[fileIndex])
+		_, err := reader.Read(path)
+		if err == nil {
+			loaded++
+		}
+		fileIndex++
+	}
+
+	batchLoaded := 0
+	for fileIndex < len(missionFiles) && batchLoaded < limit {
+		path := filepath.Join(completedDir, missionFiles[fileIndex])
+		m, err := reader.Read(path)
+		if err == nil {
+			missions = append(missions, m)
+			batchLoaded++
+		}
+		fileIndex++
+	}
+
+	totalLoadable := 0
+	for _, filename := range missionFiles {
+		path := filepath.Join(completedDir, filename)
+		_, err := reader.Read(path)
+		if err == nil {
+			totalLoadable++
+		}
+	}
+
+	return initialMissionsMsg{
+		missions:    missions,
+		totalCount:  totalLoadable,
+		loadedCount: len(missions),
+		offset:      offset,
+	}
+}
