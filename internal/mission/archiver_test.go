@@ -34,7 +34,7 @@ Body
 
 	// Archive
 	archiver := NewArchiver(fs, missionDir, mockGit)
-	err = archiver.Archive()
+	err = archiver.Archive(false)
 	require.NoError(t, err)
 
 	// Verify files were copied
@@ -82,7 +82,7 @@ Body
 
 	// Archive
 	archiver := NewArchiver(fs, missionDir, mockGit)
-	err = archiver.Archive()
+	err = archiver.Archive(false)
 	require.NoError(t, err)
 
 	// Verify essential file was copied
@@ -143,4 +143,39 @@ func TestArchiver_CleanupObsoleteFiles_MissingFiles(t *testing.T) {
 	archiver := NewArchiver(fs, missionDir, mockGit)
 	err = archiver.CleanupObsoleteFiles()
 	require.NoError(t, err)
+}
+
+func TestArchiver_Archive_ForceWithNoMission(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	missionDir := ".mission"
+
+	// Create directory but no mission file
+	err := fs.MkdirAll(missionDir, 0755)
+	require.NoError(t, err)
+
+	// Mock GitClient
+	mockGit := &MockGitClient{}
+
+	// Archive with force=true should succeed as no-op when no mission exists
+	archiver := NewArchiver(fs, missionDir, mockGit)
+	err = archiver.Archive(true)
+	require.NoError(t, err, "Archive with force=true should succeed when no mission exists")
+}
+
+func TestArchiver_Archive_NoForceWithNoMission(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	missionDir := ".mission"
+
+	// Create directory but no mission file
+	err := fs.MkdirAll(missionDir, 0755)
+	require.NoError(t, err)
+
+	// Mock GitClient
+	mockGit := &MockGitClient{}
+
+	// Archive with force=false should return error when no mission exists
+	archiver := NewArchiver(fs, missionDir, mockGit)
+	err = archiver.Archive(false)
+	require.Error(t, err, "Archive with force=false should fail when no mission exists")
+	require.Contains(t, err.Error(), "no current mission to archive")
 }

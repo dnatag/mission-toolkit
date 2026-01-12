@@ -26,14 +26,35 @@ func NewArchiver(fs afero.Fs, missionDir string, git git.GitClient) *Archiver {
 	}
 }
 
-// Archive copies mission artifacts to the completed directory
-func (a *Archiver) Archive() error {
+// Archive copies mission artifacts to the completed directory.
+// If force is true and no mission exists, this is a no-op.
+// If force is false and no mission exists, returns an error.
+func (a *Archiver) Archive(force bool) error {
+	missionPath := filepath.Join(a.missionDir, "mission.md")
+	
+	// Check if mission file exists
+	missionExists, err := afero.Exists(a.fs, missionPath)
+	if err != nil {
+		return fmt.Errorf("checking mission existence: %w", err)
+	}
+	
+	// Handle no mission case based on force flag
+	if !missionExists {
+		if force {
+			// Force flag: silently succeed (no-op)
+			return nil
+		}
+		// No force flag: return error
+		return fmt.Errorf("no current mission to archive")
+	}
+
+	// Mission exists, proceed with archiving
 	completedDir := filepath.Join(a.missionDir, "completed")
 	if err := a.fs.MkdirAll(completedDir, 0755); err != nil {
 		return fmt.Errorf("creating completed directory: %w", err)
 	}
 
-	missionID, err := a.reader.GetMissionID(filepath.Join(a.missionDir, "mission.md"))
+	missionID, err := a.reader.GetMissionID(missionPath)
 	if err != nil {
 		return fmt.Errorf("getting mission ID: %w", err)
 	}

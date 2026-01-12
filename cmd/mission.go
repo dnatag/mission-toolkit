@@ -163,11 +163,18 @@ var missionCreateCmd = &cobra.Command{
 var missionArchiveCmd = &cobra.Command{
 	Use:   "archive",
 	Short: "Archive mission files to completed directory and clean up obsolete files",
+	Long: `Archive the current mission files to the completed directory and clean up obsolete files.
+
+The --force flag controls behavior when no mission exists:
+  - With --force: silently succeeds (no-op)
+  - Without --force: returns an error`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		force, _ := cmd.Flags().GetBool("force")
+		
 		gitClient := git.NewCmdGitClient(".")
 		archiver := mission.NewArchiver(missionFs, missionDir, gitClient)
 
-		if err := archiver.Archive(); err != nil {
+		if err := archiver.Archive(force); err != nil {
 			return fmt.Errorf("archiving mission: %w", err)
 		}
 
@@ -212,4 +219,5 @@ func init() {
 	missionUpdateCmd.Flags().StringSlice("frontmatter", nil, "Frontmatter key=value pairs")
 	missionCreateCmd.Flags().String("intent", "", "Intent text for initial mission creation")
 	missionCreateCmd.MarkFlagRequired("intent")
+	missionArchiveCmd.Flags().Bool("force", false, "Forcefully archive mission or no-op if no current mission exists")
 }
