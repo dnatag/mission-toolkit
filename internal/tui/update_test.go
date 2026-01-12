@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/bubbletea"
+	"github.com/dnatag/mission-toolkit/internal/mission"
 )
 
 func TestUpdate_WindowSize(t *testing.T) {
@@ -19,6 +20,7 @@ func TestUpdate_WindowSize(t *testing.T) {
 	if model.height != 40 {
 		t.Errorf("expected height 40, got %d", model.height)
 	}
+	// 80% of 120 is 96. Split 50/50 is 48.
 	if model.leftPaneWidth != 48 {
 		t.Errorf("expected leftPaneWidth 48, got %d", model.leftPaneWidth)
 	}
@@ -66,5 +68,106 @@ func TestUpdate_ExecutionLogMsg(t *testing.T) {
 	}
 	if !model.executionLogLoaded {
 		t.Error("expected executionLogLoaded to be true")
+	}
+}
+
+func TestUpdate_KeyTab(t *testing.T) {
+	m := NewDashboardModel()
+	// Need a selected mission to switch panes
+	m.selectedMission = &mission.Mission{ID: "test", Status: "active"}
+
+	// Initial state is MissionPane
+	if m.currentPane != MissionPane {
+		t.Errorf("expected initial pane MissionPane, got %v", m.currentPane)
+	}
+
+	// Press Tab -> ExecutionLogPane
+	msg := tea.KeyMsg{Type: tea.KeyTab}
+	updated, _ := m.Update(msg)
+	model := updated.(DashboardModel)
+
+	if model.currentPane != ExecutionLogPane {
+		t.Errorf("expected pane ExecutionLogPane, got %v", model.currentPane)
+	}
+
+	// Press Tab -> MissionPane (cycle for active)
+	updated, _ = model.Update(msg)
+	model = updated.(DashboardModel)
+
+	if model.currentPane != MissionPane {
+		t.Errorf("expected pane MissionPane, got %v", model.currentPane)
+	}
+}
+
+func TestUpdate_KeyEnter_Esc(t *testing.T) {
+	m := NewDashboardModel()
+	// Setup completed missions
+	m.completedMissions = []*mission.Mission{
+		{ID: "m1", Status: "completed"},
+		{ID: "m2", Status: "completed"},
+	}
+	m.itemsPerPage = 5
+
+	// Select first item (index 0)
+	msgEnter := tea.KeyMsg{Type: tea.KeyEnter}
+	updated, _ := m.Update(msgEnter)
+	model := updated.(DashboardModel)
+
+	if model.selectedMission == nil {
+		t.Error("expected selectedMission to be set")
+	} else if model.selectedMission.ID != "m1" {
+		t.Errorf("expected selectedMission ID 'm1', got '%s'", model.selectedMission.ID)
+	}
+
+	// Press Esc to deselect
+	msgEsc := tea.KeyMsg{Type: tea.KeyEsc}
+	updated, _ = model.Update(msgEsc)
+	model = updated.(DashboardModel)
+
+	if model.selectedMission != nil {
+		t.Error("expected selectedMission to be nil after Esc")
+	}
+}
+
+func TestUpdate_KeyNavigation(t *testing.T) {
+	m := NewDashboardModel()
+	m.completedMissions = []*mission.Mission{
+		{ID: "m1"}, {ID: "m2"}, {ID: "m3"},
+	}
+	m.itemsPerPage = 5
+
+	// Initial index 0
+	if m.selectedIndex != 0 {
+		t.Errorf("expected initial index 0, got %d", m.selectedIndex)
+	}
+
+	// Down -> 1
+	msgDown := tea.KeyMsg{Type: tea.KeyDown}
+	updated, _ := m.Update(msgDown)
+	model := updated.(DashboardModel)
+	if model.selectedIndex != 1 {
+		t.Errorf("expected index 1, got %d", model.selectedIndex)
+	}
+
+	// Down -> 2
+	updated, _ = model.Update(msgDown)
+	model = updated.(DashboardModel)
+	if model.selectedIndex != 2 {
+		t.Errorf("expected index 2, got %d", model.selectedIndex)
+	}
+
+	// Down -> 2 (bound check)
+	updated, _ = model.Update(msgDown)
+	model = updated.(DashboardModel)
+	if model.selectedIndex != 2 {
+		t.Errorf("expected index 2 (bound), got %d", model.selectedIndex)
+	}
+
+	// Up -> 1
+	msgUp := tea.KeyMsg{Type: tea.KeyUp}
+	updated, _ = model.Update(msgUp)
+	model = updated.(DashboardModel)
+	if model.selectedIndex != 1 {
+		t.Errorf("expected index 1, got %d", model.selectedIndex)
 	}
 }

@@ -50,16 +50,29 @@ func (m DashboardModel) View() string {
 
 // renderDashboardView renders the appropriate pane layout
 func (m DashboardModel) renderDashboardView() string {
-	if m.selectedMission.Status == "completed" {
-		return m.renderThreePaneLayout()
-	}
+	// Always use two-pane layout, right pane content depends on currentPane
 	return m.renderTwoPaneLayout()
 }
 
-// renderTwoPaneLayout renders a two-pane layout for active missions
+// renderTwoPaneLayout renders a two-pane layout
 func (m DashboardModel) renderTwoPaneLayout() string {
 	leftPane := m.renderMissionPane()
-	rightPane := m.renderExecutionLogPane()
+	var rightPane string
+
+	switch m.currentPane {
+	case CommitPane:
+		if m.selectedMission.Status == "completed" {
+			rightPane = m.renderCommitPane()
+		} else {
+			// Fallback to log if not completed
+			rightPane = m.renderExecutionLogPane()
+		}
+	case ExecutionLogPane:
+		rightPane = m.renderExecutionLogPane()
+	default:
+		// Default to execution log
+		rightPane = m.renderExecutionLogPane()
+	}
 
 	// Apply width constraints
 	if m.leftPaneWidth > 0 {
@@ -78,41 +91,6 @@ func (m DashboardModel) renderTwoPaneLayout() string {
 	}
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, leftPane, rightPane)
-}
-
-// renderThreePaneLayout renders a three-pane layout for completed missions
-func (m DashboardModel) renderThreePaneLayout() string {
-	leftPane := m.renderMissionPane()
-	middlePane := m.renderExecutionLogPane()
-	rightPane := m.renderCommitPane()
-
-	// Apply width constraints
-	if m.leftPaneWidth > 0 {
-		leftPane = lipgloss.NewStyle().Width(m.leftPaneWidth).Render(leftPane)
-	}
-	if m.middlePaneWidth > 0 {
-		middlePane = lipgloss.NewStyle().Width(m.middlePaneWidth).Render(middlePane)
-	}
-	if m.rightPaneWidth > 0 {
-		rightPane = lipgloss.NewStyle().Width(m.rightPaneWidth).Render(rightPane)
-	}
-
-	switch m.currentPane {
-	case MissionPane:
-		leftPane = activePaneStyle.Render(leftPane)
-		middlePane = paneStyle.Render(middlePane)
-		rightPane = paneStyle.Render(rightPane)
-	case ExecutionLogPane:
-		leftPane = paneStyle.Render(leftPane)
-		middlePane = activePaneStyle.Render(middlePane)
-		rightPane = paneStyle.Render(rightPane)
-	case CommitPane:
-		leftPane = paneStyle.Render(leftPane)
-		middlePane = paneStyle.Render(middlePane)
-		rightPane = activePaneStyle.Render(rightPane)
-	}
-
-	return lipgloss.JoinHorizontal(lipgloss.Top, leftPane, middlePane, rightPane)
 }
 
 // renderMissionPane renders the mission details pane

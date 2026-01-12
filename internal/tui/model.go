@@ -50,9 +50,8 @@ type DashboardModel struct {
 	pendingPageChange int
 
 	// Split-pane width configuration
-	leftPaneWidth   int
-	middlePaneWidth int
-	rightPaneWidth  int
+	leftPaneWidth  int
+	rightPaneWidth int
 }
 
 // NewDashboardModel creates a new dashboard model with default settings
@@ -131,14 +130,14 @@ func (m DashboardModel) getCurrentPageMissions() []*mission.Mission {
 	return missions[start:end]
 }
 
-// calculatePaneWidths sets pane widths based on terminal width with default ratios
-// Default: 40% left, 30% middle, 30% right
+// calculatePaneWidths sets pane widths based on terminal width with 50/50 split
+// Restricts total content width to 80% of terminal width
 func (m *DashboardModel) calculatePaneWidths() {
 	if m.width == 0 {
 		return
 	}
 
-	m.leftPaneWidth = int(float64(m.width) * 0.4)
-	m.middlePaneWidth = int(float64(m.width) * 0.3)
-	m.rightPaneWidth = m.width - m.leftPaneWidth - m.middlePaneWidth
+	totalContentWidth := int(float64(m.width) * 0.8)
+	m.leftPaneWidth = int(float64(totalContentWidth) * 0.5)
+	m.rightPaneWidth = totalContentWidth - m.leftPaneWidth
 }

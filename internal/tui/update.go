@@ -77,14 +77,32 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "tab":
 			if m.selectedMission != nil {
-				// Cycle through panes for detailed view
+				// Cycle through panes
+				// MissionPane -> ExecutionLogPane -> CommitPane (if completed) -> MissionPane
+				nextPane := m.currentPane
+
 				if m.selectedMission.Status == "completed" {
-					// 3-pane layout for completed missions
-					m.currentPane = Pane((int(m.currentPane) + 1) % 3)
+					switch m.currentPane {
+					case MissionPane:
+						nextPane = ExecutionLogPane
+					case ExecutionLogPane:
+						nextPane = CommitPane
+					case CommitPane:
+						nextPane = MissionPane
+					}
 				} else {
-					// 2-pane layout for active missions
-					m.currentPane = Pane((int(m.currentPane) + 1) % 2)
+					// For active missions, toggle between Mission and Log
+					switch m.currentPane {
+					case MissionPane:
+						nextPane = ExecutionLogPane
+					case ExecutionLogPane:
+						nextPane = MissionPane
+					default:
+						nextPane = MissionPane
+					}
 				}
+
+				m.currentPane = nextPane
 
 				// Load content when switching to panes
 				var cmd tea.Cmd

@@ -9,14 +9,12 @@ func TestCalculatePaneWidths(t *testing.T) {
 	m.width = 100
 	m.calculatePaneWidths()
 
+	// 80% of 100 is 80. Split 50/50 is 40 each.
 	if m.leftPaneWidth != 40 {
 		t.Errorf("expected leftPaneWidth 40, got %d", m.leftPaneWidth)
 	}
-	if m.middlePaneWidth != 30 {
-		t.Errorf("expected middlePaneWidth 30, got %d", m.middlePaneWidth)
-	}
-	if m.rightPaneWidth != 30 {
-		t.Errorf("expected rightPaneWidth 30, got %d", m.rightPaneWidth)
+	if m.rightPaneWidth != 40 {
+		t.Errorf("expected rightPaneWidth 40, got %d", m.rightPaneWidth)
 	}
 }
 

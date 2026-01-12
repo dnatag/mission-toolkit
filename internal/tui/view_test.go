@@ -43,3 +43,54 @@ func TestRenderMissionDetails(t *testing.T) {
 		t.Error("expected output to contain 'Test intent'")
 	}
 }
+
+func TestRenderDashboardView(t *testing.T) {
+	m := NewDashboardModel()
+	m.width = 100 // Set width to trigger pane calculation
+	m.calculatePaneWidths()
+
+	// Case 1: Active Mission (2 panes)
+	m.selectedMission = &mission.Mission{ID: "active", Status: "active", Body: "## INTENT\nActive"}
+	m.currentPane = MissionPane
+
+	output := m.renderDashboardView()
+	// Should contain mission content
+	if !strings.Contains(output, "Active") {
+		t.Error("expected active mission view to contain body content")
+	}
+	// Should NOT contain commit pane placeholder
+	if strings.Contains(output, "No commit info") {
+		t.Error("expected active mission view NOT to contain commit info")
+	}
+
+	// Case 2: Completed Mission (Commit Pane)
+	m.selectedMission = &mission.Mission{ID: "completed", Status: "completed", Body: "## INTENT\nDone"}
+	m.currentPane = CommitPane
+	m.commitLoaded = true
+	m.commitMessage = "test commit"
+
+	output = m.renderDashboardView()
+	if !strings.Contains(output, "test commit") {
+		t.Error("expected completed mission view to contain commit message in CommitPane")
+	}
+}
+
+func TestRenderTwoPaneLayout(t *testing.T) {
+	m := NewDashboardModel()
+	m.width = 100
+	m.calculatePaneWidths()
+
+	m.selectedMission = &mission.Mission{ID: "test", Status: "active", Body: "## INTENT\nBody"}
+	m.currentPane = MissionPane
+	m.executionLogLoaded = true
+	m.executionLog = "LogContent"
+
+	// MissionPane active
+	output := m.renderTwoPaneLayout()
+	if !strings.Contains(output, "Body") {
+		t.Error("expected renderTwoPaneLayout to contain mission body")
+	}
+	if !strings.Contains(output, "LogContent") {
+		t.Error("expected renderTwoPaneLayout to contain log content")
+	}
+}
