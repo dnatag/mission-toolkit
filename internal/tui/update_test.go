@@ -110,13 +110,23 @@ func TestUpdate_KeyEnter_Esc(t *testing.T) {
 
 	// Select first item (index 0)
 	msgEnter := tea.KeyMsg{Type: tea.KeyEnter}
-	updated, _ := m.Update(msgEnter)
+	updated, cmd := m.Update(msgEnter)
 	model := updated.(DashboardModel)
 
 	if model.selectedMission == nil {
 		t.Error("expected selectedMission to be set")
 	} else if model.selectedMission.ID != "m1" {
 		t.Errorf("expected selectedMission ID 'm1', got '%s'", model.selectedMission.ID)
+	}
+
+	// Verify no command is returned (lazy loading)
+	if cmd != nil {
+		t.Error("expected no command on Enter (lazy loading)")
+	}
+
+	// Verify execution log is not loaded yet
+	if model.executionLogLoaded {
+		t.Error("expected executionLogLoaded to be false (lazy loading)")
 	}
 
 	// Press Esc to deselect
@@ -126,6 +136,14 @@ func TestUpdate_KeyEnter_Esc(t *testing.T) {
 
 	if model.selectedMission != nil {
 		t.Error("expected selectedMission to be nil after Esc")
+	}
+
+	// Verify flags are reset
+	if model.executionLogLoaded {
+		t.Error("expected executionLogLoaded to be false after Esc")
+	}
+	if model.commitLoaded {
+		t.Error("expected commitLoaded to be false after Esc")
 	}
 }
 

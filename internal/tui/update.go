@@ -128,8 +128,6 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.selectedMission = pageMissions[m.selectedIndex]
 					m.scrollOffset = 0
 					m.currentPane = MissionPane
-					// Load execution log immediately for selected mission
-					return m, loadExecutionLog(m.selectedMission.ID, m.selectedMission.Status == "active")
 				}
 			}
 		case "up", "k":
