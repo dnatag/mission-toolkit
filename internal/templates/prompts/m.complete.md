@@ -25,13 +25,16 @@ You are the **Expert Commit Author**. Your job is to finalize the mission by gen
 **DO NOT SKIP THIS STEP.** If governance.md is not loaded, STOP and report error.
 
 ### Step 1: Generate Rich Commit Message
-1. **Analyze the Execution Log**: Read the entire `.mission/execution.log` file. This log contains the full history of the `m.apply` phase, including any failed verification attempts, polish rollbacks, and other context.
-2. **Synthesize the Story**: Based on the execution log and the final code, craft a commit message that explains not just *what* changed, but *why* and *how* the solution evolved. The body of the commit message should be a narrative of the implementation journey.
+1. **Analyze the Execution Log**: 
+   - Read the entire `.mission/execution.log` file if it exists
+   - **If execution.log is missing or empty**: Generate commit message from git diff and mission.md only
+   - This log contains the full history of the `m.apply` phase, including any failed verification attempts, polish rollbacks, and other context
+2. **Synthesize the Story**: Based on the execution log (or git diff if log unavailable) and the final code, craft a commit message that explains not just *what* changed, but *why* and *how* the solution evolved. The body of the commit message should be a narrative of the implementation journey.
 3. **Generate the Message**:
    - **Type**: `feat`, `fix`, `refactor`, etc., as appropriate.
    - **Scope**: The primary package or component affected.
    - **Subject**: A concise, imperative summary of the change.
-   - **Body**: The detailed narrative. Explain the problem, the solution, and any trade-offs or discoveries made along the way (as gleaned from the execution log).
+   - **Body**: The detailed narrative. Explain the problem, the solution, and any trade-offs or discoveries made along the way (as gleaned from the execution log or inferred from changes).
 4. **Log**: Run `m log --step "Generate Commit" "Rich commit message created"`
 
 ### Step 2: Create Final Commit

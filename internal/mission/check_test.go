@@ -257,14 +257,14 @@ Test intent
 	}
 }
 
-func TestCheckService_WithCommand_Complete_ActiveStatus(t *testing.T) {
+func TestCheckService_WithCommand_Complete_ExecutedStatus(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	missionDir := ".mission"
 	fs.MkdirAll(missionDir, 0755)
 
 	missionContent := `---
 id: test-103
-status: active
+status: executed
 ---
 
 ## INTENT
@@ -333,7 +333,7 @@ Test intent
 		t.Fatalf("CheckMissionState() error = %v", err)
 	}
 
-	if status.NextStep != "STOP. Mission must be in 'active' or 'completed' status for m.complete." {
+	if status.NextStep != "STOP. Mission must be in 'executed' or 'completed' status for m.complete." {
 		t.Errorf("CheckMissionState() NextStep = %v, want STOP", status.NextStep)
 	}
 }

@@ -33,14 +33,24 @@ You are the **Executor**. Implement the current mission using a two-pass approac
 2. **Create Initial Checkpoint**: Execute `m checkpoint create` to save clean state
    - Returns checkpoint name (e.g., `MISS-20260103-143022-0`)
    - **On Checkpoint Creation Failure**:
-     - Run `m log --step "Update Status" "Checkpoint creation failed: <error>. Aborting mission."`
-     - Execute `m mission update --status failed`
-     - Display error and halt
+     - **If error contains "unstaged changes" or "working directory not clean"**:
+       - Run `m log --step "Update Status" "Checkpoint creation failed due to unstaged changes. Using template."`
+       - Execute `m mission update --status failed`
+       - Use file read tool to load template `.mission/libraries/displays/checkpoint-failure-unstaged.md` with variables:
+         - {{UNSTAGED_FILES}} = Extract file names from git error message (or "Multiple files" if extraction fails)
+         - {{MISSION_ID}} = Current mission ID
+       - Halt execution
+     - **For other checkpoint errors**:
+       - Run `m log --step "Update Status" "Checkpoint creation failed: <error>. Aborting mission."`
+       - Execute `m mission update --status failed`
+       - Display error and halt
 3. **Log**: Run `m log --step "Update Status" "Status active, checkpoint created"`
 
 ### Step 2: First Pass (Implementation)
 1. **Verify SCOPE Files**: Check all files listed in SCOPE section exist before modifying
-2. **Follow PLAN**: Execute each step in the PLAN section
+2. **Follow PLAN with Step Tracking**: Execute each step in the PLAN section:
+   - **After each PLAN step**: Run `m log --step "Plan Step [N]" "✅ Completed: [step description]"`
+   - **On step failure**: Run `m log --step "Plan Step [N]" "❌ Failed: [step description] - [error details]"`
 3. **Scope Enforcement**: Only modify files listed in SCOPE
 4. **Run Verification**: Execute the VERIFICATION command
 5. **On Verification Failure**: Attempt to fix issues and re-run verification (iterate until passing or unable to fix)
@@ -59,13 +69,15 @@ You are the **Executor**. Implement the current mission using a two-pass approac
      - Continue to Step 4 with first pass code
      - Add footer to commit message: `Polish-Skipped: checkpoint-creation-failed`
 
-2. **Review and Polish**: Analyze all modified code from Step 2 and apply quality improvements:
-   - Idiomatic patterns and language conventions
-   - Code readability and clarity
-   - Performance optimizations
-   - Error handling improvements
-   - Documentation and comments where needed
-   - Test quality (robust coverage for new logic, bug fixes, critical paths)
+2. **Enhanced Polish Review**: Analyze all modified code from Step 2 and apply comprehensive quality improvements:
+   - **Code Structure**: Idiomatic patterns, language conventions
+   - **Readability**: Clear variable names, logical flow, reduced complexity
+   - **Robustness**: Error handling, edge cases, input validation, defensive programming
+   - **Performance**: Algorithmic efficiency, resource usage, caching opportunities
+   - **Maintainability**: Documentation, comments for complex logic, consistent formatting
+   - **Testing**: Robust coverage for new logic, edge cases, error conditions, integration points
+   - **Security**: Input sanitization, secure defaults, vulnerability prevention
+   - **Standards Compliance**: Project conventions, linting rules, best practices
 
 3. **Re-run Verification**: Execute the VERIFICATION command again
 
@@ -99,8 +111,8 @@ You are the **Executor**. Implement the current mission using a two-pass approac
    - {{RETRY_ADVICE}} = "Retry /m.apply" or "Fix environment first" or "Review mission plan"
 
 **On Success (Step 2 passed, Step 3 completed or skipped)**:
-1. Keep `status: active`
-2. Run `m log --step "Status Handling" "Mission execution complete"`
+1. Execute `m mission update --status executed`
+2. Run `m log --step "Status Handling" "Mission execution complete"``
 3. Use file read tool to load template `.mission/libraries/displays/apply-success.md` with variables:
    - {{CHANGE_DETAILS}} = 4 bullet points with implementation → reasoning format:
      - {{IMPLEMENTATION_DETAIL}} → {{REASONING}}

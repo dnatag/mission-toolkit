@@ -102,13 +102,13 @@ func (c *CheckService) handleExistingMission(status *Status) (*Status, error) {
 	}
 
 	if c.context == "complete" {
-		if mission.Status == "active" || mission.Status == "completed" {
+		if mission.Status == "executed" || mission.Status == "completed" {
 			status.Message = "Mission is ready for completion or re-completion"
 			status.NextStep = "PROCEED with m.complete execution."
 			return status, nil
 		}
 		status.Message = fmt.Sprintf("Mission status '%s' is not valid for m.complete", mission.Status)
-		status.NextStep = "STOP. Mission must be in 'active' or 'completed' status for m.complete."
+		status.NextStep = "STOP. Mission must be in 'executed' or 'completed' status for m.complete."
 		return status, nil
 	}
 
