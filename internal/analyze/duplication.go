@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"github.com/dnatag/mission-toolkit/internal/logger"
 	"github.com/dnatag/mission-toolkit/internal/mission"
 	"github.com/spf13/afero"
 )
@@ -16,23 +17,35 @@ var duplicationTemplate string
 
 // DuplicationService provides duplication analysis templates
 type DuplicationService struct {
-	fs afero.Fs
+	fs  afero.Fs
+	log *logger.Logger
 }
 
 // NewDuplicationService creates a new DuplicationService
 func NewDuplicationService() *DuplicationService {
+	fs := afero.NewOsFs()
+	reader := mission.NewReader(fs)
+	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
 	return &DuplicationService{
-		fs: afero.NewOsFs(),
+		fs:  fs,
+		log: logger.New(missionID),
 	}
 }
 
 // NewDuplicationServiceWithFS creates a new DuplicationService with custom filesystem
 func NewDuplicationServiceWithFS(fs afero.Fs) *DuplicationService {
-	return &DuplicationService{fs: fs}
+	reader := mission.NewReader(fs)
+	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
+	return &DuplicationService{
+		fs:  fs,
+		log: logger.New(missionID),
+	}
 }
 
 // ProvideTemplate loads duplication.md template and injects current intent from mission.md
 func (s *DuplicationService) ProvideTemplate() (string, error) {
+	s.log.LogStep(logger.LevelSuccess, "AnalyzeDuplication", "Starting duplication analysis")
+
 	reader := mission.NewReader(s.fs)
 	missionPath := filepath.Join(".mission", "mission.md")
 

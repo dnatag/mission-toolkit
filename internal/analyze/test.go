@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"github.com/dnatag/mission-toolkit/internal/logger"
 	"github.com/dnatag/mission-toolkit/internal/mission"
 	"github.com/spf13/afero"
 )
@@ -16,23 +17,35 @@ var testTemplate string
 
 // TestService provides test analysis templates
 type TestService struct {
-	fs afero.Fs
+	fs  afero.Fs
+	log *logger.Logger
 }
 
 // NewTestService creates a new TestService
 func NewTestService() *TestService {
+	fs := afero.NewOsFs()
+	reader := mission.NewReader(fs)
+	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
 	return &TestService{
-		fs: afero.NewOsFs(),
+		fs:  fs,
+		log: logger.New(missionID),
 	}
 }
 
 // NewTestServiceWithFS creates a new TestService with custom filesystem
 func NewTestServiceWithFS(fs afero.Fs) *TestService {
-	return &TestService{fs: fs}
+	reader := mission.NewReader(fs)
+	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
+	return &TestService{
+		fs:  fs,
+		log: logger.New(missionID),
+	}
 }
 
 // ProvideTemplate loads test.md template and injects current intent and scope from mission.md
 func (s *TestService) ProvideTemplate() (string, error) {
+	s.log.LogStep(logger.LevelSuccess, "AnalyzeTest", "Starting test analysis")
+
 	reader := mission.NewReader(s.fs)
 	missionPath := filepath.Join(".mission", "mission.md")
 

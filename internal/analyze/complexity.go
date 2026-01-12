@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"github.com/dnatag/mission-toolkit/internal/logger"
 	"github.com/dnatag/mission-toolkit/internal/mission"
 	"github.com/spf13/afero"
 )
@@ -16,23 +17,35 @@ var complexityTemplate string
 
 // ComplexityService provides complexity analysis templates
 type ComplexityService struct {
-	fs afero.Fs
+	fs  afero.Fs
+	log *logger.Logger
 }
 
 // NewComplexityService creates a new ComplexityService
 func NewComplexityService() *ComplexityService {
+	fs := afero.NewOsFs()
+	reader := mission.NewReader(fs)
+	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
 	return &ComplexityService{
-		fs: afero.NewOsFs(),
+		fs:  fs,
+		log: logger.New(missionID),
 	}
 }
 
 // NewComplexityServiceWithFS creates a new ComplexityService with custom filesystem
 func NewComplexityServiceWithFS(fs afero.Fs) *ComplexityService {
-	return &ComplexityService{fs: fs}
+	reader := mission.NewReader(fs)
+	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
+	return &ComplexityService{
+		fs:  fs,
+		log: logger.New(missionID),
+	}
 }
 
 // ProvideTemplate loads complexity.md template and injects current intent and scope from mission.md
 func (s *ComplexityService) ProvideTemplate() (string, error) {
+	s.log.LogStep(logger.LevelSuccess, "AnalyzeComplexity", "Starting complexity analysis")
+
 	reader := mission.NewReader(s.fs)
 	missionPath := filepath.Join(".mission", "mission.md")
 

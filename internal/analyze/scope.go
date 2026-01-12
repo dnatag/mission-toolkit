@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"github.com/dnatag/mission-toolkit/internal/logger"
 	"github.com/dnatag/mission-toolkit/internal/mission"
 	"github.com/spf13/afero"
 )
@@ -16,23 +17,35 @@ var scopeTemplate string
 
 // ScopeService provides scope analysis templates
 type ScopeService struct {
-	fs afero.Fs
+	fs  afero.Fs
+	log *logger.Logger
 }
 
 // NewScopeService creates a new ScopeService
 func NewScopeService() *ScopeService {
+	fs := afero.NewOsFs()
+	reader := mission.NewReader(fs)
+	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
 	return &ScopeService{
-		fs: afero.NewOsFs(),
+		fs:  fs,
+		log: logger.New(missionID),
 	}
 }
 
 // NewScopeServiceWithFS creates a new ScopeService with custom filesystem
 func NewScopeServiceWithFS(fs afero.Fs) *ScopeService {
-	return &ScopeService{fs: fs}
+	reader := mission.NewReader(fs)
+	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
+	return &ScopeService{
+		fs:  fs,
+		log: logger.New(missionID),
+	}
 }
 
 // ProvideTemplate loads scope.md template and injects current intent from mission.md
 func (s *ScopeService) ProvideTemplate() (string, error) {
+	s.log.LogStep(logger.LevelSuccess, "AnalyzeScope", "Starting scope analysis")
+
 	reader := mission.NewReader(s.fs)
 	missionPath := filepath.Join(".mission", "mission.md")
 
