@@ -94,7 +94,9 @@ func (w *Writer) UpdateSection(path string, section string, content string) erro
 	return w.Write(path, mission)
 }
 
-// UpdateList updates a list section (scope, plan) with optional append mode
+// UpdateList updates a list section (scope, plan) with optional append mode.
+// This method preserves the structure of the mission file by properly handling
+// section boundaries and ensuring subsequent sections remain intact.
 func (w *Writer) UpdateList(path string, section string, items []string, appendMode bool) error {
 	mission, err := NewReader(w.fs).Read(path)
 	if err != nil {
@@ -105,14 +107,19 @@ func (w *Writer) UpdateList(path string, section string, items []string, appendM
 	var result []string
 	sectionHeader := "## " + strings.ToUpper(section)
 	foundSection := false
+	lineIndex := 0
 
-	for i, line := range lines {
-		if strings.TrimSpace(line) == sectionHeader {
-			result = append(result, line)
+	// Process each line, looking for the target section
+	for lineIndex < len(lines) {
+		currentLine := lines[lineIndex]
+		
+		if strings.TrimSpace(currentLine) == sectionHeader {
+			// Found the target section header
+			result = append(result, currentLine)
 
 			if appendMode {
 				// Preserve existing items and add new ones
-				existingItems := w.extractExistingItems(lines, i+1)
+				existingItems := w.extractExistingItems(lines, lineIndex+1)
 				result = append(result, existingItems...)
 			}
 
@@ -120,15 +127,18 @@ func (w *Writer) UpdateList(path string, section string, items []string, appendM
 			w.addFormattedItems(&result, section, items)
 
 			foundSection = true
-			// Skip to next section
-			w.skipToNextSection(&result, lines, i+1)
-			break
+			// Skip existing content in this section and continue processing
+			lineIndex = w.skipSectionContent(lines, lineIndex+1)
+			continue
 		}
-		result = append(result, line)
+		
+		// Copy non-target lines as-is
+		result = append(result, currentLine)
+		lineIndex++
 	}
 
 	if !foundSection {
-		// Add new section at end
+		// Add new section at end if it doesn't exist
 		result = append(result, "", sectionHeader)
 		w.addFormattedItems(&result, section, items)
 	}
@@ -162,15 +172,17 @@ func (w *Writer) addFormattedItems(result *[]string, section string, items []str
 	}
 }
 
-// skipToNextSection skips content until the next section and appends remaining lines
-func (w *Writer) skipToNextSection(result *[]string, lines []string, startIndex int) {
+// skipSectionContent skips content until the next section and returns the index.
+// This ensures proper section boundary handling when updating list sections.
+func (w *Writer) skipSectionContent(lines []string, startIndex int) int {
 	for j := startIndex; j < len(lines); j++ {
 		if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
-			*result = append(*result, "")
-			*result = append(*result, lines[j:]...)
-			break
+			// Found next section header, return its index
+			return j
 		}
 	}
+	// No more sections found, return end of file
+	return len(lines)
 }
 
 // UpdateFrontmatter updates frontmatter fields

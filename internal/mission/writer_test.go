@@ -331,6 +331,103 @@ func TestWriter_UpdateListAppend(t *testing.T) {
 	}
 }
 
+func TestWriter_UpdateList_PlanEntries(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writer := NewWriter(fs)
+
+	mission := &Mission{
+		ID:        "test-123",
+		Status:    "planning",
+		Iteration: 1,
+		Body:      "## INTENT\nTest\n\n## PLAN\n- [ ] 1. First step\n- [ ] 2. Second step\n\n## VERIFICATION\ngo test\n",
+	}
+
+	path := "/test/mission.md"
+	if err := writer.Write(path, mission); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	// Update plan with new items
+	newItems := []string{"3. Third step", "4. Fourth step"}
+	if err := writer.UpdateList(path, "plan", newItems, false); err != nil {
+		t.Fatalf("UpdateList plan failed: %v", err)
+	}
+
+	updated, err := NewReader(fs).Read(path)
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	// Should contain properly formatted plan entries
+	if !strings.Contains(updated.Body, "- [ ] 3. Third step") {
+		t.Error("Body missing properly formatted third step")
+	}
+	if !strings.Contains(updated.Body, "- [ ] 4. Fourth step") {
+		t.Error("Body missing properly formatted fourth step")
+	}
+	
+	// Should preserve VERIFICATION section
+	if !strings.Contains(updated.Body, "## VERIFICATION") {
+		t.Error("Body missing VERIFICATION section")
+	}
+	if !strings.Contains(updated.Body, "go test") {
+		t.Error("Body missing verification content")
+	}
+}
+
+func TestWriter_UpdateList_PreservesSubsequentSections(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writer := NewWriter(fs)
+
+	mission := &Mission{
+		ID:        "test-123",
+		Status:    "planning",
+		Iteration: 1,
+		Body:      "## INTENT\nTest intent\n\n## SCOPE\nold1.go\nold2.go\n\n## PLAN\n- [ ] Step 1\n- [ ] Step 2\n\n## VERIFICATION\ngo test ./...\n",
+	}
+
+	path := "/test/mission.md"
+	if err := writer.Write(path, mission); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	// Update scope section
+	newItems := []string{"new1.go", "new2.go"}
+	if err := writer.UpdateList(path, "scope", newItems, false); err != nil {
+		t.Fatalf("UpdateList scope failed: %v", err)
+	}
+
+	updated, err := NewReader(fs).Read(path)
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	// Should contain new scope items
+	if !strings.Contains(updated.Body, "new1.go") {
+		t.Error("Body missing new1.go")
+	}
+	if !strings.Contains(updated.Body, "new2.go") {
+		t.Error("Body missing new2.go")
+	}
+	
+	// Should preserve all subsequent sections intact
+	if !strings.Contains(updated.Body, "## PLAN") {
+		t.Error("Body missing PLAN section")
+	}
+	if !strings.Contains(updated.Body, "- [ ] Step 1") {
+		t.Error("Body missing Step 1")
+	}
+	if !strings.Contains(updated.Body, "- [ ] Step 2") {
+		t.Error("Body missing Step 2")
+	}
+	if !strings.Contains(updated.Body, "## VERIFICATION") {
+		t.Error("Body missing VERIFICATION section")
+	}
+	if !strings.Contains(updated.Body, "go test ./...") {
+		t.Error("Body missing verification content")
+	}
+}
+
 func TestWriter_UpdateFrontmatter(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	writer := NewWriter(fs)
