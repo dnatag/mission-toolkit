@@ -94,3 +94,50 @@ func TestRenderTwoPaneLayout(t *testing.T) {
 		t.Error("expected renderTwoPaneLayout to contain log content")
 	}
 }
+
+func TestApplyFixedDimensions(t *testing.T) {
+	m := NewDashboardModel()
+
+	tests := []struct {
+		name     string
+		input    string
+		wantRows int
+		wantCols int
+	}{
+		{
+			name:     "short content",
+			input:    "line1\nline2",
+			wantRows: fixedPaneHeight,
+			wantCols: fixedPaneWidth,
+		},
+		{
+			name:     "long line",
+			input:    strings.Repeat("x", 100),
+			wantRows: fixedPaneHeight,
+			wantCols: fixedPaneWidth,
+		},
+		{
+			name:     "many lines",
+			input:    strings.Repeat("line\n", 100),
+			wantRows: fixedPaneHeight,
+			wantCols: fixedPaneWidth,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			output := m.applyFixedDimensions(tt.input)
+			lines := strings.Split(output, "\n")
+
+			if len(lines) != tt.wantRows {
+				t.Errorf("expected %d rows, got %d", tt.wantRows, len(lines))
+			}
+
+			for i, line := range lines {
+				if len(line) != tt.wantCols {
+					t.Errorf("line %d: expected %d columns, got %d", i, tt.wantCols, len(line))
+				}
+			}
+		})
+	}
+}

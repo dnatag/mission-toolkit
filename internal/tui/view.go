@@ -9,6 +9,11 @@ import (
 	"github.com/dnatag/mission-toolkit/internal/mission"
 )
 
+const (
+	fixedPaneWidth  = 60
+	fixedPaneHeight = 12
+)
+
 // View renders the dashboard UI
 func (m DashboardModel) View() string {
 	var sections []string
@@ -74,13 +79,9 @@ func (m DashboardModel) renderTwoPaneLayout() string {
 		rightPane = m.renderExecutionLogPane()
 	}
 
-	// Apply width constraints
-	if m.leftPaneWidth > 0 {
-		leftPane = lipgloss.NewStyle().Width(m.leftPaneWidth).Render(leftPane)
-	}
-	if m.rightPaneWidth > 0 {
-		rightPane = lipgloss.NewStyle().Width(m.rightPaneWidth).Render(rightPane)
-	}
+	// Apply fixed dimensions
+	leftPane = m.applyFixedDimensions(leftPane)
+	rightPane = m.applyFixedDimensions(rightPane)
 
 	if m.currentPane == MissionPane {
 		leftPane = activePaneStyle.Render(leftPane)
@@ -321,4 +322,32 @@ func extractVerification(body string) string {
 		return strings.TrimSpace(matches[1])
 	}
 	return ""
+}
+
+// applyFixedDimensions applies fixed width and height to pane content.
+// Content is truncated or padded to exactly fixedPaneWidth × fixedPaneHeight.
+func (m DashboardModel) applyFixedDimensions(content string) string {
+	lines := strings.Split(content, "\n")
+
+	// Ensure exactly fixedPaneHeight lines
+	if len(lines) > fixedPaneHeight {
+		lines = lines[:fixedPaneHeight]
+	}
+	for len(lines) < fixedPaneHeight {
+		lines = append(lines, "")
+	}
+
+	// Ensure each line is exactly fixedPaneWidth characters
+	for i, line := range lines {
+		lineLen := len(line)
+		if lineLen > fixedPaneWidth {
+			// Truncate with ellipsis
+			lines[i] = line[:fixedPaneWidth-3] + "..."
+		} else if lineLen < fixedPaneWidth {
+			// Pad with spaces
+			lines[i] = line + strings.Repeat(" ", fixedPaneWidth-lineLen)
+		}
+	}
+
+	return strings.Join(lines, "\n")
 }
