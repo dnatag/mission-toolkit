@@ -45,6 +45,16 @@ func (s *FinalizeService) Finalize() (string, error) {
 	// Validate sections
 	result := s.validateSections(m)
 
+	// If valid, cleanup templates and update status
+	if result.Valid {
+		if err := s.cleanupTemplates(); err != nil {
+			return "", fmt.Errorf("cleaning up templates: %w", err)
+		}
+		if err := s.updateStatusToPlanned(missionPath); err != nil {
+			return "", fmt.Errorf("updating status: %w", err)
+		}
+	}
+
 	// Convert to JSON
 	jsonOutput, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
@@ -52,6 +62,27 @@ func (s *FinalizeService) Finalize() (string, error) {
 	}
 
 	return string(jsonOutput), nil
+}
+
+// cleanupTemplates removes .mission/templates folder if it exists
+func (s *FinalizeService) cleanupTemplates() error {
+	templatesPath := filepath.Join(s.dir, "templates")
+	exists, err := afero.DirExists(s.fs, templatesPath)
+	if err != nil {
+		return fmt.Errorf("checking templates directory: %w", err)
+	}
+	if exists {
+		if err := s.fs.RemoveAll(templatesPath); err != nil {
+			return fmt.Errorf("removing templates directory: %w", err)
+		}
+	}
+	return nil
+}
+
+// updateStatusToPlanned changes mission status from planning to planned
+func (s *FinalizeService) updateStatusToPlanned(missionPath string) error {
+	writer := NewWriter(s.fs)
+	return writer.UpdateStatus(missionPath, "planned")
 }
 
 // validateSections checks that all required sections exist and are not empty

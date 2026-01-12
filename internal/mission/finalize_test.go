@@ -153,3 +153,84 @@ func containsString(slice []string, item string) bool {
 	}
 	return false
 }
+
+func TestFinalizeService_Finalize_CleansUpTemplates(t *testing.T) {
+	fs := afero.NewMemMapFs()
+
+	missionContent := `---
+id: test-123
+status: planning
+track: 2
+type: WET
+---
+
+## INTENT
+Add user authentication
+
+## SCOPE
+auth.go
+
+## PLAN
+- [ ] 1. Create handler
+
+## VERIFICATION
+go test ./...`
+
+	afero.WriteFile(fs, ".mission/mission.md", []byte(missionContent), 0644)
+	fs.Mkdir(".mission/templates", 0755)
+	afero.WriteFile(fs, ".mission/templates/test.md", []byte("test"), 0644)
+
+	service := NewFinalizeService(fs, ".mission")
+	_, err := service.Finalize()
+
+	if err != nil {
+		t.Fatalf("Finalize failed: %v", err)
+	}
+
+	exists, _ := afero.DirExists(fs, ".mission/templates")
+	if exists {
+		t.Error("Expected templates directory to be removed")
+	}
+}
+
+func TestFinalizeService_Finalize_UpdatesStatusToPlanned(t *testing.T) {
+	fs := afero.NewMemMapFs()
+
+	missionContent := `---
+id: test-123
+status: planning
+track: 2
+type: WET
+---
+
+## INTENT
+Add user authentication
+
+## SCOPE
+auth.go
+
+## PLAN
+- [ ] 1. Create handler
+
+## VERIFICATION
+go test ./...`
+
+	afero.WriteFile(fs, ".mission/mission.md", []byte(missionContent), 0644)
+
+	service := NewFinalizeService(fs, ".mission")
+	_, err := service.Finalize()
+
+	if err != nil {
+		t.Fatalf("Finalize failed: %v", err)
+	}
+
+	reader := NewReader(fs)
+	mission, err := reader.Read(".mission/mission.md")
+	if err != nil {
+		t.Fatalf("Failed to read mission: %v", err)
+	}
+
+	if mission.Status != "planned" {
+		t.Errorf("Expected status 'planned', got: %s", mission.Status)
+	}
+}

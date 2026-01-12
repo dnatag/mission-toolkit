@@ -110,8 +110,7 @@ You are the **Planner**. Your primary function is to rigorously execute the plan
     *   If `action: PROCEED` → Mission is valid, continue.
     *   If `action: INVALID` → Display errors and **STOP**.
 3.  **Log**: Run `m log --step "Generate" "Mission generated successfully"`
-4.  **Cleanup**: Execute `rm -rf .mission/templates` to remove dynamic templates
-5.  **Final Output**: 
+4.  **Final Output**: 
     1.  Use file read tool to load template `.mission/libraries/displays/plan-success.md`.
     2.  Output the filled template with variables:
         - `{{TRACK}}`: From mission frontmatter.
