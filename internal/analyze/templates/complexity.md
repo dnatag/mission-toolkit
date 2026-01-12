@@ -77,21 +77,28 @@ Add points for complexity indicators:
 - Configuration changes required
 - Multiple environments affected (dev, staging, prod)
 
-## Step 4: Calculate Final Track
+## Step 4: Calculate Track (MANDATORY ARITHMETIC)
 
-**Total Score = File Count Score + Domain Score + Characteristics Score**
+**REQUIRED:** You MUST show this exact calculation format:
+
+```
+Files: [impl_count] × 1.0 + [test_count] × 0.5 + [doc_count] × 0.25 = [weighted_total] = [file_points] pts
+Domains: [domain_list] = [domain_points] pts  
+Characteristics: [char_list] = [char_points] pts
+TOTAL: [file_points] + [domain_points] + [char_points] = [final_score] pts → Track [N]
+```
 
 **Track Mapping:**
-- 0 points AND single file → Track 1 (Atomic)
-- 1-2 points → Track 2 (Standard)
-- 3-4 points → Track 3 (Robust)
-- 5+ points → Track 4 (Epic)
+- 0 pts + single file → Track 1
+- 1-2 pts → Track 2
+- 3-4 pts → Track 3  
+- 5+ pts → Track 4
+- Multiple files → Minimum Track 2
 
 **Special Rules:**
 - If Weighted File Count ≥ 12.5 → Track 4 regardless of other factors
 - If Total Score = 0 AND single file AND trivial intent → Track 1 with suggested edit
 - If scope is ONLY test files AND no breaking changes → Cap at Track 3
-- **Critical**: If weighted count > 1.0 (multiple files) → Minimum Track 2
 
 ## Output Format
 
