@@ -112,7 +112,7 @@ func (w *Writer) UpdateList(path string, section string, items []string, appendM
 	// Process each line, looking for the target section
 	for lineIndex < len(lines) {
 		currentLine := lines[lineIndex]
-		
+
 		if strings.TrimSpace(currentLine) == sectionHeader {
 			// Found the target section header
 			result = append(result, currentLine)
@@ -131,7 +131,7 @@ func (w *Writer) UpdateList(path string, section string, items []string, appendM
 			lineIndex = w.skipSectionContent(lines, lineIndex+1)
 			continue
 		}
-		
+
 		// Copy non-target lines as-is
 		result = append(result, currentLine)
 		lineIndex++

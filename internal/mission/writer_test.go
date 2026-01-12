@@ -365,7 +365,7 @@ func TestWriter_UpdateList_PlanEntries(t *testing.T) {
 	if !strings.Contains(updated.Body, "- [ ] 4. Fourth step") {
 		t.Error("Body missing properly formatted fourth step")
 	}
-	
+
 	// Should preserve VERIFICATION section
 	if !strings.Contains(updated.Body, "## VERIFICATION") {
 		t.Error("Body missing VERIFICATION section")
@@ -409,7 +409,7 @@ func TestWriter_UpdateList_PreservesSubsequentSections(t *testing.T) {
 	if !strings.Contains(updated.Body, "new2.go") {
 		t.Error("Body missing new2.go")
 	}
-	
+
 	// Should preserve all subsequent sections intact
 	if !strings.Contains(updated.Body, "## PLAN") {
 		t.Error("Body missing PLAN section")

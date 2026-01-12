@@ -31,13 +31,13 @@ func NewArchiver(fs afero.Fs, missionDir string, git git.GitClient) *Archiver {
 // If force is false and no mission exists, returns an error.
 func (a *Archiver) Archive(force bool) error {
 	missionPath := filepath.Join(a.missionDir, "mission.md")
-	
+
 	// Check if mission file exists
 	missionExists, err := afero.Exists(a.fs, missionPath)
 	if err != nil {
 		return fmt.Errorf("checking mission existence: %w", err)
 	}
-	
+
 	// Handle no mission case based on force flag
 	if !missionExists {
 		if force {

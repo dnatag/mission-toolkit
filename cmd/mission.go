@@ -170,7 +170,7 @@ The --force flag controls behavior when no mission exists:
   - Without --force: returns an error`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		force, _ := cmd.Flags().GetBool("force")
-		
+
 		gitClient := git.NewCmdGitClient(".")
 		archiver := mission.NewArchiver(missionFs, missionDir, gitClient)
 
@@ -205,9 +205,47 @@ var missionFinalizeCmd = &cobra.Command{
 	},
 }
 
+// missionPauseCmd pauses the current mission to .mission/paused/
+var missionPauseCmd = &cobra.Command{
+	Use:   "pause",
+	Short: "Pause current mission and save to .mission/paused/ folder",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		pauser := mission.NewPauser(missionFs, missionDir)
+
+		if err := pauser.Pause(); err != nil {
+			return fmt.Errorf("pausing mission: %w", err)
+		}
+
+		fmt.Println("Mission paused successfully")
+		return nil
+	},
+}
+
+// missionRestoreCmd restores a paused mission from .mission/paused/
+var missionRestoreCmd = &cobra.Command{
+	Use:   "restore [mission-id]",
+	Short: "Restore a paused mission from .mission/paused/ folder",
+	Args:  cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		pauser := mission.NewPauser(missionFs, missionDir)
+
+		var missionID string
+		if len(args) > 0 {
+			missionID = args[0]
+		}
+
+		if err := pauser.Restore(missionID); err != nil {
+			return fmt.Errorf("restoring mission: %w", err)
+		}
+
+		fmt.Println("Mission restored successfully")
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(missionCmd)
-	missionCmd.AddCommand(missionCheckCmd, missionUpdateCmd, missionIDCmd, missionCreateCmd, missionArchiveCmd, missionFinalizeCmd)
+	missionCmd.AddCommand(missionCheckCmd, missionUpdateCmd, missionIDCmd, missionCreateCmd, missionArchiveCmd, missionFinalizeCmd, missionPauseCmd, missionRestoreCmd)
 
 	// Add flags
 	missionCheckCmd.Flags().StringP("context", "c", "", "Context for validation (apply or complete)")
