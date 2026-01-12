@@ -189,3 +189,69 @@ func TestUpdate_KeyNavigation(t *testing.T) {
 		t.Errorf("expected index 1, got %d", model.selectedIndex)
 	}
 }
+
+func TestUpdate_KeyPagination(t *testing.T) {
+	m := NewDashboardModel()
+	// Setup 12 missions with 5 per page = 3 pages
+	m.completedMissions = []*mission.Mission{
+		{ID: "m1"}, {ID: "m2"}, {ID: "m3"}, {ID: "m4"}, {ID: "m5"},
+		{ID: "m6"}, {ID: "m7"}, {ID: "m8"}, {ID: "m9"}, {ID: "m10"},
+		{ID: "m11"}, {ID: "m12"},
+	}
+	m.itemsPerPage = 5
+
+	// Initial page 0
+	if m.currentPage != 0 {
+		t.Errorf("expected initial page 0, got %d", m.currentPage)
+	}
+
+	// Right -> page 1
+	msgRight := tea.KeyMsg{Type: tea.KeyRight}
+	updated, _ := m.Update(msgRight)
+	model := updated.(DashboardModel)
+	if model.currentPage != 1 {
+		t.Errorf("expected page 1, got %d", model.currentPage)
+	}
+	if model.selectedIndex != 0 {
+		t.Errorf("expected selectedIndex reset to 0, got %d", model.selectedIndex)
+	}
+
+	// Right -> page 2
+	updated, _ = model.Update(msgRight)
+	model = updated.(DashboardModel)
+	if model.currentPage != 2 {
+		t.Errorf("expected page 2, got %d", model.currentPage)
+	}
+
+	// Right -> page 2 (bound check, can't go beyond last page)
+	updated, _ = model.Update(msgRight)
+	model = updated.(DashboardModel)
+	if model.currentPage != 2 {
+		t.Errorf("expected page 2 (bound), got %d", model.currentPage)
+	}
+
+	// Left -> page 1
+	msgLeft := tea.KeyMsg{Type: tea.KeyLeft}
+	updated, _ = model.Update(msgLeft)
+	model = updated.(DashboardModel)
+	if model.currentPage != 1 {
+		t.Errorf("expected page 1, got %d", model.currentPage)
+	}
+	if model.selectedIndex != 0 {
+		t.Errorf("expected selectedIndex reset to 0, got %d", model.selectedIndex)
+	}
+
+	// Left -> page 0
+	updated, _ = model.Update(msgLeft)
+	model = updated.(DashboardModel)
+	if model.currentPage != 0 {
+		t.Errorf("expected page 0, got %d", model.currentPage)
+	}
+
+	// Left -> page 0 (bound check, can't go below 0)
+	updated, _ = model.Update(msgLeft)
+	model = updated.(DashboardModel)
+	if model.currentPage != 0 {
+		t.Errorf("expected page 0 (bound), got %d", model.currentPage)
+	}
+}

@@ -42,7 +42,7 @@ func (m DashboardModel) View() string {
 			sections = append(sections, helpStyle.Render("Tab: switch panes (mission|log) • Esc: back to list • q: quit"))
 		}
 	} else {
-		sections = append(sections, helpStyle.Render("↑/↓: navigate • Enter: view details • q: quit"))
+		sections = append(sections, helpStyle.Render("↑/↓: navigate • ←/→: prev/next page • Enter: view details • q: quit"))
 	}
 
 	return strings.Join(sections, "\n")

@@ -131,14 +131,43 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "up", "k":
-			if m.selectedMission == nil && len(m.completedMissions) > 0 && m.selectedIndex > 0 {
-				m.selectedIndex--
+			if m.selectedMission == nil && len(m.completedMissions) > 0 {
+				if m.selectedIndex > 0 {
+					m.selectedIndex--
+				} else if m.currentPage > 0 {
+					// At top of page, go to previous page
+					m.currentPage--
+					pageMissions := m.getCurrentPageMissions()
+					m.selectedIndex = len(pageMissions) - 1
+				}
 			}
 		case "down", "j":
 			if m.selectedMission == nil {
 				pageMissions := m.getCurrentPageMissions()
-				if len(pageMissions) > 0 && m.selectedIndex < len(pageMissions)-1 {
-					m.selectedIndex++
+				if len(pageMissions) > 0 {
+					if m.selectedIndex < len(pageMissions)-1 {
+						m.selectedIndex++
+					} else {
+						// At bottom of page, go to next page
+						totalPages := (len(m.completedMissions) + m.itemsPerPage - 1) / m.itemsPerPage
+						if m.currentPage < totalPages-1 {
+							m.currentPage++
+							m.selectedIndex = 0
+						}
+					}
+				}
+			}
+		case "left", "h":
+			if m.selectedMission == nil && m.currentPage > 0 {
+				m.currentPage--
+				m.selectedIndex = 0
+			}
+		case "right", "l":
+			if m.selectedMission == nil && len(m.completedMissions) > 0 {
+				totalPages := (len(m.completedMissions) + m.itemsPerPage - 1) / m.itemsPerPage
+				if m.currentPage < totalPages-1 {
+					m.currentPage++
+					m.selectedIndex = 0
 				}
 			}
 		}
@@ -190,7 +219,7 @@ func loadCurrentMission() tea.Msg {
 
 // loadInitialMissions loads the first batch of completed missions
 func loadInitialMissions() tea.Msg {
-	return loadCompletedMissionsBatch(0, 5)
+	return loadCompletedMissionsBatch(0, -1) // Load all missions
 }
 
 // loadCompletedMissionsBatch loads a batch of completed missions
@@ -229,7 +258,7 @@ func loadCompletedMissionsBatch(offset, limit int) tea.Msg {
 	}
 
 	batchLoaded := 0
-	for fileIndex < len(missionFiles) && batchLoaded < limit {
+	for fileIndex < len(missionFiles) && (limit < 0 || batchLoaded < limit) {
 		path := filepath.Join(completedDir, missionFiles[fileIndex])
 		m, err := reader.Read(path)
 		if err == nil {
