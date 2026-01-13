@@ -6,7 +6,89 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/dnatag/mission-toolkit/internal/logger"
+	"github.com/spf13/afero"
 )
+
+func TestCreateTestLoggerConfig(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	config := CreateTestLoggerConfig(fs)
+
+	if config.Output != logger.OutputConsole {
+		t.Errorf("Expected OutputConsole, got %s", config.Output)
+	}
+
+	if config.FilePath != "/dev/null" {
+		t.Errorf("Expected /dev/null, got %s", config.FilePath)
+	}
+
+	if config.Fs != fs {
+		t.Error("Expected same filesystem instance")
+	}
+}
+
+func TestCreateLogger(t *testing.T) {
+	fs := afero.NewMemMapFs()
+
+	// Test with console config (don't use nil to avoid real filesystem)
+	consoleConfig := CreateTestLoggerConfig(fs)
+	log1 := CreateLogger(fs, consoleConfig)
+	if log1 == nil {
+		t.Error("Expected logger, got nil")
+	}
+
+	// Test with custom config
+	config := CreateTestLoggerConfig(fs)
+	log2 := CreateLogger(fs, config)
+	if log2 == nil {
+		t.Error("Expected logger, got nil")
+	}
+}
+
+func TestFormatOutputWithFS(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	templateContent := "# Test Template\nThis is test content"
+
+	output, err := FormatOutputWithFS(fs, templateContent)
+	if err != nil {
+		t.Fatalf("FormatOutputWithFS failed: %v", err)
+	}
+
+	// Verify JSON structure
+	var result map[string]string
+	if err := json.Unmarshal([]byte(output), &result); err != nil {
+		t.Fatalf("Output is not valid JSON: %v", err)
+	}
+
+	// Verify required fields
+	if _, ok := result["instruction"]; !ok {
+		t.Error("Output missing instruction field")
+	}
+
+	templatePath, ok := result["template_path"]
+	if !ok {
+		t.Error("Output missing template_path field")
+	}
+
+	// Verify file was created
+	exists, err := afero.Exists(fs, templatePath)
+	if err != nil {
+		t.Fatalf("Error checking file existence: %v", err)
+	}
+	if !exists {
+		t.Error("Template file was not created")
+	}
+
+	// Verify file content
+	content, err := afero.ReadFile(fs, templatePath)
+	if err != nil {
+		t.Fatalf("Error reading template file: %v", err)
+	}
+	if string(content) != templateContent {
+		t.Errorf("Expected %q, got %q", templateContent, string(content))
+	}
+}
 
 func TestFormatOutput(t *testing.T) {
 	// Setup: Create temp directory for test

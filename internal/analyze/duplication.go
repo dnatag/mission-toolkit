@@ -24,21 +24,17 @@ type DuplicationService struct {
 // NewDuplicationService creates a new DuplicationService
 func NewDuplicationService() *DuplicationService {
 	fs := afero.NewOsFs()
-	reader := mission.NewReader(fs)
-	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
 	return &DuplicationService{
 		fs:  fs,
-		log: logger.New(missionID),
+		log: CreateLogger(fs, nil),
 	}
 }
 
-// NewDuplicationServiceWithFS creates a new DuplicationService with custom filesystem
-func NewDuplicationServiceWithFS(fs afero.Fs) *DuplicationService {
-	reader := mission.NewReader(fs)
-	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
+// NewDuplicationServiceWithConfig creates a new DuplicationService with custom filesystem and logger config
+func NewDuplicationServiceWithConfig(fs afero.Fs, loggerConfig *logger.Config) *DuplicationService {
 	return &DuplicationService{
 		fs:  fs,
-		log: logger.New(missionID),
+		log: CreateLogger(fs, loggerConfig),
 	}
 }
 
@@ -65,5 +61,5 @@ func (s *DuplicationService) ProvideTemplate() (string, error) {
 		return "", fmt.Errorf("executing template: %w", err)
 	}
 
-	return FormatOutput(buf.String())
+	return FormatOutputWithFS(s.fs, buf.String())
 }

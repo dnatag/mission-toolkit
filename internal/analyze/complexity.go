@@ -24,21 +24,17 @@ type ComplexityService struct {
 // NewComplexityService creates a new ComplexityService
 func NewComplexityService() *ComplexityService {
 	fs := afero.NewOsFs()
-	reader := mission.NewReader(fs)
-	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
 	return &ComplexityService{
 		fs:  fs,
-		log: logger.New(missionID),
+		log: CreateLogger(fs, nil),
 	}
 }
 
-// NewComplexityServiceWithFS creates a new ComplexityService with custom filesystem
-func NewComplexityServiceWithFS(fs afero.Fs) *ComplexityService {
-	reader := mission.NewReader(fs)
-	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
+// NewComplexityServiceWithConfig creates a new ComplexityService with custom filesystem and logger config
+func NewComplexityServiceWithConfig(fs afero.Fs, loggerConfig *logger.Config) *ComplexityService {
 	return &ComplexityService{
 		fs:  fs,
-		log: logger.New(missionID),
+		log: CreateLogger(fs, loggerConfig),
 	}
 }
 
@@ -73,5 +69,5 @@ func (s *ComplexityService) ProvideTemplate() (string, error) {
 		return "", fmt.Errorf("executing template: %w", err)
 	}
 
-	return FormatOutput(buf.String())
+	return FormatOutputWithFS(s.fs, buf.String())
 }

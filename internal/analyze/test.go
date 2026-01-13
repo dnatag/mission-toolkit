@@ -24,21 +24,17 @@ type TestService struct {
 // NewTestService creates a new TestService
 func NewTestService() *TestService {
 	fs := afero.NewOsFs()
-	reader := mission.NewReader(fs)
-	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
 	return &TestService{
 		fs:  fs,
-		log: logger.New(missionID),
+		log: CreateLogger(fs, nil),
 	}
 }
 
-// NewTestServiceWithFS creates a new TestService with custom filesystem
-func NewTestServiceWithFS(fs afero.Fs) *TestService {
-	reader := mission.NewReader(fs)
-	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
+// NewTestServiceWithConfig creates a new TestService with custom filesystem and logger config
+func NewTestServiceWithConfig(fs afero.Fs, loggerConfig *logger.Config) *TestService {
 	return &TestService{
 		fs:  fs,
-		log: logger.New(missionID),
+		log: CreateLogger(fs, loggerConfig),
 	}
 }
 
@@ -73,5 +69,5 @@ func (s *TestService) ProvideTemplate() (string, error) {
 		return "", fmt.Errorf("executing template: %w", err)
 	}
 
-	return FormatOutput(buf.String())
+	return FormatOutputWithFS(s.fs, buf.String())
 }

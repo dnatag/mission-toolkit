@@ -4,11 +4,9 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"path/filepath"
 	"text/template"
 
 	"github.com/dnatag/mission-toolkit/internal/logger"
-	"github.com/dnatag/mission-toolkit/internal/mission"
 	"github.com/spf13/afero"
 )
 
@@ -17,15 +15,24 @@ var intentTemplate string
 
 // IntentService provides intent analysis templates
 type IntentService struct {
+	fs  afero.Fs
 	log *logger.Logger
 }
 
 // NewIntentService creates a new IntentService
 func NewIntentService() *IntentService {
-	reader := mission.NewReader(afero.NewOsFs())
-	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
+	fs := afero.NewOsFs()
 	return &IntentService{
-		log: logger.New(missionID),
+		fs:  fs,
+		log: CreateLogger(fs, nil),
+	}
+}
+
+// NewIntentServiceWithConfig creates a new IntentService with custom filesystem and logger config
+func NewIntentServiceWithConfig(fs afero.Fs, loggerConfig *logger.Config) *IntentService {
+	return &IntentService{
+		fs:  fs,
+		log: CreateLogger(fs, loggerConfig),
 	}
 }
 
@@ -44,5 +51,5 @@ func (s *IntentService) ProvideTemplate(userInput string) (string, error) {
 		return "", fmt.Errorf("executing template: %w", err)
 	}
 
-	return FormatOutput(buf.String())
+	return FormatOutputWithFS(s.fs, buf.String())
 }

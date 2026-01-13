@@ -74,6 +74,10 @@ func getOutput(config *Config) io.Writer {
 
 // openLogFile opens log file for writing using the provided filesystem, returns nil on error
 func openLogFile(fs afero.Fs, filePath string) afero.File {
+	// Return nil if filePath is empty or invalid to prevent file creation
+	if filePath == "" || filePath == "/dev/null" {
+		return nil
+	}
 	if err := fs.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
 		return nil
 	}

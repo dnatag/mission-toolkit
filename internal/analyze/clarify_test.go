@@ -2,7 +2,6 @@ package analyze
 
 import (
 	"encoding/json"
-	"os"
 	"strings"
 	"testing"
 
@@ -10,13 +9,10 @@ import (
 )
 
 func TestClarifyService_ProvideTemplate(t *testing.T) {
-	// Setup: Create temp directory for test
-	tempDir := t.TempDir()
-	originalWd, _ := os.Getwd()
-	defer os.Chdir(originalWd)
-	os.Chdir(tempDir)
-
 	fs := afero.NewMemMapFs()
+
+	// Use helper to create test logger config
+	loggerConfig := CreateTestLoggerConfig(fs)
 
 	missionContent := `---
 id: test-123
@@ -33,7 +29,7 @@ auth.go`
 		t.Fatal(err)
 	}
 
-	service := NewClarifyServiceWithFS(fs)
+	service := NewClarifyServiceWithConfig(fs, loggerConfig)
 	output, err := service.ProvideTemplate()
 
 	if err != nil {
@@ -48,7 +44,7 @@ auth.go`
 
 	// Verify file was created and contains expected content
 	templatePath := result["template_path"]
-	content, err := os.ReadFile(templatePath)
+	content, err := afero.ReadFile(fs, templatePath)
 	if err != nil {
 		t.Fatalf("Failed to read template file: %v", err)
 	}
@@ -64,7 +60,11 @@ auth.go`
 
 func TestClarifyService_ProvideTemplate_MissingMission(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	service := NewClarifyServiceWithFS(fs)
+
+	// Use helper to create test logger config
+	loggerConfig := CreateTestLoggerConfig(fs)
+
+	service := NewClarifyServiceWithConfig(fs, loggerConfig)
 	_, err := service.ProvideTemplate()
 
 	if err == nil {

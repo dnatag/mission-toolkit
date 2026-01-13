@@ -24,21 +24,17 @@ type ScopeService struct {
 // NewScopeService creates a new ScopeService
 func NewScopeService() *ScopeService {
 	fs := afero.NewOsFs()
-	reader := mission.NewReader(fs)
-	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
 	return &ScopeService{
 		fs:  fs,
-		log: logger.New(missionID),
+		log: CreateLogger(fs, nil),
 	}
 }
 
-// NewScopeServiceWithFS creates a new ScopeService with custom filesystem
-func NewScopeServiceWithFS(fs afero.Fs) *ScopeService {
-	reader := mission.NewReader(fs)
-	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
+// NewScopeServiceWithConfig creates a new ScopeService with custom filesystem and logger config
+func NewScopeServiceWithConfig(fs afero.Fs, loggerConfig *logger.Config) *ScopeService {
 	return &ScopeService{
 		fs:  fs,
-		log: logger.New(missionID),
+		log: CreateLogger(fs, loggerConfig),
 	}
 }
 
@@ -65,5 +61,5 @@ func (s *ScopeService) ProvideTemplate() (string, error) {
 		return "", fmt.Errorf("executing template: %w", err)
 	}
 
-	return FormatOutput(buf.String())
+	return FormatOutputWithFS(s.fs, buf.String())
 }

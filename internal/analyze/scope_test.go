@@ -2,21 +2,24 @@ package analyze
 
 import (
 	"encoding/json"
-	"os"
 	"strings"
 	"testing"
 
+	"github.com/dnatag/mission-toolkit/internal/logger"
 	"github.com/spf13/afero"
 )
 
 func TestScopeService_ProvideTemplate(t *testing.T) {
-	// Setup: Create temp directory for test
-	tempDir := t.TempDir()
-	originalWd, _ := os.Getwd()
-	defer os.Chdir(originalWd)
-	os.Chdir(tempDir)
-
 	fs := afero.NewMemMapFs()
+
+	// Use console-only logger config to prevent execution.log creation
+	loggerConfig := &logger.Config{
+		Level:    logger.DefaultConfig().Level,
+		Format:   logger.DefaultConfig().Format,
+		Output:   logger.OutputConsole,
+		FilePath: "", // Empty path to prevent file creation
+		Fs:       fs, // Use same in-memory filesystem
+	}
 
 	missionContent := `---
 id: test-123
@@ -33,7 +36,7 @@ auth.go`
 		t.Fatal(err)
 	}
 
-	service := NewScopeServiceWithFS(fs)
+	service := NewScopeServiceWithConfig(fs, loggerConfig)
 	output, err := service.ProvideTemplate()
 
 	if err != nil {
@@ -48,7 +51,7 @@ auth.go`
 
 	// Verify file was created and contains expected content
 	templatePath := result["template_path"]
-	content, err := os.ReadFile(templatePath)
+	content, err := afero.ReadFile(fs, templatePath)
 	if err != nil {
 		t.Fatalf("Failed to read template file: %v", err)
 	}
@@ -64,7 +67,17 @@ auth.go`
 
 func TestScopeService_ProvideTemplate_MissingMission(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	service := NewScopeServiceWithFS(fs)
+
+	// Use console-only logger config to prevent execution.log creation
+	loggerConfig := &logger.Config{
+		Level:    logger.DefaultConfig().Level,
+		Format:   logger.DefaultConfig().Format,
+		Output:   logger.OutputConsole,
+		FilePath: "", // Empty path to prevent file creation
+		Fs:       fs, // Use same in-memory filesystem
+	}
+
+	service := NewScopeServiceWithConfig(fs, loggerConfig)
 	_, err := service.ProvideTemplate()
 
 	if err == nil {
