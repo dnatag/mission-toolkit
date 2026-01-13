@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/dnatag/mission-toolkit/internal/mission"
@@ -366,8 +367,8 @@ func (m *DashboardModel) applyScrollableContent(content string, isLeftPane bool)
 	// Calculate content dimensions
 	maxWidth := 0
 	for _, line := range lines {
-		if len(line) > maxWidth {
-			maxWidth = len(line)
+		if displayWidth(line) > maxWidth {
+			maxWidth = displayWidth(line)
 		}
 	}
 
@@ -419,8 +420,9 @@ func (m *DashboardModel) applyScrollableContent(content string, isLeftPane bool)
 
 	// Pad each line to visible width
 	for i, line := range visibleLines {
-		if len(line) < visibleWidth {
-			visibleLines[i] = line + strings.Repeat(" ", visibleWidth-len(line))
+		lineWidth := displayWidth(line)
+		if lineWidth < visibleWidth {
+			visibleLines[i] = line + strings.Repeat(" ", visibleWidth-lineWidth)
 		}
 	}
 
@@ -477,4 +479,21 @@ func (m *DashboardModel) applyScrollableContent(content string, isLeftPane bool)
 	visibleLines = append(visibleLines, horizontalScrollbar)
 
 	return strings.Join(visibleLines, "\n")
+}
+
+// displayWidth calculates the visual width of a string, accounting for emojis.
+// Emojis typically render as 2 character widths in most terminals, which can
+// cause alignment issues if not accounted for in layout calculations.
+func displayWidth(s string) int {
+	// Comprehensive emoji detection covering major Unicode emoji blocks
+	emojiPattern := regexp.MustCompile(`[\x{1F600}-\x{1F64F}]|[\x{1F300}-\x{1F5FF}]|[\x{1F680}-\x{1F6FF}]|[\x{1F1E0}-\x{1F1FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]|[\x{1F900}-\x{1F9FF}]|[\x{1F018}-\x{1F270}]`)
+
+	// Count regular characters (runes, not bytes)
+	width := utf8.RuneCountInString(s)
+
+	// Add extra width for emojis (they typically display as 2 characters wide)
+	emojiMatches := emojiPattern.FindAllString(s, -1)
+	width += len(emojiMatches)
+
+	return width
 }

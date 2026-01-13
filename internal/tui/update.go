@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/bubbletea"
+	"github.com/dnatag/mission-toolkit/internal/git"
 	"github.com/dnatag/mission-toolkit/internal/mission"
 	"github.com/spf13/afero"
 )
@@ -244,10 +245,26 @@ func loadExecutionLog(missionID string, isActive bool) tea.Cmd {
 // loadCommitMessage loads the commit message for a completed mission
 func loadCommitMessage(missionID string) tea.Cmd {
 	return func() tea.Msg {
-		content := fmt.Sprintf("Mission %s completed\n\nHash: %s\nDate: %s",
-			missionID,
-			"abc123...",
-			time.Now().Format("2006-01-02 15:04"))
+		// For completed missions, try to read the archived commit message first
+		commitPath := fmt.Sprintf(".mission/completed/%s-commit.msg", missionID)
+		if content, err := os.ReadFile(commitPath); err == nil {
+			return commitMsg{content: string(content)}
+		}
+
+		// Fallback: try to get from git using the final consolidated commit
+		// The final commit should be tagged when the mission is completed
+		gitClient := git.NewCmdGitClient(".")
+
+		// Look for the mission's final commit by checking recent commits
+		// that contain the mission ID in the commit message
+		commitMessage, err := gitClient.GetCommitMessage("HEAD")
+		if err == nil && strings.Contains(commitMessage, missionID) {
+			return commitMsg{content: commitMessage}
+		}
+
+		// If that fails, provide a helpful message
+		content := fmt.Sprintf("Mission %s\n\nCommit message not found\nThe mission may not have been completed with @m.complete",
+			missionID)
 		return commitMsg{content: content}
 	}
 }
