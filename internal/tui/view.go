@@ -42,9 +42,9 @@ func (m DashboardModel) View() string {
 	sections = append(sections, "")
 	if m.selectedMission != nil {
 		if m.selectedMission.Status == "completed" {
-			sections = append(sections, helpStyle.Render("Tab: switch panes (mission|log|commit) • Esc: back to list • q: quit"))
+			sections = append(sections, helpStyle.Render("Tab: switch panes (mission|log|commit) • ↑↓←→: scroll content • Esc: back to list • q: quit"))
 		} else {
-			sections = append(sections, helpStyle.Render("Tab: switch panes (mission|log) • Esc: back to list • q: quit"))
+			sections = append(sections, helpStyle.Render("Tab: switch panes (mission|log) • ↑↓←→: scroll content • Esc: back to list • q: quit"))
 		}
 	} else {
 		sections = append(sections, helpStyle.Render("↑/↓: navigate • ←/→: prev/next page • Enter: view details • q: quit"))
@@ -79,9 +79,9 @@ func (m DashboardModel) renderTwoPaneLayout() string {
 		rightPane = m.renderExecutionLogPane()
 	}
 
-	// Apply fixed dimensions
-	leftPane = m.applyFixedDimensions(leftPane)
-	rightPane = m.applyFixedDimensions(rightPane)
+	// Apply scrollable content with proper pane identification
+	leftPane = m.applyScrollableContent(leftPane, true)    // Left pane
+	rightPane = m.applyScrollableContent(rightPane, false) // Right pane
 
 	if m.currentPane == MissionPane {
 		leftPane = activePaneStyle.Render(leftPane)
@@ -324,9 +324,10 @@ func extractVerification(body string) string {
 	return ""
 }
 
-// applyFixedDimensions applies fixed width and height to pane content.
-// Content is truncated or padded to exactly fixedPaneWidth × fixedPaneHeight.
+// applyFixedDimensions applies fixed width and height to pane content with scrolling support.
+// Content is clipped based on scroll position and scrollbars are added if needed.
 func (m DashboardModel) applyFixedDimensions(content string) string {
+	// For backward compatibility, use the original fixed dimensions without scrolling
 	lines := strings.Split(content, "\n")
 
 	// Ensure exactly fixedPaneHeight lines
@@ -350,4 +351,130 @@ func (m DashboardModel) applyFixedDimensions(content string) string {
 	}
 
 	return strings.Join(lines, "\n")
+}
+
+// applyScrollableContent handles content clipping and scrollbar rendering for panes.
+// It supports both horizontal and vertical scrolling with visual indicators.
+// Parameters:
+//   - content: The raw content to be displayed
+//   - isLeftPane: true for left pane (mission), false for right pane (log/commit)
+//
+// Returns: Formatted content with scrollbars and proper clipping
+func (m *DashboardModel) applyScrollableContent(content string, isLeftPane bool) string {
+	lines := strings.Split(content, "\n")
+
+	// Calculate content dimensions
+	maxWidth := 0
+	for _, line := range lines {
+		if len(line) > maxWidth {
+			maxWidth = len(line)
+		}
+	}
+
+	// Update max dimensions for scrolling
+	if isLeftPane {
+		m.leftPaneMaxWidth = maxWidth
+		m.leftPaneMaxHeight = len(lines)
+	} else {
+		m.rightPaneMaxWidth = maxWidth
+		m.rightPaneMaxHeight = len(lines)
+	}
+
+	// Get scroll position
+	scrollX := m.leftPaneScrollX
+	scrollY := m.leftPaneScrollY
+	if !isLeftPane {
+		scrollX = m.rightPaneScrollX
+		scrollY = m.rightPaneScrollY
+	}
+
+	// Calculate visible area (reserve space for scrollbars)
+	visibleWidth := fixedPaneWidth - 1   // Reserve 1 char for vertical scrollbar
+	visibleHeight := fixedPaneHeight - 1 // Reserve 1 line for horizontal scrollbar
+
+	// Clip content based on scroll position
+	var visibleLines []string
+	for i := scrollY; i < scrollY+visibleHeight && i < len(lines); i++ {
+		if i >= 0 {
+			line := lines[i]
+			// Horizontal clipping
+			startX := scrollX
+			endX := scrollX + visibleWidth
+			if startX < len(line) {
+				if endX > len(line) {
+					endX = len(line)
+				}
+				line = line[startX:endX]
+			} else {
+				line = ""
+			}
+			visibleLines = append(visibleLines, line)
+		}
+	}
+
+	// Pad to visible height
+	for len(visibleLines) < visibleHeight {
+		visibleLines = append(visibleLines, "")
+	}
+
+	// Pad each line to visible width
+	for i, line := range visibleLines {
+		if len(line) < visibleWidth {
+			visibleLines[i] = line + strings.Repeat(" ", visibleWidth-len(line))
+		}
+	}
+
+	// Add vertical scrollbar with position indicator
+	needsVerticalScrollbar := len(lines) > visibleHeight
+	for i := range visibleLines {
+		if needsVerticalScrollbar {
+			if i == 0 && scrollY > 0 {
+				visibleLines[i] += "▲" // Up arrow
+			} else if i == len(visibleLines)-1 && scrollY+visibleHeight < len(lines) {
+				visibleLines[i] += "▼" // Down arrow
+			} else if len(lines) > visibleHeight {
+				// Show position indicator
+				scrollPosition := float64(scrollY) / float64(len(lines)-visibleHeight)
+				indicatorPos := int(scrollPosition*float64(visibleHeight-2)) + 1
+				if i == indicatorPos {
+					visibleLines[i] += "█" // Position indicator
+				} else {
+					visibleLines[i] += "│" // Scrollbar track
+				}
+			} else {
+				visibleLines[i] += " "
+			}
+		} else {
+			visibleLines[i] += " "
+		}
+	}
+
+	// Add horizontal scrollbar with position indicator
+	var horizontalScrollbar string
+	needsHorizontalScrollbar := maxWidth > visibleWidth
+	if needsHorizontalScrollbar {
+		for i := 0; i < visibleWidth; i++ {
+			if i == 0 && scrollX > 0 {
+				horizontalScrollbar += "◀" // Left arrow
+			} else if i == visibleWidth-1 && scrollX+visibleWidth < maxWidth {
+				horizontalScrollbar += "▶" // Right arrow
+			} else {
+				// Show position indicator
+				scrollPosition := float64(scrollX) / float64(maxWidth-visibleWidth)
+				indicatorPos := int(scrollPosition*float64(visibleWidth-2)) + 1
+				if i == indicatorPos {
+					horizontalScrollbar += "█" // Position indicator
+				} else {
+					horizontalScrollbar += "─" // Scrollbar track
+				}
+			}
+		}
+		horizontalScrollbar += " " // Corner space
+	} else {
+		horizontalScrollbar = strings.Repeat(" ", fixedPaneWidth)
+	}
+
+	visibleLines = append(visibleLines, horizontalScrollbar)
+
+	return strings.Join(visibleLines, "\n")
 }

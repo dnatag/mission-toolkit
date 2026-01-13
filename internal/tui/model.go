@@ -52,6 +52,16 @@ type DashboardModel struct {
 	// Split-pane width configuration
 	leftPaneWidth  int
 	rightPaneWidth int
+
+	// Scrollbar state for panes
+	leftPaneScrollX    int
+	leftPaneScrollY    int
+	rightPaneScrollX   int
+	rightPaneScrollY   int
+	leftPaneMaxWidth   int
+	leftPaneMaxHeight  int
+	rightPaneMaxWidth  int
+	rightPaneMaxHeight int
 }
 
 // NewDashboardModel creates a new dashboard model with default settings

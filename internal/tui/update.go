@@ -120,6 +120,11 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.executionLogLoaded = false
 				m.commitLoaded = false
 				m.scrollOffset = 0
+				// Reset scroll positions
+				m.leftPaneScrollX = 0
+				m.leftPaneScrollY = 0
+				m.rightPaneScrollX = 0
+				m.rightPaneScrollY = 0
 			}
 		case "enter":
 			if m.selectedMission == nil {
@@ -128,6 +133,11 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.selectedMission = pageMissions[m.selectedIndex]
 					m.scrollOffset = 0
 					m.currentPane = MissionPane
+					// Reset scroll positions for new mission
+					m.leftPaneScrollX = 0
+					m.leftPaneScrollY = 0
+					m.rightPaneScrollX = 0
+					m.rightPaneScrollY = 0
 				}
 			}
 		case "up", "k":
@@ -139,6 +149,17 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.currentPage--
 					pageMissions := m.getCurrentPageMissions()
 					m.selectedIndex = len(pageMissions) - 1
+				}
+			} else if m.selectedMission != nil {
+				// Vertical scroll up in active pane
+				if m.currentPane == MissionPane {
+					if m.leftPaneScrollY > 0 {
+						m.leftPaneScrollY--
+					}
+				} else {
+					if m.rightPaneScrollY > 0 {
+						m.rightPaneScrollY--
+					}
 				}
 			}
 		case "down", "j":
@@ -156,11 +177,29 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						}
 					}
 				}
+			} else if m.selectedMission != nil {
+				// Vertical scroll down in active pane - always allow scrolling down
+				if m.currentPane == MissionPane {
+					m.leftPaneScrollY++
+				} else {
+					m.rightPaneScrollY++
+				}
 			}
 		case "left", "h":
 			if m.selectedMission == nil && m.currentPage > 0 {
 				m.currentPage--
 				m.selectedIndex = 0
+			} else if m.selectedMission != nil {
+				// Horizontal scroll left in active pane
+				if m.currentPane == MissionPane {
+					if m.leftPaneScrollX > 0 {
+						m.leftPaneScrollX--
+					}
+				} else {
+					if m.rightPaneScrollX > 0 {
+						m.rightPaneScrollX--
+					}
+				}
 			}
 		case "right", "l":
 			if m.selectedMission == nil && len(m.completedMissions) > 0 {
@@ -168,6 +207,13 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.currentPage < totalPages-1 {
 					m.currentPage++
 					m.selectedIndex = 0
+				}
+			} else if m.selectedMission != nil {
+				// Horizontal scroll right in active pane - always allow scrolling right
+				if m.currentPane == MissionPane {
+					m.leftPaneScrollX++
+				} else {
+					m.rightPaneScrollX++
 				}
 			}
 		}
