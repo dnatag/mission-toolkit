@@ -54,13 +54,12 @@ var missionUpdateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update mission status or sections",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		writer := mission.NewWriter(missionFs)
-		missionPath := missionDir + "/mission.md"
+		writer := mission.NewWriter(missionFs, missionDir)
 
 		// Handle status update
 		if cmd.Flags().Changed("status") {
 			status, _ := cmd.Flags().GetString("status")
-			if err := writer.UpdateStatus(missionPath, status); err != nil {
+			if err := writer.UpdateStatus(status); err != nil {
 				return fmt.Errorf("updating mission status: %w", err)
 			}
 			fmt.Printf("Mission status updated to: %s\n", status)
@@ -74,7 +73,7 @@ var missionUpdateCmd = &cobra.Command{
 			// Text section update (intent, verification)
 			if cmd.Flags().Changed("content") {
 				content, _ := cmd.Flags().GetString("content")
-				if err := writer.UpdateSection(missionPath, section, content); err != nil {
+				if err := writer.UpdateSection(section, content); err != nil {
 					return fmt.Errorf("updating section: %w", err)
 				}
 				fmt.Printf("Section '%s' updated\n", section)
@@ -85,7 +84,7 @@ var missionUpdateCmd = &cobra.Command{
 			if cmd.Flags().Changed("item") {
 				items, _ := cmd.Flags().GetStringSlice("item")
 				appendMode, _ := cmd.Flags().GetBool("append")
-				if err := writer.UpdateList(missionPath, section, items, appendMode); err != nil {
+				if err := writer.UpdateList(section, items, appendMode); err != nil {
 					return fmt.Errorf("updating list: %w", err)
 				}
 				fmt.Printf("Section '%s' updated with %d items\n", section, len(items))
@@ -98,7 +97,7 @@ var missionUpdateCmd = &cobra.Command{
 		// Handle frontmatter update
 		if cmd.Flags().Changed("frontmatter") {
 			frontmatter, _ := cmd.Flags().GetStringSlice("frontmatter")
-			if err := writer.UpdateFrontmatter(missionPath, frontmatter); err != nil {
+			if err := writer.UpdateFrontmatter(frontmatter); err != nil {
 				return fmt.Errorf("updating frontmatter: %w", err)
 			}
 			fmt.Println("Frontmatter updated")
@@ -147,13 +146,12 @@ var missionCreateCmd = &cobra.Command{
 			return fmt.Errorf("getting mission ID: %w", err)
 		}
 
-		writer := mission.NewWriter(missionFs)
-		missionPath := missionDir + "/mission.md"
+		writer := mission.NewWriter(missionFs, missionDir)
 
-		if err := writer.CreateWithIntent(missionPath, missionID, intent); err != nil {
+		if err := writer.CreateWithIntent(missionID, intent); err != nil {
 			return fmt.Errorf("creating mission with intent: %w", err)
 		}
-		fmt.Printf("Mission created: %s\n", missionPath)
+		fmt.Printf("Mission created: %s\n", missionDir+"/mission.md")
 		return nil
 	},
 }
@@ -253,13 +251,12 @@ var missionPlanCmd = &cobra.Command{
 			return fmt.Errorf("--step is required")
 		}
 
-		writer := mission.NewWriter(missionFs)
-		missionPath := missionDir + "/mission.md"
+		writer := mission.NewWriter(missionFs, missionDir)
 
 		status, _ := cmd.Flags().GetString("status")
 		message, _ := cmd.Flags().GetString("message")
 
-		if err := writer.MarkPlanStepComplete(missionPath, step, status, message); err != nil {
+		if err := writer.MarkPlanStepComplete(step, status, message); err != nil {
 			return fmt.Errorf("marking step %d complete: %w", step, err)
 		}
 

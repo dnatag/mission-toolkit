@@ -81,8 +81,8 @@ func (s *FinalizeService) cleanupTemplates() error {
 
 // updateStatusToPlanned changes mission status from planning to planned
 func (s *FinalizeService) updateStatusToPlanned(missionPath string) error {
-	writer := NewWriter(s.fs)
-	return writer.UpdateStatus(missionPath, "planned")
+	writer := NewWriterWithPath(s.fs, missionPath)
+	return writer.UpdateStatus("planned")
 }
 
 // validateSections checks that all required sections exist and are not empty

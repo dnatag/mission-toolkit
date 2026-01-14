@@ -9,7 +9,8 @@ import (
 
 func TestWriter_Write(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	writer := NewWriter(fs)
+	path := "test-mission.md"
+	writer := NewWriterWithPath(fs, path)
 
 	mission := &Mission{
 		ID:        "test-456",
@@ -20,8 +21,7 @@ func TestWriter_Write(t *testing.T) {
 		Body:      "## INTENT\nTest body content\n",
 	}
 
-	path := "test-mission.md"
-	err := writer.Write(path, mission)
+	err := writer.Write(mission)
 	if err != nil {
 		t.Fatalf("Write() error = %v", err)
 	}
@@ -69,8 +69,8 @@ file1.go
 	afero.WriteFile(fs, path, []byte(initialContent), 0644)
 
 	// Update status
-	writer := NewWriter(fs)
-	err := writer.UpdateStatus(path, "active")
+	writer := NewWriterWithPath(fs, path)
+	err := writer.UpdateStatus("active")
 	if err != nil {
 		t.Fatalf("UpdateStatus() error = %v", err)
 	}
@@ -123,8 +123,8 @@ go test ./...
 `
 	afero.WriteFile(fs, path, []byte(initialContent), 0644)
 
-	writer := NewWriter(fs)
-	err := writer.UpdateStatus(path, "completed")
+	writer := NewWriterWithPath(fs, path)
+	err := writer.UpdateStatus("completed")
 	if err != nil {
 		t.Fatalf("UpdateStatus() error = %v", err)
 	}
@@ -158,10 +158,10 @@ go test ./...
 
 func TestWriter_CreateWithIntent(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	writer := NewWriter(fs)
-
 	path := "/test/mission.md"
-	if err := writer.CreateWithIntent(path, "test-123", "Add user authentication"); err != nil {
+	writer := NewWriterWithPath(fs, path)
+
+	if err := writer.CreateWithIntent("test-123", "Add user authentication"); err != nil {
 		t.Fatalf("CreateWithIntent failed: %v", err)
 	}
 
@@ -183,7 +183,8 @@ func TestWriter_CreateWithIntent(t *testing.T) {
 
 func TestWriter_UpdateSection(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	writer := NewWriter(fs)
+	path := "/test/mission.md"
+	writer := NewWriterWithPath(fs, path)
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -192,12 +193,11 @@ func TestWriter_UpdateSection(t *testing.T) {
 		Body:      "## INTENT\nOld intent\n\n## SCOPE\nfile.go\n",
 	}
 
-	path := "/test/mission.md"
-	if err := writer.Write(path, mission); err != nil {
+	if err := writer.Write(mission); err != nil {
 		t.Fatalf("Write failed: %v", err)
 	}
 
-	if err := writer.UpdateSection(path, "intent", "New intent"); err != nil {
+	if err := writer.UpdateSection("intent", "New intent"); err != nil {
 		t.Fatalf("UpdateSection failed: %v", err)
 	}
 
@@ -216,7 +216,8 @@ func TestWriter_UpdateSection(t *testing.T) {
 
 func TestWriter_UpdateSectionCreatesNew(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	writer := NewWriter(fs)
+	path := "/test/mission.md"
+	writer := NewWriterWithPath(fs, path)
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -225,13 +226,12 @@ func TestWriter_UpdateSectionCreatesNew(t *testing.T) {
 		Body:      "## INTENT\nTest intent\n\n## SCOPE\nfile.go\n",
 	}
 
-	path := "/test/mission.md"
-	if err := writer.Write(path, mission); err != nil {
+	if err := writer.Write(mission); err != nil {
 		t.Fatalf("Write failed: %v", err)
 	}
 
 	// Update non-existent section - should create it
-	if err := writer.UpdateSection(path, "verification", "go test ./..."); err != nil {
+	if err := writer.UpdateSection("verification", "go test ./..."); err != nil {
 		t.Fatalf("UpdateSection failed to create new section: %v", err)
 	}
 
@@ -257,7 +257,8 @@ func TestWriter_UpdateSectionCreatesNew(t *testing.T) {
 
 func TestWriter_UpdateList(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	writer := NewWriter(fs)
+	path := "/test/mission.md"
+	writer := NewWriterWithPath(fs, path)
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -266,13 +267,12 @@ func TestWriter_UpdateList(t *testing.T) {
 		Body:      "## INTENT\nTest\n\n## SCOPE\n",
 	}
 
-	path := "/test/mission.md"
-	if err := writer.Write(path, mission); err != nil {
+	if err := writer.Write(mission); err != nil {
 		t.Fatalf("Write failed: %v", err)
 	}
 
 	items := []string{"file1.go", "file2.go"}
-	if err := writer.UpdateList(path, "scope", items, false); err != nil {
+	if err := writer.UpdateList("scope", items, false); err != nil {
 		t.Fatalf("UpdateList failed: %v", err)
 	}
 
@@ -291,7 +291,8 @@ func TestWriter_UpdateList(t *testing.T) {
 
 func TestWriter_UpdateListAppend(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	writer := NewWriter(fs)
+	path := "/test/mission.md"
+	writer := NewWriterWithPath(fs, path)
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -300,14 +301,13 @@ func TestWriter_UpdateListAppend(t *testing.T) {
 		Body:      "## INTENT\nTest\n\n## SCOPE\nexisting1.go\nexisting2.go\n",
 	}
 
-	path := "/test/mission.md"
-	if err := writer.Write(path, mission); err != nil {
+	if err := writer.Write(mission); err != nil {
 		t.Fatalf("Write failed: %v", err)
 	}
 
 	// Test append mode
 	newItems := []string{"new1.go", "new2.go"}
-	if err := writer.UpdateList(path, "scope", newItems, true); err != nil {
+	if err := writer.UpdateList("scope", newItems, true); err != nil {
 		t.Fatalf("UpdateList append failed: %v", err)
 	}
 
@@ -333,7 +333,8 @@ func TestWriter_UpdateListAppend(t *testing.T) {
 
 func TestWriter_UpdateList_PlanEntries(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	writer := NewWriter(fs)
+	path := "/test/mission.md"
+	writer := NewWriterWithPath(fs, path)
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -342,14 +343,13 @@ func TestWriter_UpdateList_PlanEntries(t *testing.T) {
 		Body:      "## INTENT\nTest\n\n## PLAN\n- [ ] 1. First step\n- [ ] 2. Second step\n\n## VERIFICATION\ngo test\n",
 	}
 
-	path := "/test/mission.md"
-	if err := writer.Write(path, mission); err != nil {
+	if err := writer.Write(mission); err != nil {
 		t.Fatalf("Write failed: %v", err)
 	}
 
 	// Update plan with new items
 	newItems := []string{"3. Third step", "4. Fourth step"}
-	if err := writer.UpdateList(path, "plan", newItems, false); err != nil {
+	if err := writer.UpdateList("plan", newItems, false); err != nil {
 		t.Fatalf("UpdateList plan failed: %v", err)
 	}
 
@@ -377,7 +377,8 @@ func TestWriter_UpdateList_PlanEntries(t *testing.T) {
 
 func TestWriter_UpdateList_PreservesSubsequentSections(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	writer := NewWriter(fs)
+	path := "/test/mission.md"
+	writer := NewWriterWithPath(fs, path)
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -386,14 +387,13 @@ func TestWriter_UpdateList_PreservesSubsequentSections(t *testing.T) {
 		Body:      "## INTENT\nTest intent\n\n## SCOPE\nold1.go\nold2.go\n\n## PLAN\n- [ ] Step 1\n- [ ] Step 2\n\n## VERIFICATION\ngo test ./...\n",
 	}
 
-	path := "/test/mission.md"
-	if err := writer.Write(path, mission); err != nil {
+	if err := writer.Write(mission); err != nil {
 		t.Fatalf("Write failed: %v", err)
 	}
 
 	// Update scope section
 	newItems := []string{"new1.go", "new2.go"}
-	if err := writer.UpdateList(path, "scope", newItems, false); err != nil {
+	if err := writer.UpdateList("scope", newItems, false); err != nil {
 		t.Fatalf("UpdateList scope failed: %v", err)
 	}
 
@@ -430,8 +430,8 @@ func TestWriter_UpdateList_PreservesSubsequentSections(t *testing.T) {
 
 func TestWriter_MarkPlanStepComplete(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	writer := NewWriter(fs)
 	path := "mission.md"
+	writer := NewWriterWithPath(fs, path)
 
 	mission := &Mission{
 		ID:     "test-123",
@@ -439,12 +439,12 @@ func TestWriter_MarkPlanStepComplete(t *testing.T) {
 		Body:   "## PLAN\n- [ ] Step 1\n- [ ] Step 2\n- [ ] Step 3",
 	}
 
-	if err := writer.Write(path, mission); err != nil {
+	if err := writer.Write(mission); err != nil {
 		t.Fatalf("Write failed: %v", err)
 	}
 
 	// Test marking step 2 complete
-	if err := writer.MarkPlanStepComplete(path, 2, "", ""); err != nil {
+	if err := writer.MarkPlanStepComplete(2, "", ""); err != nil {
 		t.Fatalf("MarkPlanStepComplete failed: %v", err)
 	}
 
@@ -477,8 +477,8 @@ func TestWriter_MarkPlanStepComplete(t *testing.T) {
 
 func TestWriter_MarkPlanStepComplete_InvalidStep(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	writer := NewWriter(fs)
 	path := "mission.md"
+	writer := NewWriterWithPath(fs, path)
 
 	mission := &Mission{
 		ID:     "test-123",
@@ -486,18 +486,19 @@ func TestWriter_MarkPlanStepComplete_InvalidStep(t *testing.T) {
 		Body:   "## PLAN\n- [ ] Step 1",
 	}
 
-	if err := writer.Write(path, mission); err != nil {
+	if err := writer.Write(mission); err != nil {
 		t.Fatalf("Write failed: %v", err)
 	}
 
-	if err := writer.MarkPlanStepComplete(path, 99, "", ""); err == nil {
+	if err := writer.MarkPlanStepComplete(99, "", ""); err == nil {
 		t.Error("Expected error for invalid step, got nil")
 	}
 }
 
 func TestWriter_UpdateFrontmatter(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	writer := NewWriter(fs)
+	path := "/test/mission.md"
+	writer := NewWriterWithPath(fs, path)
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -508,13 +509,12 @@ func TestWriter_UpdateFrontmatter(t *testing.T) {
 		Body:      "## INTENT\nTest\n",
 	}
 
-	path := "/test/mission.md"
-	if err := writer.Write(path, mission); err != nil {
+	if err := writer.Write(mission); err != nil {
 		t.Fatalf("Write failed: %v", err)
 	}
 
 	pairs := []string{"track=3", "type=DRY"}
-	if err := writer.UpdateFrontmatter(path, pairs); err != nil {
+	if err := writer.UpdateFrontmatter(pairs); err != nil {
 		t.Fatalf("UpdateFrontmatter failed: %v", err)
 	}
 

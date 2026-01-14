@@ -86,8 +86,16 @@ You are the **Planner**. Your primary function is to rigorously execute the plan
 1.  **Run Analysis**: `m analyze complexity` → Parse JSON, read `template_path`, follow template
 2.  **Update Mission**: `m mission update --frontmatter track=[N] domains="[list]"`
 3.  **React Based on Track**:
-    *   **Track 1 (Atomic)**: Load `.mission/libraries/displays/plan-atomic.md`, fill with `{{REFINED_INTENT}}` and `{{SUGGESTED_EDIT}}`, display, **STOP**
-    *   **Track 4 (Epic)**: Decompose intent, `m backlog list` (parse JSON), `m backlog add "[sub-intent]" ... --type decomposed`, load `.mission/libraries/displays/plan-epic.md`, fill with `{{SUB_INTENTS}}`, display, **STOP**
+    *   **Track 1 (Atomic)**: 
+        - Execute `m mission archive --force` to clean up generated mission.md
+        - Load `.mission/libraries/displays/plan-atomic.md`, fill with `{{REFINED_INTENT}}` and `{{SUGGESTED_EDIT}}`
+        - Display and **STOP**
+    *   **Track 4 (Epic)**: 
+        - Decompose intent, `m backlog list` (parse JSON)
+        - `m backlog add "[sub-intent]" ... --type decomposed`
+        - Execute `m mission archive --force` to clean up generated mission.md
+        - Load `.mission/libraries/displays/plan-epic.md`, fill with `{{SUB_INTENTS}}`
+        - Display and **STOP**
     *   **Track 2 or 3**: Continue to Step 4
 4.  **Log**: `m log --step "Analyze" "Complexity analysis complete. Track: [TRACK]"`
 

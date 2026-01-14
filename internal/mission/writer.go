@@ -2,6 +2,7 @@ package mission
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/dnatag/mission-toolkit/internal/logger"
@@ -9,50 +10,63 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// Writer handles writing mission files and updating status
+// Writer handles writing mission files and updating status.
 type Writer struct {
-	fs afero.Fs
+	fs   afero.Fs
+	path string
 }
 
-// NewWriter creates a new mission writer
-func NewWriter(fs afero.Fs) *Writer {
-	return &Writer{fs: fs}
+// NewWriter creates a new mission writer rooted at missionDir.
+// The mission file path is always <missionDir>/mission.md.
+func NewWriter(fs afero.Fs, missionDir string) *Writer {
+	return &Writer{
+		fs:   fs,
+		path: filepath.Join(missionDir, "mission.md"),
+	}
 }
 
-// Write writes a Mission struct to a file with YAML frontmatter
-func (w *Writer) Write(path string, mission *Mission) error {
+// NewWriterWithPath creates a new mission writer for an explicit mission file path.
+func NewWriterWithPath(fs afero.Fs, path string) *Writer {
+	return &Writer{
+		fs:   fs,
+		path: path,
+	}
+}
+
+// Write writes a Mission struct to the writer's mission file with YAML frontmatter.
+func (w *Writer) Write(mission *Mission) error {
 	content, err := w.format(mission)
 	if err != nil {
 		return err
 	}
 
-	return afero.WriteFile(w.fs, path, []byte(content), 0644)
+	return afero.WriteFile(w.fs, w.path, []byte(content), 0644)
 }
 
-// UpdateStatus updates the status field in a mission file while preserving the body
-func (w *Writer) UpdateStatus(path string, newStatus string) error {
-	mission, err := NewReader(w.fs).Read(path)
+// UpdateStatus updates the status field in the mission file while preserving the body.
+func (w *Writer) UpdateStatus(newStatus string) error {
+	mission, err := NewReader(w.fs).Read(w.path)
 	if err != nil {
 		return fmt.Errorf("failed to read mission: %w", err)
 	}
 	mission.Status = newStatus
-	return w.Write(path, mission)
+	return w.Write(mission)
 }
 
-// CreateWithIntent creates initial mission.md with just INTENT section
-func (w *Writer) CreateWithIntent(path string, missionID string, intent string) error {
+// CreateWithIntent creates initial mission.md with just INTENT section.
+func (w *Writer) CreateWithIntent(missionID string, intent string) error {
 	mission := &Mission{
 		ID:        missionID,
 		Iteration: 1,
 		Status:    "planning",
 		Body:      fmt.Sprintf("## INTENT\n%s\n", intent),
 	}
-	return w.Write(path, mission)
+	return w.Write(mission)
 }
 
-// UpdateSection updates a text section (intent, verification)
-func (w *Writer) UpdateSection(path string, section string, content string) error {
-	mission, err := NewReader(w.fs).Read(path)
+// UpdateSection updates a text section (intent, verification).
+func (w *Writer) UpdateSection(section string, content string) error {
+	mission, err := NewReader(w.fs).Read(w.path)
 	if err != nil {
 		return fmt.Errorf("reading mission: %w", err)
 	}
@@ -92,14 +106,14 @@ func (w *Writer) UpdateSection(path string, section string, content string) erro
 	}
 
 	mission.Body = strings.Join(result, "\n")
-	return w.Write(path, mission)
+	return w.Write(mission)
 }
 
 // UpdateList updates a list section (scope, plan) with optional append mode.
 // This method preserves the structure of the mission file by properly handling
 // section boundaries and ensuring subsequent sections remain intact.
-func (w *Writer) UpdateList(path string, section string, items []string, appendMode bool) error {
-	mission, err := NewReader(w.fs).Read(path)
+func (w *Writer) UpdateList(section string, items []string, appendMode bool) error {
+	mission, err := NewReader(w.fs).Read(w.path)
 	if err != nil {
 		return fmt.Errorf("reading mission: %w", err)
 	}
@@ -145,10 +159,10 @@ func (w *Writer) UpdateList(path string, section string, items []string, appendM
 	}
 
 	mission.Body = strings.Join(result, "\n")
-	return w.Write(path, mission)
+	return w.Write(mission)
 }
 
-// extractExistingItems collects existing items from a section
+// extractExistingItems collects existing items from a section.
 func (w *Writer) extractExistingItems(lines []string, startIndex int) []string {
 	var existingItems []string
 	for j := startIndex; j < len(lines); j++ {
@@ -162,7 +176,7 @@ func (w *Writer) extractExistingItems(lines []string, startIndex int) []string {
 	return existingItems
 }
 
-// addFormattedItems adds items with proper formatting based on section type
+// addFormattedItems adds items with proper formatting based on section type.
 func (w *Writer) addFormattedItems(result *[]string, section string, items []string) {
 	if section == "plan" {
 		for _, item := range items {
@@ -186,9 +200,9 @@ func (w *Writer) skipSectionContent(lines []string, startIndex int) int {
 	return len(lines)
 }
 
-// MarkPlanStepComplete marks a specific plan step as completed and optionally logs a message
-func (w *Writer) MarkPlanStepComplete(path string, step int, status, message string) error {
-	mission, err := NewReader(w.fs).Read(path)
+// MarkPlanStepComplete marks a specific plan step as completed and optionally logs a message.
+func (w *Writer) MarkPlanStepComplete(step int, status, message string) error {
+	mission, err := NewReader(w.fs).Read(w.path)
 	if err != nil {
 		return fmt.Errorf("reading mission: %w", err)
 	}
@@ -232,12 +246,12 @@ func (w *Writer) MarkPlanStepComplete(path string, step int, status, message str
 	}
 
 	mission.Body = strings.Join(result, "\n")
-	return w.Write(path, mission)
+	return w.Write(mission)
 }
 
-// UpdateFrontmatter updates frontmatter fields
-func (w *Writer) UpdateFrontmatter(path string, pairs []string) error {
-	mission, err := NewReader(w.fs).Read(path)
+// UpdateFrontmatter updates frontmatter fields.
+func (w *Writer) UpdateFrontmatter(pairs []string) error {
+	mission, err := NewReader(w.fs).Read(w.path)
 	if err != nil {
 		return fmt.Errorf("reading mission: %w", err)
 	}
@@ -262,10 +276,10 @@ func (w *Writer) UpdateFrontmatter(path string, pairs []string) error {
 		}
 	}
 
-	return w.Write(path, mission)
+	return w.Write(mission)
 }
 
-// format converts a Mission struct to markdown with YAML frontmatter
+// format converts a Mission struct to markdown with YAML frontmatter.
 func (w *Writer) format(mission *Mission) (string, error) {
 	frontmatter := map[string]interface{}{
 		"id":        mission.ID,
