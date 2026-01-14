@@ -24,8 +24,9 @@ func CreateTestLoggerConfig(fs afero.Fs) *logger.Config {
 
 // CreateLogger creates a logger with optional config, reading mission ID from filesystem
 func CreateLogger(fs afero.Fs, loggerConfig *logger.Config) *logger.Logger {
-	reader := mission.NewReader(fs)
-	missionID, _ := reader.GetMissionID(filepath.Join(".mission", "mission.md"))
+	missionPath := filepath.Join(".mission", "mission.md")
+	reader := mission.NewReader(fs, missionPath)
+	missionID, _ := reader.GetMissionID(missionPath)
 
 	if loggerConfig != nil {
 		return logger.NewWithConfig(missionID, loggerConfig)

@@ -45,7 +45,7 @@ func (w *Writer) Write(mission *Mission) error {
 
 // UpdateStatus updates the status field in the mission file while preserving the body.
 func (w *Writer) UpdateStatus(newStatus string) error {
-	mission, err := NewReader(w.fs).Read(w.path)
+	mission, err := NewReader(w.fs, w.path).Read(w.path)
 	if err != nil {
 		return fmt.Errorf("failed to read mission: %w", err)
 	}
@@ -66,7 +66,7 @@ func (w *Writer) CreateWithIntent(missionID string, intent string) error {
 
 // UpdateSection updates a text section (intent, verification).
 func (w *Writer) UpdateSection(section string, content string) error {
-	mission, err := NewReader(w.fs).Read(w.path)
+	mission, err := NewReader(w.fs, w.path).Read(w.path)
 	if err != nil {
 		return fmt.Errorf("reading mission: %w", err)
 	}
@@ -113,7 +113,7 @@ func (w *Writer) UpdateSection(section string, content string) error {
 // This method preserves the structure of the mission file by properly handling
 // section boundaries and ensuring subsequent sections remain intact.
 func (w *Writer) UpdateList(section string, items []string, appendMode bool) error {
-	mission, err := NewReader(w.fs).Read(w.path)
+	mission, err := NewReader(w.fs, w.path).Read(w.path)
 	if err != nil {
 		return fmt.Errorf("reading mission: %w", err)
 	}
@@ -202,7 +202,7 @@ func (w *Writer) skipSectionContent(lines []string, startIndex int) int {
 
 // MarkPlanStepComplete marks a specific plan step as completed and optionally logs a message.
 func (w *Writer) MarkPlanStepComplete(step int, status, message string) error {
-	mission, err := NewReader(w.fs).Read(w.path)
+	mission, err := NewReader(w.fs, w.path).Read(w.path)
 	if err != nil {
 		return fmt.Errorf("reading mission: %w", err)
 	}
@@ -251,7 +251,7 @@ func (w *Writer) MarkPlanStepComplete(step int, status, message string) error {
 
 // UpdateFrontmatter updates frontmatter fields.
 func (w *Writer) UpdateFrontmatter(pairs []string) error {
-	mission, err := NewReader(w.fs).Read(w.path)
+	mission, err := NewReader(w.fs, w.path).Read(w.path)
 	if err != nil {
 		return fmt.Errorf("reading mission: %w", err)
 	}

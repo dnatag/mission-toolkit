@@ -42,8 +42,8 @@ func NewScopeServiceWithConfig(fs afero.Fs, loggerConfig *logger.Config) *ScopeS
 func (s *ScopeService) ProvideTemplate() (string, error) {
 	s.log.LogStep(logger.LevelSuccess, "AnalyzeScope", "Starting scope analysis")
 
-	reader := mission.NewReader(s.fs)
 	missionPath := filepath.Join(".mission", "mission.md")
+	reader := mission.NewReader(s.fs, missionPath)
 
 	intent, err := reader.ReadIntent(missionPath)
 	if err != nil {

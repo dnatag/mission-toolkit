@@ -17,10 +17,11 @@ type Pauser struct {
 
 // NewPauser creates a new Pauser instance
 func NewPauser(fs afero.Fs, missionDir string) *Pauser {
+	missionPath := filepath.Join(missionDir, "mission.md")
 	return &Pauser{
 		fs:         fs,
 		missionDir: missionDir,
-		reader:     NewReader(fs),
+		reader:     NewReader(fs, missionPath),
 	}
 }
 

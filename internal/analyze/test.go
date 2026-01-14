@@ -42,8 +42,8 @@ func NewTestServiceWithConfig(fs afero.Fs, loggerConfig *logger.Config) *TestSer
 func (s *TestService) ProvideTemplate() (string, error) {
 	s.log.LogStep(logger.LevelSuccess, "AnalyzeTest", "Starting test analysis")
 
-	reader := mission.NewReader(s.fs)
 	missionPath := filepath.Join(".mission", "mission.md")
+	reader := mission.NewReader(s.fs, missionPath)
 
 	intent, err := reader.ReadIntent(missionPath)
 	if err != nil {

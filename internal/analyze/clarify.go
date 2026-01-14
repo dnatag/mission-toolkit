@@ -42,8 +42,8 @@ func NewClarifyServiceWithConfig(fs afero.Fs, loggerConfig *logger.Config) *Clar
 func (s *ClarifyService) ProvideTemplate() (string, error) {
 	s.log.LogStep(logger.LevelSuccess, "AnalyzeClarify", "Starting clarification analysis")
 
-	reader := mission.NewReader(s.fs)
 	missionPath := filepath.Join(".mission", "mission.md")
+	reader := mission.NewReader(s.fs, missionPath)
 
 	intent, err := reader.ReadIntent(missionPath)
 	if err != nil {

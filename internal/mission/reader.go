@@ -12,12 +12,13 @@ import (
 
 // Reader handles reading and parsing mission.md files
 type Reader struct {
-	fs afero.Fs
+	fs   afero.Fs
+	path string
 }
 
 // NewReader creates a new mission reader
-func NewReader(fs afero.Fs) *Reader {
-	return &Reader{fs: fs}
+func NewReader(fs afero.Fs, path string) *Reader {
+	return &Reader{fs: fs, path: path}
 }
 
 // Read reads and parses a mission file into a Mission struct

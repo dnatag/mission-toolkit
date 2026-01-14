@@ -24,12 +24,13 @@ type IDService struct {
 
 // NewIDService creates a new mission ID service
 func NewIDService(fs afero.Fs, missionDir string) *IDService {
+	missionPath := filepath.Join(missionDir, "mission.md")
 	return &IDService{
 		fs:          fs,
 		missionDir:  missionDir,
 		idPath:      filepath.Join(missionDir, "id"),
-		missionPath: filepath.Join(missionDir, "mission.md"),
-		reader:      NewReader(fs),
+		missionPath: missionPath,
+		reader:      NewReader(fs, missionPath),
 	}
 }
 

@@ -76,7 +76,7 @@ file1.go
 	}
 
 	// Read back and verify
-	reader := NewReader(fs)
+	reader := NewReader(fs, path)
 	mission, err := reader.Read(path)
 	if err != nil {
 		t.Fatalf("Failed to read updated mission: %v", err)
@@ -165,7 +165,7 @@ func TestWriter_CreateWithIntent(t *testing.T) {
 		t.Fatalf("CreateWithIntent failed: %v", err)
 	}
 
-	mission, err := NewReader(fs).Read(path)
+	mission, err := NewReader(fs, path).Read(path)
 	if err != nil {
 		t.Fatalf("Read failed: %v", err)
 	}
@@ -201,7 +201,7 @@ func TestWriter_UpdateSection(t *testing.T) {
 		t.Fatalf("UpdateSection failed: %v", err)
 	}
 
-	updated, err := NewReader(fs).Read(path)
+	updated, err := NewReader(fs, path).Read(path)
 	if err != nil {
 		t.Fatalf("Read failed: %v", err)
 	}
@@ -235,7 +235,7 @@ func TestWriter_UpdateSectionCreatesNew(t *testing.T) {
 		t.Fatalf("UpdateSection failed to create new section: %v", err)
 	}
 
-	updated, err := NewReader(fs).Read(path)
+	updated, err := NewReader(fs, path).Read(path)
 	if err != nil {
 		t.Fatalf("Read failed: %v", err)
 	}
@@ -276,7 +276,7 @@ func TestWriter_UpdateList(t *testing.T) {
 		t.Fatalf("UpdateList failed: %v", err)
 	}
 
-	updated, err := NewReader(fs).Read(path)
+	updated, err := NewReader(fs, path).Read(path)
 	if err != nil {
 		t.Fatalf("Read failed: %v", err)
 	}
@@ -311,7 +311,7 @@ func TestWriter_UpdateListAppend(t *testing.T) {
 		t.Fatalf("UpdateList append failed: %v", err)
 	}
 
-	updated, err := NewReader(fs).Read(path)
+	updated, err := NewReader(fs, path).Read(path)
 	if err != nil {
 		t.Fatalf("Read failed: %v", err)
 	}
@@ -353,7 +353,7 @@ func TestWriter_UpdateList_PlanEntries(t *testing.T) {
 		t.Fatalf("UpdateList plan failed: %v", err)
 	}
 
-	updated, err := NewReader(fs).Read(path)
+	updated, err := NewReader(fs, path).Read(path)
 	if err != nil {
 		t.Fatalf("Read failed: %v", err)
 	}
@@ -397,7 +397,7 @@ func TestWriter_UpdateList_PreservesSubsequentSections(t *testing.T) {
 		t.Fatalf("UpdateList scope failed: %v", err)
 	}
 
-	updated, err := NewReader(fs).Read(path)
+	updated, err := NewReader(fs, path).Read(path)
 	if err != nil {
 		t.Fatalf("Read failed: %v", err)
 	}
@@ -448,7 +448,7 @@ func TestWriter_MarkPlanStepComplete(t *testing.T) {
 		t.Fatalf("MarkPlanStepComplete failed: %v", err)
 	}
 
-	updated, err := NewReader(fs).Read(path)
+	updated, err := NewReader(fs, path).Read(path)
 	if err != nil {
 		t.Fatalf("Read failed: %v", err)
 	}
@@ -520,7 +520,7 @@ func TestWriter_MarkPlanStepComplete_AfterOtherStepsComplete(t *testing.T) {
 		t.Fatalf("MarkPlanStepComplete(3) after step 1 complete failed: %v", err)
 	}
 
-	updated, err := NewReader(fs).Read(path)
+	updated, err := NewReader(fs, path).Read(path)
 	if err != nil {
 		t.Fatalf("Read failed: %v", err)
 	}
@@ -573,7 +573,7 @@ func TestWriter_UpdateFrontmatter(t *testing.T) {
 		t.Fatalf("UpdateFrontmatter failed: %v", err)
 	}
 
-	updated, err := NewReader(fs).Read(path)
+	updated, err := NewReader(fs, path).Read(path)
 	if err != nil {
 		t.Fatalf("Read failed: %v", err)
 	}
@@ -647,7 +647,7 @@ func TestWriter_UpdateFrontmatter_Domains(t *testing.T) {
 		t.Fatalf("UpdateFrontmatter failed: %v", err)
 	}
 
-	updated, err := NewReader(fs).Read(path)
+	updated, err := NewReader(fs, path).Read(path)
 	if err != nil {
 		t.Fatalf("Read failed: %v", err)
 	}

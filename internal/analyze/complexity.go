@@ -42,8 +42,8 @@ func NewComplexityServiceWithConfig(fs afero.Fs, loggerConfig *logger.Config) *C
 func (s *ComplexityService) ProvideTemplate() (string, error) {
 	s.log.LogStep(logger.LevelSuccess, "AnalyzeComplexity", "Starting complexity analysis")
 
-	reader := mission.NewReader(s.fs)
 	missionPath := filepath.Join(".mission", "mission.md")
+	reader := mission.NewReader(s.fs, missionPath)
 
 	intent, err := reader.ReadIntent(missionPath)
 	if err != nil {

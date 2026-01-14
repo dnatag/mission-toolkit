@@ -42,7 +42,7 @@ Weighted File Count = (Implementation Files × 1.0) + (Test Files × 0.5) + (Doc
 - 1.0-3.9 weighted files → 1 point
 - 4.0-6.9 weighted files → 2 points
 - 7.0-12.4 weighted files → 3 points
-- 12.5+ weighted files → 5 points (auto Track 4)
+- 12.5+ weighted files → 5 points
 
 ## Step 2: Identify Critical Domains
 
@@ -67,12 +67,13 @@ Select ALL applicable domains and sum their weights:
 Add points for complexity indicators:
 
 **+1 point each:**
-- Breaking changes (API signature changes, removed features)
+- Semantic breaking changes (behavior changes, removed features, API contract changes)
 - Data migration required (schema changes, data transformation)
 - External integrations (third-party APIs, webhooks)
 - State management changes (session, cache, database state)
 
 **+0.5 points each:**
+- Mechanical breaking changes (parameter reordering, removing redundant params, renaming)
 - New dependencies added
 - Configuration changes required
 - Multiple environments affected (dev, staging, prod)
@@ -83,22 +84,29 @@ Add points for complexity indicators:
 
 ```
 Files: [impl_count] × 1.0 + [test_count] × 0.5 + [doc_count] × 0.25 = [weighted_total] = [file_points] pts
-Domains: [domain_list] = [domain_points] pts  
+Domains: [domain_list] = [domain_points] pts
 Characteristics: [char_list] = [char_points] pts
 TOTAL: [file_points] + [domain_points] + [char_points] = [final_score] pts → Track [N]
 ```
 
-**Track Mapping:**
+**Track Mapping (Preliminary):**
 - 0 pts + single file → Track 1
 - 1-2 pts → Track 2
-- 3-4 pts → Track 3  
+- 3-4 pts → Track 3
 - 5+ pts → Track 4
 - Multiple files → Minimum Track 2
 
-**Special Rules:**
-- If Weighted File Count ≥ 12.5 → Track 4 regardless of other factors
-- If Total Score = 0 AND single file AND trivial intent → Track 1 with suggested edit
-- If scope is ONLY test files AND no breaking changes → Cap at Track 3
+*Note: Apply Special Rules below to determine Final Track.*
+
+**Special Rules (Overrides Preliminary Track):**
+- **Trivial Single File**: If Total Score = 0 AND single file AND trivial intent → Track 1 with suggested edit
+- **Test-Only Changes**: If scope is ONLY test files AND no breaking changes → Cap at Track 3
+- **Simple Mechanical Refactor Cap**: If ALL criteria below are met → Cap at Track 3 (overrides score-based Track 4):
+  - Simple mechanical pattern (constructor signature, field addition, renaming, method signature)
+  - Consistent pattern applied across multiple files
+  - NO business logic changes
+  - NO new dependencies or external integrations
+  - NO critical domains (security, high-risk, complex-algo)
 
 ## Output Format
 
@@ -123,6 +131,7 @@ TOTAL: [file_points] + [domain_points] + [char_points] = [final_score] pts → T
     "total_score": 4,
     "final_track": 3
   },
+  "special_rule_applied": "trivial_single_file" | "test_only_changes" | null,  // Optional: indicate if special rule was applied
   "suggested_edit": "..."  // Only if action is ATOMIC_EDIT
 }
 ```
@@ -227,7 +236,7 @@ Scope: ["helper_test.go", "setup_test.go", "fixtures_test.go"]
 }
 ```
 
-**Case 4: Payment System Rewrite**
+**Case 5: Payment System Rewrite**
 Intent: "Rewrite payment processing"
 Scope: [8 implementation files, 4 test files, 1 config]
 ```json
@@ -247,6 +256,31 @@ Scope: [8 implementation files, 4 test files, 1 config]
     "characteristics": {"identified": ["data_migration", "external_integrations"], "score": 2},
     "total_score": 10,
     "final_track": 4
+  }
+}
+```
+
+**Case 6: Simple Mechanical Refactor (Many Files)**
+Intent: "Add path field to Reader struct and update NewReader constructor to accept path parameter"
+Scope: [13 implementation files, 4 test files]
+```json
+{
+  "track": 3,
+  "action": "PROCEED",
+  "reasoning": "15.0 weighted files (13×1.0 + 4×0.5) would normally be Track 4, but this qualifies for SIMPLE MECHANICAL REFACTOR CAP: constructor signature update with consistent pattern, no logic changes, no new dependencies, no critical domains → Capped at Track 3",
+  "scoring": {
+    "file_count": {
+      "implementation": 13,
+      "test": 4,
+      "docs": 0,
+      "weighted_total": 15.0,
+      "score": 5
+    },
+    "domains": {"identified": [], "score": 0},
+    "characteristics": {"identified": ["breaking_changes"], "score": 1},
+    "total_score": 6,
+    "final_track": 3,
+    "special_rule_applied": "simple_mechanical_refactor_cap"
   }
 }
 ```

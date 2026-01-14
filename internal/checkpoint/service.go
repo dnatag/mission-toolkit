@@ -21,20 +21,22 @@ type Service struct {
 
 // NewService creates a new checkpoint service using CmdGitClient (production)
 func NewService(fs afero.Fs, missionDir string) (*Service, error) {
+	missionPath := fmt.Sprintf("%s/mission.md", missionDir)
 	return &Service{
 		fs:            fs,
 		missionDir:    missionDir,
-		missionReader: mission.NewReader(fs),
+		missionReader: mission.NewReader(fs, missionPath),
 		git:           git.NewCmdGitClient("."),
 	}, nil
 }
 
 // NewServiceWithGit creates a new checkpoint service with a specific GitClient (testing)
 func NewServiceWithGit(fs afero.Fs, missionDir string, gitClient git.GitClient) *Service {
+	missionPath := fmt.Sprintf("%s/mission.md", missionDir)
 	return &Service{
 		fs:            fs,
 		missionDir:    missionDir,
-		missionReader: mission.NewReader(fs),
+		missionReader: mission.NewReader(fs, missionPath),
 		git:           gitClient,
 	}
 }

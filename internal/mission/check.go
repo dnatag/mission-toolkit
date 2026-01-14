@@ -32,11 +32,12 @@ type CheckService struct {
 
 // NewCheckService creates a new check service
 func NewCheckService(fs afero.Fs, missionDir string) *CheckService {
+	missionPath := filepath.Join(missionDir, "mission.md")
 	return &CheckService{
 		fs:          fs,
 		missionDir:  missionDir,
-		missionPath: filepath.Join(missionDir, "mission.md"),
-		reader:      NewReader(fs),
+		missionPath: missionPath,
+		reader:      NewReader(fs, missionPath),
 		idService:   NewIDService(fs, missionDir),
 		context:     "",
 	}

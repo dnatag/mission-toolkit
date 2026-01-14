@@ -18,10 +18,11 @@ type Archiver struct {
 
 // NewArchiver creates a new Archiver instance
 func NewArchiver(fs afero.Fs, missionDir string, git git.GitClient) *Archiver {
+	missionPath := filepath.Join(missionDir, "mission.md")
 	return &Archiver{
 		fs:         fs,
 		missionDir: missionDir,
-		reader:     NewReader(fs),
+		reader:     NewReader(fs, missionPath),
 		git:        git,
 	}
 }
