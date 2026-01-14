@@ -428,6 +428,73 @@ func TestWriter_UpdateList_PreservesSubsequentSections(t *testing.T) {
 	}
 }
 
+func TestWriter_MarkPlanStepComplete(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writer := NewWriter(fs)
+	path := "mission.md"
+
+	mission := &Mission{
+		ID:     "test-123",
+		Status: "active",
+		Body:   "## PLAN\n- [ ] Step 1\n- [ ] Step 2\n- [ ] Step 3",
+	}
+
+	if err := writer.Write(path, mission); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	// Test marking step 2 complete
+	if err := writer.MarkPlanStepComplete(path, 2); err != nil {
+		t.Fatalf("MarkPlanStepComplete failed: %v", err)
+	}
+
+	updated, err := NewReader(fs).Read(path)
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	lines := strings.Split(updated.Body, "\n")
+	found := false
+	for _, line := range lines {
+		if strings.Contains(line, "- [x] Step 2") {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Error("Step 2 was not marked as complete")
+	}
+
+	// Verify other steps are untouched
+	if !strings.Contains(updated.Body, "- [ ] Step 1") {
+		t.Error("Step 1 should remain incomplete")
+	}
+	if !strings.Contains(updated.Body, "- [ ] Step 3") {
+		t.Error("Step 3 should remain incomplete")
+	}
+}
+
+func TestWriter_MarkPlanStepComplete_InvalidStep(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writer := NewWriter(fs)
+	path := "mission.md"
+
+	mission := &Mission{
+		ID:     "test-123",
+		Status: "active",
+		Body:   "## PLAN\n- [ ] Step 1",
+	}
+
+	if err := writer.Write(path, mission); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	if err := writer.MarkPlanStepComplete(path, 99); err == nil {
+		t.Error("Expected error for invalid step, got nil")
+	}
+}
+
 func TestWriter_UpdateFrontmatter(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	writer := NewWriter(fs)

@@ -243,9 +243,31 @@ var missionRestoreCmd = &cobra.Command{
 	},
 }
 
+// missionPlanCmd manages the mission plan
+var missionPlanCmd = &cobra.Command{
+	Use:   "plan",
+	Short: "Manage mission plan",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		step, _ := cmd.Flags().GetInt("step")
+		if step == 0 {
+			return fmt.Errorf("--step is required")
+		}
+
+		writer := mission.NewWriter(missionFs)
+		missionPath := missionDir + "/mission.md"
+
+		if err := writer.MarkPlanStepComplete(missionPath, step); err != nil {
+			return fmt.Errorf("marking step %d complete: %w", step, err)
+		}
+
+		fmt.Printf("Plan step %d marked as complete\n", step)
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(missionCmd)
-	missionCmd.AddCommand(missionCheckCmd, missionUpdateCmd, missionIDCmd, missionCreateCmd, missionArchiveCmd, missionFinalizeCmd, missionPauseCmd, missionRestoreCmd)
+	missionCmd.AddCommand(missionCheckCmd, missionUpdateCmd, missionIDCmd, missionCreateCmd, missionArchiveCmd, missionFinalizeCmd, missionPauseCmd, missionRestoreCmd, missionPlanCmd)
 
 	// Add flags
 	missionCheckCmd.Flags().StringP("context", "c", "", "Context for validation (apply or complete)")
@@ -258,4 +280,5 @@ func init() {
 	missionCreateCmd.Flags().String("intent", "", "Intent text for initial mission creation")
 	missionCreateCmd.MarkFlagRequired("intent")
 	missionArchiveCmd.Flags().Bool("force", false, "Forcefully archive mission or no-op if no current mission exists")
+	missionPlanCmd.Flags().Int("step", 0, "Step number to mark as complete")
 }

@@ -185,6 +185,46 @@ func (w *Writer) skipSectionContent(lines []string, startIndex int) int {
 	return len(lines)
 }
 
+// MarkPlanStepComplete marks a specific plan step as completed
+func (w *Writer) MarkPlanStepComplete(path string, step int) error {
+	mission, err := NewReader(w.fs).Read(path)
+	if err != nil {
+		return fmt.Errorf("reading mission: %w", err)
+	}
+
+	lines := strings.Split(mission.Body, "\n")
+	var result []string
+	inPlan := false
+	planStepCount := 0
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "## PLAN" {
+			inPlan = true
+			result = append(result, line)
+			continue
+		} else if strings.HasPrefix(trimmed, "## ") {
+			inPlan = false
+		}
+
+		if inPlan && strings.HasPrefix(trimmed, "- [ ]") {
+			planStepCount++
+			if planStepCount == step {
+				line = strings.Replace(line, "- [ ]", "- [x]", 1)
+			}
+		}
+
+		result = append(result, line)
+	}
+
+	if step > planStepCount {
+		return fmt.Errorf("step %d not found (total steps: %d)", step, planStepCount)
+	}
+
+	mission.Body = strings.Join(result, "\n")
+	return w.Write(path, mission)
+}
+
 // UpdateFrontmatter updates frontmatter fields
 func (w *Writer) UpdateFrontmatter(path string, pairs []string) error {
 	mission, err := NewReader(w.fs).Read(path)
