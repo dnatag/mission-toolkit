@@ -444,7 +444,7 @@ func TestWriter_MarkPlanStepComplete(t *testing.T) {
 	}
 
 	// Test marking step 2 complete
-	if err := writer.MarkPlanStepComplete(path, 2, "", ""); err != nil {
+	if err := writer.MarkPlanStepComplete(path, 2); err != nil {
 		t.Fatalf("MarkPlanStepComplete failed: %v", err)
 	}
 
@@ -490,7 +490,7 @@ func TestWriter_MarkPlanStepComplete_InvalidStep(t *testing.T) {
 		t.Fatalf("Write failed: %v", err)
 	}
 
-	if err := writer.MarkPlanStepComplete(path, 99, "", ""); err == nil {
+	if err := writer.MarkPlanStepComplete(path, 99); err == nil {
 		t.Error("Expected error for invalid step, got nil")
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dnatag/mission-toolkit/internal/logger"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 )
@@ -186,20 +185,11 @@ func (w *Writer) skipSectionContent(lines []string, startIndex int) int {
 	return len(lines)
 }
 
-// MarkPlanStepComplete marks a specific plan step as completed and optionally logs a message
-func (w *Writer) MarkPlanStepComplete(path string, step int, status, message string) error {
+// MarkPlanStepComplete marks a specific plan step as completed
+func (w *Writer) MarkPlanStepComplete(path string, step int) error {
 	mission, err := NewReader(w.fs).Read(path)
 	if err != nil {
 		return fmt.Errorf("reading mission: %w", err)
-	}
-
-	// Handle logging if message is provided
-	if message != "" {
-		if status == "" {
-			status = "INFO"
-		}
-		log := logger.New(mission.ID)
-		log.LogStep(status, fmt.Sprintf("Plan Step %d", step), message)
 	}
 
 	lines := strings.Split(mission.Body, "\n")
