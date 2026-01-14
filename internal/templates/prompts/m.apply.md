@@ -49,7 +49,7 @@ You are the **Executor**. Implement the current mission using a two-pass approac
 ### Step 2: First Pass (Implementation)
 1. **Verify SCOPE Files**: Check all files listed in SCOPE section exist before modifying
 2. **Follow PLAN with Step Tracking**: Execute each step in the PLAN section:
-   - **After each PLAN step**: Run `m log --step "Plan Step [N]" "✅ Completed: [step description]"`
+   - **After each PLAN step**: Run `m mission plan --step [N] --status SUCCESS --message "✅ Completed: [step description]"`
    - **On step failure**: Run `m log --step "Plan Step [N]" "❌ Failed: [step description] - [error details]"`
 3. **Scope Enforcement**: Only modify files listed in SCOPE
 4. **Run Verification**: Execute the VERIFICATION command
