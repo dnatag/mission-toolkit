@@ -256,7 +256,10 @@ var missionPlanCmd = &cobra.Command{
 		writer := mission.NewWriter(missionFs)
 		missionPath := missionDir + "/mission.md"
 
-		if err := writer.MarkPlanStepComplete(missionPath, step); err != nil {
+		status, _ := cmd.Flags().GetString("status")
+		message, _ := cmd.Flags().GetString("message")
+
+		if err := writer.MarkPlanStepComplete(missionPath, step, status, message); err != nil {
 			return fmt.Errorf("marking step %d complete: %w", step, err)
 		}
 
@@ -281,4 +284,6 @@ func init() {
 	missionCreateCmd.MarkFlagRequired("intent")
 	missionArchiveCmd.Flags().Bool("force", false, "Forcefully archive mission or no-op if no current mission exists")
 	missionPlanCmd.Flags().Int("step", 0, "Step number to mark as complete")
+	missionPlanCmd.Flags().String("status", "INFO", "Status level for logging (INFO, SUCCESS, FAILED, etc.)")
+	missionPlanCmd.Flags().String("message", "", "Message to log for this step")
 }
