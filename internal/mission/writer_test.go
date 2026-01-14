@@ -495,6 +495,61 @@ func TestWriter_MarkPlanStepComplete_InvalidStep(t *testing.T) {
 	}
 }
 
+func TestWriter_MarkPlanStepComplete_AfterOtherStepsComplete(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "mission.md"
+	writer := NewWriterWithPath(fs, path)
+
+	mission := &Mission{
+		ID:     "test-123",
+		Status: "active",
+		Body:   "## PLAN\n- [ ] Step 1\n- [ ] Step 2\n- [ ] Step 3",
+	}
+
+	if err := writer.Write(mission); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	// Mark step 1 complete first
+	if err := writer.MarkPlanStepComplete(1, "", ""); err != nil {
+		t.Fatalf("MarkPlanStepComplete(1) failed: %v", err)
+	}
+
+	// Now mark step 3 complete - this should work even though step 2 is not complete
+	if err := writer.MarkPlanStepComplete(3, "", ""); err != nil {
+		t.Fatalf("MarkPlanStepComplete(3) after step 1 complete failed: %v", err)
+	}
+
+	updated, err := NewReader(fs).Read(path)
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	lines := strings.Split(updated.Body, "\n")
+	completeCount := 0
+	for _, line := range lines {
+		if strings.Contains(line, "- [x]") {
+			completeCount++
+		}
+	}
+
+	if completeCount != 2 {
+		t.Errorf("Expected 2 completed steps, got %d", completeCount)
+	}
+
+	// Verify step 3 is marked complete
+	foundStep3 := false
+	for _, line := range lines {
+		if strings.Contains(line, "- [x] Step 3") {
+			foundStep3 = true
+			break
+		}
+	}
+	if !foundStep3 {
+		t.Error("Step 3 was not marked as complete")
+	}
+}
+
 func TestWriter_UpdateFrontmatter(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "/test/mission.md"

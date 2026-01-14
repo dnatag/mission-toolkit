@@ -231,7 +231,7 @@ func (w *Writer) MarkPlanStepComplete(step int, status, message string) error {
 			inPlan = false
 		}
 
-		if inPlan && strings.HasPrefix(trimmed, "- [ ]") {
+		if inPlan && strings.HasPrefix(trimmed, "- [") {
 			planStepCount++
 			if planStepCount == step {
 				line = strings.Replace(line, "- [ ]", "- [x]", 1)
