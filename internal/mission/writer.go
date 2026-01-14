@@ -271,8 +271,7 @@ func (w *Writer) UpdateFrontmatter(pairs []string) error {
 		case "type":
 			mission.Type = value
 		case "domains":
-			// Store as type for now (would need Mission struct update for domains)
-			mission.Type = value
+			mission.Domains = value
 		}
 	}
 
@@ -291,6 +290,10 @@ func (w *Writer) format(mission *Mission) (string, error) {
 
 	if mission.ParentMission != "" {
 		frontmatter["parent_mission"] = mission.ParentMission
+	}
+
+	if mission.Domains != "" {
+		frontmatter["domains"] = mission.Domains
 	}
 
 	yamlData, err := yaml.Marshal(frontmatter)

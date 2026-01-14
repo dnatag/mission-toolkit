@@ -7,6 +7,7 @@ type Mission struct {
 	// Frontmatter fields
 	ID            string `yaml:"id"`
 	Type          string `yaml:"type"`
+	Domains       string `yaml:"domains,omitempty"`
 	Track         int    `yaml:"track"`
 	Iteration     int    `yaml:"iteration"`
 	Status        string `yaml:"status"`

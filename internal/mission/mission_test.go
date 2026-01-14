@@ -94,3 +94,15 @@ Some intent.
 		})
 	}
 }
+
+func TestMission_DomainsField(t *testing.T) {
+	m := &Mission{}
+
+	// Test setting domains field
+	m.Domains = "security,performance"
+	assert.Equal(t, "security,performance", m.Domains)
+
+	// Test empty domains field
+	m2 := &Mission{Domains: ""}
+	assert.Equal(t, "", m2.Domains)
+}

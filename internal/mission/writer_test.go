@@ -530,3 +530,79 @@ func TestWriter_UpdateFrontmatter(t *testing.T) {
 		t.Errorf("Expected type 'DRY', got '%s'", updated.Type)
 	}
 }
+
+func TestWriter_WriteWithDomains(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "test-mission-with-domains.md"
+	writer := NewWriterWithPath(fs, path)
+
+	mission := &Mission{
+		ID:        "test-789",
+		Type:      "WET",
+		Track:     2,
+		Iteration: 1,
+		Status:    "planned",
+		Domains:   "security,performance",
+		Body:      "## INTENT\nTest body content\n",
+	}
+
+	err := writer.Write(mission)
+	if err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+
+	// Read back and verify
+	data, err := afero.ReadFile(fs, path)
+	if err != nil {
+		t.Fatalf("Failed to read written file: %v", err)
+	}
+
+	content := string(data)
+	if !strings.Contains(content, "domains: security,performance") {
+		t.Error("Write() content should contain domains field")
+	}
+
+	// Verify that type field is still present and separate
+	if !strings.Contains(content, "type: WET") {
+		t.Error("Write() content should contain type field")
+	}
+}
+
+func TestWriter_UpdateFrontmatter_Domains(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "/test/mission.md"
+	writer := NewWriterWithPath(fs, path)
+
+	mission := &Mission{
+		ID:        "test-456",
+		Status:    "planned",
+		Track:     2,
+		Type:      "WET",
+		Iteration: 1,
+		Body:      "## INTENT\nTest\n",
+	}
+
+	if err := writer.Write(mission); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	// Update domains field
+	pairs := []string{"domains=security,performance"}
+	if err := writer.UpdateFrontmatter(pairs); err != nil {
+		t.Fatalf("UpdateFrontmatter failed: %v", err)
+	}
+
+	updated, err := NewReader(fs).Read(path)
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if updated.Domains != "security,performance" {
+		t.Errorf("Expected domains 'security,performance', got '%s'", updated.Domains)
+	}
+
+	// Verify that type field is NOT affected by domains update
+	if updated.Type != "WET" {
+		t.Errorf("Expected type 'WET' (unchanged), got '%s'", updated.Type)
+	}
+}
