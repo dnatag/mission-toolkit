@@ -1,11 +1,9 @@
 package analyze
 
 import (
-	"bytes"
 	_ "embed"
 	"fmt"
 	"path/filepath"
-	"text/template"
 
 	"github.com/dnatag/mission-toolkit/internal/logger"
 	"github.com/dnatag/mission-toolkit/internal/mission"
@@ -17,49 +15,39 @@ var duplicationTemplate string
 
 // DuplicationService provides duplication analysis templates
 type DuplicationService struct {
-	fs  afero.Fs
-	log *logger.Logger
+	*BaseService
 }
 
 // NewDuplicationService creates a new DuplicationService
 func NewDuplicationService() *DuplicationService {
-	fs := afero.NewOsFs()
 	return &DuplicationService{
-		fs:  fs,
-		log: CreateLogger(fs, nil),
+		BaseService: NewBaseService(),
 	}
 }
 
 // NewDuplicationServiceWithConfig creates a new DuplicationService with custom filesystem and logger config
 func NewDuplicationServiceWithConfig(fs afero.Fs, loggerConfig *logger.Config) *DuplicationService {
 	return &DuplicationService{
-		fs:  fs,
-		log: CreateLogger(fs, loggerConfig),
+		BaseService: NewBaseServiceWithConfig(fs, loggerConfig),
 	}
 }
 
 // ProvideTemplate loads duplication.md template and injects current intent from mission.md
 func (s *DuplicationService) ProvideTemplate() (string, error) {
-	s.log.LogStep(logger.LevelSuccess, "AnalyzeDuplication", "Starting duplication analysis")
+	s.Log().LogStep(logger.LevelSuccess, "AnalyzeDuplication", "Starting duplication analysis")
 
 	missionPath := filepath.Join(".mission", "mission.md")
-	reader := mission.NewReader(s.fs, missionPath)
+	reader := mission.NewReader(s.FS(), missionPath)
 
 	intent, err := reader.ReadIntent()
 	if err != nil {
 		return "", fmt.Errorf("reading current intent: %w", err)
 	}
 
-	tmpl, err := template.New("duplication").Parse(duplicationTemplate)
+	output, err := s.ExecuteTemplate("duplication", duplicationTemplate, map[string]string{"CurrentIntent": intent})
 	if err != nil {
-		return "", fmt.Errorf("parsing template: %w", err)
+		return "", err
 	}
 
-	var buf bytes.Buffer
-	data := map[string]string{"CurrentIntent": intent}
-	if err := tmpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("executing template: %w", err)
-	}
-
-	return FormatOutputWithFS(s.fs, buf.String())
+	return s.FormatOutput(output)
 }
