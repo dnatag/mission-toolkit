@@ -112,7 +112,23 @@ var analyzeComplexityCmd = &cobra.Command{
 	},
 }
 
+// analyzeDecomposeCmd provides decomposition analysis template for Track 4 epics
+var analyzeDecomposeCmd = &cobra.Command{
+	Use:   "decompose",
+	Short: "Provide decomposition analysis template for Track 4 epics",
+	Long:  `Load decompose.md template and inject current intent and scope from mission.md for LLM analysis.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		service := analyze.NewDecomposeService()
+		output, err := service.ProvideTemplate()
+		if err != nil {
+			return fmt.Errorf("providing decompose template: %w", err)
+		}
+		fmt.Print(output)
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(analyzeCmd)
-	analyzeCmd.AddCommand(analyzeIntentCmd, analyzeClarifyCmd, analyzeScopeCmd, analyzeTestCmd, analyzeDuplicationCmd, analyzeComplexityCmd)
+	analyzeCmd.AddCommand(analyzeIntentCmd, analyzeClarifyCmd, analyzeScopeCmd, analyzeTestCmd, analyzeDuplicationCmd, analyzeComplexityCmd, analyzeDecomposeCmd)
 }

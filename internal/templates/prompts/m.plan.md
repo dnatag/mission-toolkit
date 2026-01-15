@@ -91,7 +91,9 @@ You are the **Planner**. Your primary function is to rigorously execute the plan
         - Load `.mission/libraries/displays/plan-atomic.md`, fill with `{{REFINED_INTENT}}` and `{{SUGGESTED_EDIT}}`
         - Display and **STOP**
     *   **Track 4 (Epic)**: 
-        - Decompose intent, `m backlog list` (parse JSON)
+        - Run `m analyze decompose` → Parse JSON, read `template_path`, follow template for decomposition guidance
+        - Decompose intent into sub-intents based on template analysis
+        - `m backlog list` (parse JSON)
         - `m backlog add "[sub-intent]" ... --type decomposed`
         - Execute `m mission archive --force` to clean up generated mission.md
         - Load `.mission/libraries/displays/plan-epic.md`, fill with `{{SUB_INTENTS}}`
