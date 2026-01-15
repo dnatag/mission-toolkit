@@ -113,6 +113,6 @@ func (s *IDService) readIDFile() string {
 
 // getIDFromMission extracts ID from mission.md file using reader
 func (s *IDService) getIDFromMission() string {
-	id, _ := s.reader.GetMissionID(s.missionPath)
+	id, _ := s.reader.GetMissionID()
 	return id
 }

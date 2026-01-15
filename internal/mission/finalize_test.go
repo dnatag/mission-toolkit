@@ -225,7 +225,7 @@ go test ./...`
 	}
 
 	reader := NewReader(fs, ".mission/mission.md")
-	mission, err := reader.Read(".mission/mission.md")
+	mission, err := reader.Read()
 	if err != nil {
 		t.Fatalf("Failed to read mission: %v", err)
 	}

@@ -45,12 +45,12 @@ func (s *TestService) ProvideTemplate() (string, error) {
 	missionPath := filepath.Join(".mission", "mission.md")
 	reader := mission.NewReader(s.fs, missionPath)
 
-	intent, err := reader.ReadIntent(missionPath)
+	intent, err := reader.ReadIntent()
 	if err != nil {
 		return "", fmt.Errorf("reading current intent: %w", err)
 	}
 
-	scope, err := reader.ReadScope(missionPath)
+	scope, err := reader.ReadScope()
 	if err != nil {
 		return "", fmt.Errorf("reading current scope: %w", err)
 	}

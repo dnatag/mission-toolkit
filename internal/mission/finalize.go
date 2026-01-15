@@ -37,7 +37,7 @@ func (s *FinalizeService) Finalize() (string, error) {
 
 	// Read mission file
 	reader := NewReader(s.fs, missionPath)
-	m, err := reader.Read(missionPath)
+	m, err := reader.Read()
 	if err != nil {
 		return "", fmt.Errorf("reading mission file: %w", err)
 	}

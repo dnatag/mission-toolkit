@@ -26,7 +26,7 @@ func CreateTestLoggerConfig(fs afero.Fs) *logger.Config {
 func CreateLogger(fs afero.Fs, loggerConfig *logger.Config) *logger.Logger {
 	missionPath := filepath.Join(".mission", "mission.md")
 	reader := mission.NewReader(fs, missionPath)
-	missionID, _ := reader.GetMissionID(missionPath)
+	missionID, _ := reader.GetMissionID()
 
 	if loggerConfig != nil {
 		return logger.NewWithConfig(missionID, loggerConfig)

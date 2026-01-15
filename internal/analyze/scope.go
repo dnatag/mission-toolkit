@@ -45,7 +45,7 @@ func (s *ScopeService) ProvideTemplate() (string, error) {
 	missionPath := filepath.Join(".mission", "mission.md")
 	reader := mission.NewReader(s.fs, missionPath)
 
-	intent, err := reader.ReadIntent(missionPath)
+	intent, err := reader.ReadIntent()
 	if err != nil {
 		return "", fmt.Errorf("reading current intent: %w", err)
 	}

@@ -274,7 +274,7 @@ func loadCurrentMission() tea.Msg {
 	fs := afero.NewOsFs()
 	missionPath := ".mission/mission.md"
 	reader := mission.NewReader(fs, missionPath)
-	m, err := reader.Read(missionPath)
+	m, err := reader.Read()
 	if err != nil {
 		return currentMissionMsg{err: err}
 	}
@@ -313,7 +313,7 @@ func loadCompletedMissionsBatch(offset, limit int) tea.Msg {
 	for fileIndex < len(missionFiles) && loaded < offset {
 		path := filepath.Join(completedDir, missionFiles[fileIndex])
 		reader := mission.NewReader(fs, path)
-		_, err := reader.Read(path)
+		_, err := reader.Read()
 		if err == nil {
 			loaded++
 		}
@@ -324,7 +324,7 @@ func loadCompletedMissionsBatch(offset, limit int) tea.Msg {
 	for fileIndex < len(missionFiles) && (limit < 0 || batchLoaded < limit) {
 		path := filepath.Join(completedDir, missionFiles[fileIndex])
 		reader := mission.NewReader(fs, path)
-		m, err := reader.Read(path)
+		m, err := reader.Read()
 		if err == nil {
 			missions = append(missions, m)
 			batchLoaded++
@@ -336,7 +336,7 @@ func loadCompletedMissionsBatch(offset, limit int) tea.Msg {
 	for _, filename := range missionFiles {
 		path := filepath.Join(completedDir, filename)
 		reader := mission.NewReader(fs, path)
-		_, err := reader.Read(path)
+		_, err := reader.Read()
 		if err == nil {
 			totalLoadable++
 		}

@@ -78,7 +78,7 @@ func (c *CheckService) CheckMissionState() (*Status, error) {
 
 // handleExistingMission processes existing mission state
 func (c *CheckService) handleExistingMission(status *Status) (*Status, error) {
-	mission, err := c.reader.Read(c.missionPath)
+	mission, err := c.reader.Read()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read mission file: %w", err)
 	}

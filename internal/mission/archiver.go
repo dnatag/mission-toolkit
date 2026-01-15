@@ -55,7 +55,7 @@ func (a *Archiver) Archive(force bool) error {
 		return fmt.Errorf("creating completed directory: %w", err)
 	}
 
-	missionID, err := a.reader.GetMissionID(missionPath)
+	missionID, err := a.reader.GetMissionID()
 	if err != nil {
 		return fmt.Errorf("getting mission ID: %w", err)
 	}

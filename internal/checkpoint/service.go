@@ -168,7 +168,7 @@ func (s *Service) Consolidate(missionID, message string) (string, error) {
 
 // getScope reads mission and returns scope files
 func (s *Service) getScope() ([]string, error) {
-	m, err := s.missionReader.Read(fmt.Sprintf("%s/mission.md", s.missionDir))
+	m, err := s.missionReader.Read()
 	if err != nil {
 		return nil, fmt.Errorf("reading mission: %w", err)
 	}

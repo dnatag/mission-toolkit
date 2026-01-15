@@ -236,7 +236,7 @@ Missing ID field
 			afero.WriteFile(fs, path, []byte(tt.content), 0644)
 
 			reader := NewReader(fs, path)
-			mission, err := reader.Read(path)
+			mission, err := reader.Read()
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Read() error = %v, wantErr %v", err, tt.wantErr)
@@ -335,7 +335,7 @@ Test large frontmatter
 			afero.WriteFile(fs, path, []byte(tt.content), 0644)
 
 			reader := NewReader(fs, path)
-			_, err := reader.Read(path)
+			_, err := reader.Read()
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Read() error = %v, wantErr %v", err, tt.wantErr)
@@ -348,7 +348,7 @@ func TestReader_ReadNonexistentFile(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	reader := NewReader(fs, "nonexistent.md")
 
-	_, err := reader.Read("nonexistent.md")
+	_, err := reader.Read()
 	if err == nil {
 		t.Error("Read() expected error for nonexistent file, got nil")
 	}
@@ -371,7 +371,7 @@ Test content
 	afero.WriteFile(fs, path, []byte(content), 0644)
 
 	reader := NewReader(fs, path)
-	id, err := reader.GetMissionID(path)
+	id, err := reader.GetMissionID()
 	if err != nil {
 		t.Fatalf("GetMissionID() error = %v", err)
 	}
@@ -398,7 +398,7 @@ Test
 	afero.WriteFile(fs, path, []byte(content), 0644)
 
 	reader := NewReader(fs, path)
-	status, err := reader.GetMissionStatus(path)
+	status, err := reader.GetMissionStatus()
 	if err != nil {
 		t.Fatalf("GetMissionStatus() error = %v", err)
 	}
@@ -417,7 +417,7 @@ No frontmatter
 	afero.WriteFile(fs, path, []byte(content), 0644)
 
 	reader := NewReader(fs, path)
-	_, err := reader.GetMissionID(path)
+	_, err := reader.GetMissionID()
 	if err == nil {
 		t.Error("GetMissionID() expected error for missing frontmatter, got nil")
 	}
@@ -475,7 +475,7 @@ Test with extra metadata
 			afero.WriteFile(fs, path, []byte(tt.content), 0644)
 
 			reader := NewReader(fs, path)
-			mission, err := reader.Read(path)
+			mission, err := reader.Read()
 			if err != nil {
 				t.Fatalf("Read() error = %v", err)
 			}
@@ -511,7 +511,7 @@ auth.go`
 
 	afero.WriteFile(fs, path, []byte(content), 0644)
 
-	intent, err := reader.ReadIntent(path)
+	intent, err := reader.ReadIntent()
 	if err != nil {
 		t.Fatalf("ReadIntent failed: %v", err)
 	}
@@ -542,7 +542,7 @@ middleware.go`
 
 	afero.WriteFile(fs, path, []byte(content), 0644)
 
-	scope, err := reader.ReadScope(path)
+	scope, err := reader.ReadScope()
 	if err != nil {
 		t.Fatalf("ReadScope failed: %v", err)
 	}
@@ -572,7 +572,7 @@ auth.go`
 
 	afero.WriteFile(fs, path, []byte(content), 0644)
 
-	_, err := reader.ReadIntent(path)
+	_, err := reader.ReadIntent()
 	if err == nil {
 		t.Error("Expected error for missing INTENT section")
 	}

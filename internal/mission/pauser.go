@@ -42,7 +42,7 @@ func (p *Pauser) Pause() error {
 	}
 
 	// Read mission to get ID for naming
-	mission, err := p.reader.Read(missionPath)
+	mission, err := p.reader.Read()
 	if err != nil {
 		return fmt.Errorf("reading mission: %w", err)
 	}

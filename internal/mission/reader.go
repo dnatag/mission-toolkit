@@ -22,8 +22,8 @@ func NewReader(fs afero.Fs, path string) *Reader {
 }
 
 // Read reads and parses a mission file into a Mission struct
-func (r *Reader) Read(path string) (*Mission, error) {
-	data, err := afero.ReadFile(r.fs, path)
+func (r *Reader) Read() (*Mission, error) {
+	data, err := afero.ReadFile(r.fs, r.path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read mission file: %w", err)
 	}
@@ -139,8 +139,8 @@ func (r *Reader) parseLegacy(data []byte) (*Mission, error) {
 }
 
 // GetMissionID reads the mission ID from a mission file
-func (r *Reader) GetMissionID(path string) (string, error) {
-	mission, err := r.Read(path)
+func (r *Reader) GetMissionID() (string, error) {
+	mission, err := r.Read()
 	if err != nil {
 		return "", err
 	}
@@ -148,8 +148,8 @@ func (r *Reader) GetMissionID(path string) (string, error) {
 }
 
 // GetMissionStatus reads the mission status from a mission file
-func (r *Reader) GetMissionStatus(path string) (string, error) {
-	mission, err := r.Read(path)
+func (r *Reader) GetMissionStatus() (string, error) {
+	mission, err := r.Read()
 	if err != nil {
 		return "", err
 	}
@@ -157,8 +157,8 @@ func (r *Reader) GetMissionStatus(path string) (string, error) {
 }
 
 // ReadIntent extracts the INTENT section from a mission file
-func (r *Reader) ReadIntent(path string) (string, error) {
-	mission, err := r.Read(path)
+func (r *Reader) ReadIntent() (string, error) {
+	mission, err := r.Read()
 	if err != nil {
 		return "", fmt.Errorf("reading mission file: %w", err)
 	}
@@ -166,8 +166,8 @@ func (r *Reader) ReadIntent(path string) (string, error) {
 }
 
 // ReadScope extracts the SCOPE section from a mission file
-func (r *Reader) ReadScope(path string) (string, error) {
-	mission, err := r.Read(path)
+func (r *Reader) ReadScope() (string, error) {
+	mission, err := r.Read()
 	if err != nil {
 		return "", fmt.Errorf("reading mission file: %w", err)
 	}
