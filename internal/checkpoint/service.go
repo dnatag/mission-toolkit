@@ -122,23 +122,14 @@ func (s *Service) Clear(missionID string) (int, error) {
 
 // Consolidate creates a final commit with all changes from the mission and clears checkpoints.
 func (s *Service) Consolidate(missionID, message string) (string, error) {
-	// Find initial checkpoint to determine base commit
-	if initialCommitHash, err := s.git.GetTagCommit(fmt.Sprintf("%s-1", missionID)); err == nil {
-		// Check if this commit was created by us (starts with "checkpoint:")
-		msg, err := s.git.GetCommitMessage(initialCommitHash)
-		if err == nil {
-			targetHash := initialCommitHash
-			if strings.HasPrefix(msg, "checkpoint:") {
-				// If we created it, reset to its parent to squash it
-				if parentHash, err := s.git.GetCommitParent(initialCommitHash); err == nil && parentHash != "" {
-					targetHash = parentHash
-				}
-			}
-			// If we didn't create it (it was a pre-existing commit we tagged), reset to it directly.
-			// This preserves the pre-existing commit but squashes subsequent checkpoints.
-			if err := s.git.SoftReset(targetHash); err != nil {
-				return "", fmt.Errorf("soft reset to %s failed: %w", targetHash, err)
-			}
+	targetHash, err := s.squashCheckpoints(missionID)
+	if err != nil {
+		return "", err
+	}
+
+	if targetHash != "" {
+		if err := s.git.SoftReset(targetHash); err != nil {
+			return "", fmt.Errorf("soft reset to %s failed: %w", targetHash, err)
 		}
 	}
 
@@ -166,6 +157,32 @@ func (s *Service) Consolidate(missionID, message string) (string, error) {
 	}
 
 	return finalCommitHash, nil
+}
+
+// squashCheckpoints finds the initial checkpoint and determines the target commit for squashing.
+// Returns the target hash to reset to, or empty string if no squashing is needed.
+func (s *Service) squashCheckpoints(missionID string) (string, error) {
+	initialCommitHash, err := s.git.GetTagCommit(fmt.Sprintf("%s-1", missionID))
+	if err != nil {
+		return "", nil // No initial checkpoint found, no squashing needed
+	}
+
+	msg, err := s.git.GetCommitMessage(initialCommitHash)
+	if err != nil {
+		return "", nil // Can't read commit message, skip squashing
+	}
+
+	targetHash := initialCommitHash
+	if strings.HasPrefix(msg, "checkpoint:") {
+		// If we created it, reset to its parent to squash it
+		if parentHash, err := s.git.GetCommitParent(initialCommitHash); err == nil && parentHash != "" {
+			targetHash = parentHash
+		}
+	}
+	// If we didn't create it (it was a pre-existing commit we tagged), reset to it directly.
+	// This preserves the pre-existing commit but squashes subsequent checkpoints.
+
+	return targetHash, nil
 }
 
 // getScope reads mission and returns scope files
