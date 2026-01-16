@@ -136,7 +136,9 @@ func (s *Service) Consolidate(missionID, message string) (string, error) {
 			}
 			// If we didn't create it (it was a pre-existing commit we tagged), reset to it directly.
 			// This preserves the pre-existing commit but squashes subsequent checkpoints.
-			_ = s.git.SoftReset(targetHash)
+			if err := s.git.SoftReset(targetHash); err != nil {
+				return "", fmt.Errorf("soft reset to %s failed: %w", targetHash, err)
+			}
 		}
 	}
 
