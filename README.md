@@ -291,10 +291,6 @@ The `m` CLI provides several commands for project management:
 ### Embedded Templates
 - **Analysis Templates**: Clarification and complexity assessment guidance
 - **Display Templates**: Consistent user output for all command outcomes
-- **Mission Templates**: WET, DRY, and clarification mission structures
-- **Script Templates**: Standardized operations for status updates and archival
-- **Metrics Templates**: Individual mission and aggregate project metrics
-- **Logging Templates**: Execution step tracking and debugging
 
 ### Variable Standardization
 - Consistent naming across all templates ({{TRACK}}, {{MISSION_TYPE}}, etc.)
@@ -316,24 +312,11 @@ The `m` CLI provides several commands for project management:
 - Archived logs with completed missions
 - Debugging support for failed missions
 
-### Metrics Tracking
-- Mission duration and complexity correlation
-- Track distribution and success rates
-- WET→DRY evolution effectiveness
-- Verification success/failure patterns
-- Template system usage analytics
-
 ### Pattern Detection
 - Automatic duplication identification
 - Abstraction opportunity recognition
 - Common failure pattern analysis
 - Process bottleneck identification
-
-### Historical Analysis
-- Timestamped mission archives with full context
-- Performance trend analysis
-- Process evolution tracking
-- Evidence-based improvements
 
 ## ✨ Benefits
 

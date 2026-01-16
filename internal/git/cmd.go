@@ -116,9 +116,7 @@ func (c *CmdGitClient) GetCommitMessage(commitHash string) (string, error) {
 
 func (c *CmdGitClient) IsTracked(path string) (bool, error) {
 	// git ls-files --error-unmatch <file> returns 0 if tracked, 1 if not
-	cmd := exec.Command("git", "ls-files", "--error-unmatch", path)
-	cmd.Dir = c.workDir
-	err := cmd.Run()
+	_, err := c.run("ls-files", "--error-unmatch", path)
 	if err != nil {
 		// If exit code is 1, it's not tracked.
 		// We treat this as false, not an error.
