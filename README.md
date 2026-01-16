@@ -42,7 +42,7 @@ The Mission Toolkit implements this philosophy through a systematic approach tha
 ## 🤝 The Slash Commands
 
 *Note: Amazon Q CLI and Kiro CLI differences:*
-- *Use '@' commands instead of '/' (e.g., @m.plan, @m.clarify, @m.apply, @m.complete)*
+- *Use '@' commands instead of '/' (e.g., @m.plan, @m.apply, @m.complete)*
 - *Inline arguments are ignored - the AI will prompt for input*
 
 ### 📝 `/m.plan` - The Planning Handshake
@@ -58,20 +58,7 @@ Converts your intent into a structured mission. You define what, AI proposes how
 - 📁 Automatic scope estimation and file identification
 - 🔒 Security validation and input sanitization
 - 📋 Backlog management for complex intents
-
-### 🔍 `/m.clarify` - The Clarification Handshake (Optional)
-Refines vague or complex intents before planning. Helps break down ambiguous requirements into actionable missions.
-
-```bash
-# Example usage
-/m.clarify
-```
-
-**Features:**
-- 🎯 Intent disambiguation and scope refinement
-- 📋 Requirement extraction from vague descriptions
-- 🔄 Interactive clarification process
-- 📝 Structured output ready for m.apply
+- 🔍 Integrated clarification for ambiguous requirements
 
 ### 🚀 `/m.apply` - The Execution Handshake  
 Implements your authorized plan. AI handles execution while you maintain oversight.
@@ -97,7 +84,6 @@ Captures what was accomplished and learned. Builds organizational memory for fut
 
 **Features:**
 - 📁 Mission archival with timestamps
-- 📊 Metrics collection and analysis
 - 📋 Backlog updates and pattern tracking
 - 📆 Historical data preservation
 
@@ -107,30 +93,22 @@ Captures what was accomplished and learned. Builds organizational memory for fut
 .mission/
 ├── governance.md          # Core principles and workflow rules
 ├── backlog.md            # Future work and refactoring opportunities
-├── metrics.md            # Aggregate performance statistics
 ├── mission.md            # Current active mission (auto-generated)
 ├── execution.log         # Current mission execution log
 ├── completed/            # Archived missions and detailed metrics
 │   ├── MISSION-ID-mission.md
-│   ├── MISSION-ID-metrics.md
+│   ├── MISSION-ID-commit.msg
 │   └── MISSION-ID-execution.log
 ├── paused/               # Temporarily paused missions
 │   └── TIMESTAMP-mission.md
 └── libraries/            # Template system (embedded)
-    ├── analysis/         # Analysis guidance templates
-    ├── displays/         # User output templates
-    ├── logs/             # Execution logging templates
-    ├── metrics/          # Metrics templates
-    ├── missions/         # Mission file templates
-    ├── scripts/          # Operation templates
-    └── variables/        # Variable calculation rules
+    └── displays/         # User output templates
 
 # AI-specific prompt directories:
 .amazonq/prompts/         # Amazon Q prompts
 .claude/commands/         # Claude commands
 .kiro/prompts/           # Kiro prompts
 .opencode/command/       # OpenCode commands
-├── m.clarify.md        # Clarification prompt for vague intents
 ├── m.plan.md           # Planning prompt and complexity matrix
 ├── m.apply.md          # Execution prompt and safety checks
 └── m.complete.md       # Completion prompt and observability
@@ -162,17 +140,16 @@ Captures what was accomplished and learned. Builds organizational memory for fut
 ## Mission Lifecycle
 
 ```
-m.plan → [m.clarify] → 🤝 Review mission.md → m.apply → 🤝 Review code → [Adjustments] → m.complete
-                        (Handshake #1)                  (Handshake #2)
+m.plan → 🤝 Review mission.md → m.apply → 🤝 Review code → [Adjustments] → m.complete
+(Handshake #1)                  (Handshake #2)
 ```
 
 **How it works:**
-1. **m.plan** creates mission.md with INTENT, SCOPE, PLAN, VERIFICATION
-2. **m.clarify** (optional) refines ambiguous requirements
-3. **🤝 Review & approve** the mission before execution (authorize the architecture)
-4. **m.apply** executes, polishes, and generates commit message
-5. **🤝 Review code** and optionally request adjustments (verify the implementation)
-6. **m.complete** archives mission and creates git commit
+1. **m.plan** creates mission.md with INTENT, SCOPE, PLAN, VERIFICATION (includes clarification if needed)
+2. **🤝 Review & approve** the mission before execution (authorize the architecture)
+3. **m.apply** executes, polishes, and generates commit message
+4. **🤝 Review code** and optionally request adjustments (verify the implementation)
+5. **m.complete** archives mission and creates git commit
 
 [See detailed workflow diagram →](docs/workflows/01-mission-lifecycle.md)
 

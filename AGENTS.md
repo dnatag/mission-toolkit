@@ -5,12 +5,12 @@
 **Build**: `go build -o bin/m main.go`  
 **Run**: `./bin/m --help`  
 **Test**: `go test ./...`  
-**Init Project**: `./bin/m init --ai-type q`
+**Init Project**: `./bin/m init --ai q`
 
 ## Project Architecture
 
 ### Core Components
-- **CLI Commands**: `cmd/` - Root, init, status, version commands
+- **CLI Commands**: `cmd/` - Root, init, dashboard, version commands
 - **Templates**: `internal/templates/` - Embedded mission and prompt templates
 - **TUI**: `internal/tui/` - Terminal user interface
 - **Mission Logic**: `internal/mission/` - Mission file reader
@@ -42,7 +42,7 @@ go test ./...                      # Run tests
 
 ### CLI Usage
 ```bash
-./bin/m init --ai-type q           # Initialize project
-./bin/m status                     # Show mission status
-./bin/m version                    # Show version
+m init --ai q                # Initialize project
+m dashboard                  # Show mission dashboard
+m version                    # Show version
 ```
