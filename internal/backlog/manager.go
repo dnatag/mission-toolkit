@@ -85,6 +85,33 @@ func (m *BacklogManager) isInSection(sectionHeader, itemType string) bool {
 	return sectionHeader == expectedHeader
 }
 
+// findAndModifySection finds a section by header and applies a modifier function to insert items.
+// Returns the modified lines or an error if the section is not found.
+func (m *BacklogManager) findAndModifySection(lines []string, sectionHeader string, modifier func() []string) ([]string, error) {
+	result := make([]string, 0, len(lines)+10)
+
+	for i, line := range lines {
+		result = append(result, line)
+
+		if strings.TrimSpace(line) == sectionHeader {
+			// Find the end of this section
+			j := i + 1
+			for j < len(lines) && !strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") && strings.TrimSpace(lines[j]) != "" {
+				result = append(result, lines[j])
+				j++
+			}
+			// Apply modifier to get items to insert
+			newItems := modifier()
+			result = append(result, newItems...)
+			// Add remaining lines
+			result = append(result, lines[j:]...)
+			return result, nil
+		}
+	}
+
+	return nil, fmt.Errorf("section %s not found in backlog", sectionHeader)
+}
+
 // Add adds a new item to the specified section
 func (m *BacklogManager) Add(description, itemType string) error {
 	if err := m.validateType(itemType); err != nil {
@@ -101,30 +128,16 @@ func (m *BacklogManager) Add(description, itemType string) error {
 	}
 
 	sectionHeader := m.getSectionHeader(itemType)
-	newItem := fmt.Sprintf("- [ ] %s", description)
-
 	lines := strings.Split(content, "\n")
-	result := make([]string, 0, len(lines)+1)
 
-	for i, line := range lines {
-		result = append(result, line)
-
-		if strings.TrimSpace(line) == sectionHeader {
-			// Find the end of this section
-			j := i + 1
-			for j < len(lines) && !strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") && strings.TrimSpace(lines[j]) != "" {
-				result = append(result, lines[j])
-				j++
-			}
-			// Add the new item
-			result = append(result, newItem)
-			// Add remaining lines
-			result = append(result, lines[j:]...)
-			return m.writeBacklogContent(strings.Join(result, "\n"))
-		}
+	result, err := m.findAndModifySection(lines, sectionHeader, func() []string {
+		return []string{fmt.Sprintf("- [ ] %s", description)}
+	})
+	if err != nil {
+		return err
 	}
 
-	return fmt.Errorf("section %s not found in backlog", sectionHeader)
+	return m.writeBacklogContent(strings.Join(result, "\n"))
 }
 
 // AddMultiple adds multiple items to the specified section in a single operation.
@@ -144,31 +157,20 @@ func (m *BacklogManager) AddMultiple(descriptions []string, itemType string) err
 	}
 
 	sectionHeader := m.getSectionHeader(itemType)
-
 	lines := strings.Split(content, "\n")
-	result := make([]string, 0, len(lines)+len(descriptions))
 
-	for i, line := range lines {
-		result = append(result, line)
-
-		if strings.TrimSpace(line) == sectionHeader {
-			// Find the end of this section
-			j := i + 1
-			for j < len(lines) && !strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") && strings.TrimSpace(lines[j]) != "" {
-				result = append(result, lines[j])
-				j++
-			}
-			// Add all new items
-			for _, desc := range descriptions {
-				result = append(result, fmt.Sprintf("- [ ] %s", desc))
-			}
-			// Add remaining lines
-			result = append(result, lines[j:]...)
-			return m.writeBacklogContent(strings.Join(result, "\n"))
+	result, err := m.findAndModifySection(lines, sectionHeader, func() []string {
+		items := make([]string, len(descriptions))
+		for i, desc := range descriptions {
+			items[i] = fmt.Sprintf("- [ ] %s", desc)
 		}
+		return items
+	})
+	if err != nil {
+		return err
 	}
 
-	return fmt.Errorf("section %s not found in backlog", sectionHeader)
+	return m.writeBacklogContent(strings.Join(result, "\n"))
 }
 
 // Complete marks an item as completed and moves it to the COMPLETED section
