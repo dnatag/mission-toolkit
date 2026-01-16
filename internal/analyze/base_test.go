@@ -8,10 +8,11 @@ import (
 )
 
 func TestBaseService_NewBaseService(t *testing.T) {
-	service := NewBaseService()
+	fs := afero.NewMemMapFs()
+	service := NewBaseServiceWithConfig(fs, CreateTestLoggerConfig(fs))
 
 	if service == nil {
-		t.Fatal("NewBaseService returned nil")
+		t.Fatal("NewBaseServiceWithConfig returned nil")
 	}
 
 	if service.FS() == nil {
