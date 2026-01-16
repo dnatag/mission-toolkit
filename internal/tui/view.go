@@ -19,7 +19,7 @@ const (
 func (m DashboardModel) View() string {
 	var sections []string
 
-	sections = append(sections, titleStyle.Render("Mission Dashboard"))
+	sections = append(sections, styles.Title.Render("Mission Dashboard"))
 	sections = append(sections, "")
 
 	if m.currentMission != nil {
@@ -43,12 +43,12 @@ func (m DashboardModel) View() string {
 	sections = append(sections, "")
 	if m.selectedMission != nil {
 		if m.selectedMission.Status == "completed" {
-			sections = append(sections, helpStyle.Render("Tab: switch panes (mission|log|commit) • ↑↓←→: scroll content • Esc: back to list • q: quit"))
+			sections = append(sections, styles.Help.Render("Tab: switch panes (mission|log|commit) • ↑↓←→: scroll content • Esc: back to list • q: quit"))
 		} else {
-			sections = append(sections, helpStyle.Render("Tab: switch panes (mission|log) • ↑↓←→: scroll content • Esc: back to list • q: quit"))
+			sections = append(sections, styles.Help.Render("Tab: switch panes (mission|log) • ↑↓←→: scroll content • Esc: back to list • q: quit"))
 		}
 	} else {
-		sections = append(sections, helpStyle.Render("↑/↓: navigate • ←/→: prev/next page • Enter: view details • q: quit"))
+		sections = append(sections, styles.Help.Render("↑/↓: navigate • ←/→: prev/next page • Enter: view details • q: quit"))
 	}
 
 	return strings.Join(sections, "\n")
@@ -85,11 +85,11 @@ func (m DashboardModel) renderTwoPaneLayout() string {
 	rightPane = m.applyScrollableContent(rightPane, false) // Right pane
 
 	if m.currentPane == MissionPane {
-		leftPane = activePaneStyle.Render(leftPane)
-		rightPane = paneStyle.Render(rightPane)
+		leftPane = styles.ActivePane.Render(leftPane)
+		rightPane = styles.Pane.Render(rightPane)
 	} else {
-		leftPane = paneStyle.Render(leftPane)
-		rightPane = activePaneStyle.Render(rightPane)
+		leftPane = styles.Pane.Render(leftPane)
+		rightPane = styles.ActivePane.Render(rightPane)
 	}
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, leftPane, rightPane)
@@ -153,13 +153,13 @@ func (m DashboardModel) renderCurrentMission() string {
 		statusStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00CED1"))
 		nextSteps = "Next: Run '@m.apply' to execute the mission"
 	case "active":
-		statusStyle = activeStyle
+		statusStyle = styles.Active
 		nextSteps = "Next: Run '@m.complete' to finalize the mission"
 	case "completed":
-		statusStyle = completedStyle
+		statusStyle = styles.Completed
 		nextSteps = "Mission completed successfully"
 	case "failed":
-		statusStyle = failedStyle
+		statusStyle = styles.Failed
 		nextSteps = "Next: Create a new mission with smaller scope using '@m.plan'"
 	default:
 		statusStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
@@ -175,7 +175,7 @@ func (m DashboardModel) renderCurrentMission() string {
 		nextSteps,
 	)
 
-	return boxStyle.Render(content)
+	return styles.Box.Render(content)
 }
 
 // renderNoMission renders the no mission box
@@ -189,7 +189,7 @@ func (m DashboardModel) renderNoMission() string {
 		"Use '@m.plan' to start with your intent",
 	)
 
-	return boxStyle.Render(content)
+	return styles.Box.Render(content)
 }
 
 // renderCompletedMissions renders the list of completed missions
@@ -228,9 +228,9 @@ func (m DashboardModel) renderMissionDetails(mission *mission.Mission) string {
 	var statusStyle lipgloss.Style
 	switch mission.Status {
 	case "completed":
-		statusStyle = completedStyle
+		statusStyle = styles.Completed
 	case "failed":
-		statusStyle = failedStyle
+		statusStyle = styles.Failed
 	default:
 		statusStyle = lipgloss.NewStyle()
 	}
