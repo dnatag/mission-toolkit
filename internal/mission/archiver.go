@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/dnatag/mission-toolkit/internal/git"
+	"github.com/dnatag/mission-toolkit/internal/utils"
 	"github.com/spf13/afero"
 )
 
@@ -68,7 +69,7 @@ func (a *Archiver) Archive(force bool) error {
 		}
 
 		dst := filepath.Join(completedDir, fmt.Sprintf("%s-%s", missionID, filename))
-		if err := a.copyFile(src, dst); err != nil {
+		if err := utils.CopyFile(a.fs, src, dst); err != nil {
 			return fmt.Errorf("archiving %s: %w", filename, err)
 		}
 	}
@@ -111,13 +112,4 @@ func (a *Archiver) CleanupObsoleteFiles() error {
 	}
 
 	return nil
-}
-
-// copyFile copies a file from src to dst
-func (a *Archiver) copyFile(src, dst string) error {
-	content, err := afero.ReadFile(a.fs, src)
-	if err != nil {
-		return err
-	}
-	return afero.WriteFile(a.fs, dst, content, 0644)
 }

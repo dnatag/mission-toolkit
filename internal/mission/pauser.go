@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/dnatag/mission-toolkit/internal/utils"
 	"github.com/spf13/afero"
 )
 
@@ -59,7 +60,7 @@ func (p *Pauser) Pause() error {
 	pausedPath := filepath.Join(pausedDir, pausedFilename)
 
 	// Copy mission file to paused directory
-	if err := p.copyFile(missionPath, pausedPath); err != nil {
+	if err := utils.CopyFile(p.fs, missionPath, pausedPath); err != nil {
 		return fmt.Errorf("copying mission to paused directory: %w", err)
 	}
 
@@ -68,7 +69,7 @@ func (p *Pauser) Pause() error {
 	if exists, _ := afero.Exists(p.fs, logPath); exists {
 		pausedLogFilename := fmt.Sprintf("%s-%s-execution.log", timestamp, mission.ID)
 		pausedLogPath := filepath.Join(pausedDir, pausedLogFilename)
-		if err := p.copyFile(logPath, pausedLogPath); err != nil {
+		if err := utils.CopyFile(p.fs, logPath, pausedLogPath); err != nil {
 			return fmt.Errorf("copying execution log: %w", err)
 		}
 	}
@@ -167,7 +168,7 @@ func (p *Pauser) Restore(missionID string) error {
 
 	// Restore mission file
 	pausedMissionPath := filepath.Join(pausedDir, missionFile)
-	if err := p.copyFile(pausedMissionPath, currentMissionPath); err != nil {
+	if err := utils.CopyFile(p.fs, pausedMissionPath, currentMissionPath); err != nil {
 		return fmt.Errorf("restoring mission file: %w", err)
 	}
 
@@ -175,7 +176,7 @@ func (p *Pauser) Restore(missionID string) error {
 	pausedLogPath := filepath.Join(pausedDir, logFile)
 	if exists, _ := afero.Exists(p.fs, pausedLogPath); exists {
 		currentLogPath := filepath.Join(p.missionDir, "execution.log")
-		if err := p.copyFile(pausedLogPath, currentLogPath); err != nil {
+		if err := utils.CopyFile(p.fs, pausedLogPath, currentLogPath); err != nil {
 			return fmt.Errorf("restoring execution log: %w", err)
 		}
 	}
@@ -189,20 +190,6 @@ func (p *Pauser) Restore(missionID string) error {
 		if err := p.fs.Remove(pausedLogPath); err != nil {
 			return fmt.Errorf("removing paused log file: %w", err)
 		}
-	}
-
-	return nil
-}
-
-// copyFile copies a file from src to dst
-func (p *Pauser) copyFile(src, dst string) error {
-	content, err := afero.ReadFile(p.fs, src)
-	if err != nil {
-		return fmt.Errorf("reading source file: %w", err)
-	}
-
-	if err := afero.WriteFile(p.fs, dst, content, 0644); err != nil {
-		return fmt.Errorf("writing destination file: %w", err)
 	}
 
 	return nil
