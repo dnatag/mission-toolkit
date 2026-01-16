@@ -5,7 +5,7 @@
 
 ## 🧠 The Philosophy
 
-Intent-Driven Atomic Development is a minimalist workflow designed to bridge the gap between "Vibe Coding" (Chaos) and "Spec-Driven Development" (Bureaucracy).
+Atomic Intent-Driven Development is a minimalist workflow designed to bridge the gap between "Vibe Coding" (Chaos) and "Spec-Driven Development" (Bureaucracy).
 
 We believe that AI coding fails in two extremes:
 
@@ -13,7 +13,7 @@ We believe that AI coding fails in two extremes:
 
 **📝 The Spec Trap:** You write exhaustive documentation before coding. AI generates large implementations that work, but the sheer volume alienates you from the codebase. You feel like a contributor, not an owner.
 
-**✨ Intent-Driven Atomic Development is the Golden Ratio.** It forces a "🤝 Handshake" before every coding task and keeps changes within human comprehension limits. You don't write the code, but you authorize the architecture and verify the implementation.
+**✨ Atomic Intent-Driven Development is the Golden Ratio.** It forces a "🤝 Handshake" before every coding task and keeps changes within human comprehension limits. You don't write the code, but you authorize the architecture and verify the implementation.
 
 ## ⚛️ Why Atomic?
 
@@ -59,6 +59,7 @@ Converts your intent into a structured mission. You define what, AI proposes how
 - 🔒 Security validation and input sanitization
 - 📋 Backlog management for complex intents
 - 🔍 Integrated clarification for ambiguous requirements
+- 🛡️ CLI-exclusive state management
 
 ### 🚀 `/m.apply` - The Execution Handshake  
 Implements your authorized plan. AI handles execution while you maintain oversight.
@@ -74,6 +75,7 @@ Implements your authorized plan. AI handles execution while you maintain oversig
 - ✅ Mandatory verification execution
 - 🔍 Pattern detection for future refactoring
 - 🛡️ Two-pass implementation with automatic rollback
+- 💾 Automatic checkpoint creation and restoration
 
 ### 📈 `/m.complete` - The Learning Handshake
 Captures what was accomplished and learned. Builds organizational memory for future missions.
@@ -87,7 +89,8 @@ Captures what was accomplished and learned. Builds organizational memory for fut
 - 📁 Mission archival with timestamps
 - 📋 Backlog updates and pattern tracking
 - 📆 Historical data preservation
-- 🎯 Rich commit message generation
+- 🎯 Rich commit message generation from execution logs
+- 📦 Consolidated commit creation
 
 ## Project Structure
 

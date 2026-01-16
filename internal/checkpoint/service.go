@@ -43,14 +43,9 @@ func NewServiceWithGit(fs afero.Fs, missionDir string, gitClient git.GitClient) 
 
 // Create creates a new checkpoint for the current mission
 func (s *Service) Create(missionID string) (string, error) {
-	scope, err := s.getScope()
+	stagableFiles, err := s.getStagableScope()
 	if err != nil {
 		return "", err
-	}
-
-	stagableFiles, err := s.filterStagableFiles(scope)
-	if err != nil {
-		return "", fmt.Errorf("filtering stagable files: %w", err)
 	}
 
 	num, err := s.getNextCheckpointNumber(missionID)
@@ -133,14 +128,9 @@ func (s *Service) Consolidate(missionID, message string) (string, error) {
 		}
 	}
 
-	scope, err := s.getScope()
+	stagableFiles, err := s.getStagableScope()
 	if err != nil {
 		return "", err
-	}
-
-	stagableFiles, err := s.filterStagableFiles(scope)
-	if err != nil {
-		return "", fmt.Errorf("filtering stagable files: %w", err)
 	}
 
 	if err := s.git.Add(stagableFiles); err != nil {
@@ -183,6 +173,22 @@ func (s *Service) squashCheckpoints(missionID string) (string, error) {
 	// This preserves the pre-existing commit but squashes subsequent checkpoints.
 
 	return targetHash, nil
+}
+
+// getStagableScope reads mission scope and filters to stagable files.
+// It combines getScope() and filterStagableFiles() to reduce duplication.
+func (s *Service) getStagableScope() ([]string, error) {
+	scope, err := s.getScope()
+	if err != nil {
+		return nil, err
+	}
+
+	stagableFiles, err := s.filterStagableFiles(scope)
+	if err != nil {
+		return nil, fmt.Errorf("filtering stagable files: %w", err)
+	}
+
+	return stagableFiles, nil
 }
 
 // getScope reads mission and returns scope files
