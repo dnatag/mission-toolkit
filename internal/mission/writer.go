@@ -2,7 +2,6 @@ package mission
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/dnatag/mission-toolkit/internal/logger"
@@ -12,24 +11,21 @@ import (
 
 // Writer handles writing mission files and updating status.
 type Writer struct {
-	fs   afero.Fs
-	path string
+	*BaseService
 }
 
 // NewWriter creates a new mission writer rooted at missionDir.
 // The mission file path is always <missionDir>/mission.md.
 func NewWriter(fs afero.Fs, missionDir string) *Writer {
 	return &Writer{
-		fs:   fs,
-		path: filepath.Join(missionDir, "mission.md"),
+		BaseService: NewBaseService(fs, missionDir),
 	}
 }
 
 // NewWriterWithPath creates a new mission writer for an explicit mission file path.
 func NewWriterWithPath(fs afero.Fs, path string) *Writer {
 	return &Writer{
-		fs:   fs,
-		path: path,
+		BaseService: NewBaseServiceWithPath(fs, "", path),
 	}
 }
 
@@ -40,12 +36,12 @@ func (w *Writer) Write(mission *Mission) error {
 		return err
 	}
 
-	return afero.WriteFile(w.fs, w.path, []byte(content), 0644)
+	return afero.WriteFile(w.FS(), w.MissionPath(), []byte(content), 0644)
 }
 
 // UpdateStatus updates the status field in the mission file while preserving the body.
 func (w *Writer) UpdateStatus(newStatus string) error {
-	mission, err := NewReader(w.fs, w.path).Read()
+	mission, err := NewReader(w.FS(), w.MissionPath()).Read()
 	if err != nil {
 		return fmt.Errorf("failed to read mission: %w", err)
 	}
@@ -66,7 +62,7 @@ func (w *Writer) CreateWithIntent(missionID string, intent string) error {
 
 // UpdateSection updates a text section (intent, verification).
 func (w *Writer) UpdateSection(section string, content string) error {
-	mission, err := NewReader(w.fs, w.path).Read()
+	mission, err := NewReader(w.FS(), w.MissionPath()).Read()
 	if err != nil {
 		return fmt.Errorf("reading mission: %w", err)
 	}
@@ -113,7 +109,7 @@ func (w *Writer) UpdateSection(section string, content string) error {
 // This method preserves the structure of the mission file by properly handling
 // section boundaries and ensuring subsequent sections remain intact.
 func (w *Writer) UpdateList(section string, items []string, appendMode bool) error {
-	mission, err := NewReader(w.fs, w.path).Read()
+	mission, err := NewReader(w.FS(), w.MissionPath()).Read()
 	if err != nil {
 		return fmt.Errorf("reading mission: %w", err)
 	}
@@ -202,7 +198,7 @@ func (w *Writer) skipSectionContent(lines []string, startIndex int) int {
 
 // MarkPlanStepComplete marks a specific plan step as completed and optionally logs a message.
 func (w *Writer) MarkPlanStepComplete(step int, status, message string) error {
-	mission, err := NewReader(w.fs, w.path).Read()
+	mission, err := NewReader(w.FS(), w.MissionPath()).Read()
 	if err != nil {
 		return fmt.Errorf("reading mission: %w", err)
 	}
@@ -251,7 +247,7 @@ func (w *Writer) MarkPlanStepComplete(step int, status, message string) error {
 
 // UpdateFrontmatter updates frontmatter fields.
 func (w *Writer) UpdateFrontmatter(pairs []string) error {
-	mission, err := NewReader(w.fs, w.path).Read()
+	mission, err := NewReader(w.FS(), w.MissionPath()).Read()
 	if err != nil {
 		return fmt.Errorf("reading mission: %w", err)
 	}

@@ -15,22 +15,18 @@ var idPattern = regexp.MustCompile(`^\d{14}-\d{4}$`)
 
 // IDService manages mission ID generation and persistence
 type IDService struct {
-	fs          afero.Fs
-	missionDir  string
-	idPath      string
-	missionPath string
-	reader      *Reader
+	*BaseService
+	idPath string
+	reader *Reader
 }
 
 // NewIDService creates a new mission ID service
 func NewIDService(fs afero.Fs, missionDir string) *IDService {
-	missionPath := filepath.Join(missionDir, "mission.md")
+	base := NewBaseService(fs, missionDir)
 	return &IDService{
-		fs:          fs,
-		missionDir:  missionDir,
+		BaseService: base,
 		idPath:      filepath.Join(missionDir, "id"),
-		missionPath: missionPath,
-		reader:      NewReader(fs, missionPath),
+		reader:      NewReader(fs, base.MissionPath()),
 	}
 }
 
@@ -43,10 +39,10 @@ func (s *IDService) GetOrCreateID() (string, error) {
 
 	// Generate and store new ID
 	newID := s.generateID()
-	if err := s.fs.MkdirAll(s.missionDir, 0755); err != nil {
+	if err := s.FS().MkdirAll(s.MissionDir(), 0755); err != nil {
 		return "", fmt.Errorf("failed to create mission directory: %w", err)
 	}
-	if err := afero.WriteFile(s.fs, s.idPath, []byte(newID), 0644); err != nil {
+	if err := afero.WriteFile(s.FS(), s.idPath, []byte(newID), 0644); err != nil {
 		return "", fmt.Errorf("failed to write mission ID: %w", err)
 	}
 	return newID, nil
@@ -54,13 +50,13 @@ func (s *IDService) GetOrCreateID() (string, error) {
 
 // CleanupStaleID removes stale mission ID when no active mission exists
 func (s *IDService) CleanupStaleID() error {
-	exists, err := afero.Exists(s.fs, s.missionPath)
+	exists, err := afero.Exists(s.FS(), s.MissionPath())
 	if err != nil {
 		return err
 	}
 	if !exists {
-		if idExists, _ := afero.Exists(s.fs, s.idPath); idExists {
-			return s.fs.Remove(s.idPath)
+		if idExists, _ := afero.Exists(s.FS(), s.idPath); idExists {
+			return s.FS().Remove(s.idPath)
 		}
 	}
 	return nil
@@ -100,7 +96,7 @@ func (s *IDService) isValidID(id string) bool {
 
 // readIDFile reads and validates ID from stored file
 func (s *IDService) readIDFile() string {
-	data, err := afero.ReadFile(s.fs, s.idPath)
+	data, err := afero.ReadFile(s.FS(), s.idPath)
 	if err != nil {
 		return ""
 	}

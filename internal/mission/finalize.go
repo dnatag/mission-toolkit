@@ -11,8 +11,7 @@ import (
 
 // FinalizeService validates mission.md completeness
 type FinalizeService struct {
-	fs  afero.Fs
-	dir string
+	*BaseService
 }
 
 // FinalizeResult represents validation result
@@ -26,17 +25,16 @@ type FinalizeResult struct {
 // NewFinalizeService creates a new FinalizeService
 func NewFinalizeService(fs afero.Fs, dir string) *FinalizeService {
 	return &FinalizeService{
-		fs:  fs,
-		dir: dir,
+		BaseService: NewBaseService(fs, dir),
 	}
 }
 
 // Finalize validates mission.md completeness and returns JSON result
 func (s *FinalizeService) Finalize() (string, error) {
-	missionPath := filepath.Join(s.dir, "mission.md")
+	missionPath := s.MissionPath()
 
 	// Read mission file
-	reader := NewReader(s.fs, missionPath)
+	reader := NewReader(s.FS(), missionPath)
 	m, err := reader.Read()
 	if err != nil {
 		return "", fmt.Errorf("reading mission file: %w", err)
@@ -66,13 +64,13 @@ func (s *FinalizeService) Finalize() (string, error) {
 
 // cleanupTemplates removes .mission/templates folder if it exists
 func (s *FinalizeService) cleanupTemplates() error {
-	templatesPath := filepath.Join(s.dir, "templates")
-	exists, err := afero.DirExists(s.fs, templatesPath)
+	templatesPath := filepath.Join(s.MissionDir(), "templates")
+	exists, err := afero.DirExists(s.FS(), templatesPath)
 	if err != nil {
 		return fmt.Errorf("checking templates directory: %w", err)
 	}
 	if exists {
-		if err := s.fs.RemoveAll(templatesPath); err != nil {
+		if err := s.FS().RemoveAll(templatesPath); err != nil {
 			return fmt.Errorf("removing templates directory: %w", err)
 		}
 	}
@@ -81,7 +79,7 @@ func (s *FinalizeService) cleanupTemplates() error {
 
 // updateStatusToPlanned changes mission status from planning to planned
 func (s *FinalizeService) updateStatusToPlanned(missionPath string) error {
-	writer := NewWriterWithPath(s.fs, missionPath)
+	writer := NewWriterWithPath(s.FS(), missionPath)
 	return writer.UpdateStatus("planned")
 }
 

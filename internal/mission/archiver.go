@@ -11,20 +11,18 @@ import (
 
 // Archiver handles archiving mission files to completed directory
 type Archiver struct {
-	fs         afero.Fs
-	missionDir string
-	reader     *Reader
-	git        git.GitClient
+	*BaseService
+	reader *Reader
+	git    git.GitClient
 }
 
 // NewArchiver creates a new Archiver instance
 func NewArchiver(fs afero.Fs, missionDir string, git git.GitClient) *Archiver {
-	missionPath := filepath.Join(missionDir, "mission.md")
+	base := NewBaseService(fs, missionDir)
 	return &Archiver{
-		fs:         fs,
-		missionDir: missionDir,
-		reader:     NewReader(fs, missionPath),
-		git:        git,
+		BaseService: base,
+		reader:      NewReader(fs, base.MissionPath()),
+		git:         git,
 	}
 }
 
@@ -32,10 +30,10 @@ func NewArchiver(fs afero.Fs, missionDir string, git git.GitClient) *Archiver {
 // If force is true and no mission exists, this is a no-op.
 // If force is false and no mission exists, returns an error.
 func (a *Archiver) Archive(force bool) error {
-	missionPath := filepath.Join(a.missionDir, "mission.md")
+	missionPath := a.MissionPath()
 
 	// Check if mission file exists
-	missionExists, err := afero.Exists(a.fs, missionPath)
+	missionExists, err := afero.Exists(a.FS(), missionPath)
 	if err != nil {
 		return fmt.Errorf("checking mission existence: %w", err)
 	}
@@ -51,8 +49,8 @@ func (a *Archiver) Archive(force bool) error {
 	}
 
 	// Mission exists, proceed with archiving
-	completedDir := filepath.Join(a.missionDir, "completed")
-	if err := a.fs.MkdirAll(completedDir, 0755); err != nil {
+	completedDir := filepath.Join(a.MissionDir(), "completed")
+	if err := a.FS().MkdirAll(completedDir, 0755); err != nil {
 		return fmt.Errorf("creating completed directory: %w", err)
 	}
 
@@ -63,13 +61,13 @@ func (a *Archiver) Archive(force bool) error {
 
 	// Archive mission artifacts
 	for _, filename := range []string{"mission.md", "execution.log"} {
-		src := filepath.Join(a.missionDir, filename)
-		if exists, _ := afero.Exists(a.fs, src); !exists {
+		src := filepath.Join(a.MissionDir(), filename)
+		if exists, _ := afero.Exists(a.FS(), src); !exists {
 			continue
 		}
 
 		dst := filepath.Join(completedDir, fmt.Sprintf("%s-%s", missionID, filename))
-		if err := utils.CopyFile(a.fs, src, dst); err != nil {
+		if err := utils.CopyFile(a.FS(), src, dst); err != nil {
 			return fmt.Errorf("archiving %s: %w", filename, err)
 		}
 	}
@@ -81,7 +79,7 @@ func (a *Archiver) Archive(force bool) error {
 	}
 
 	dst := filepath.Join(completedDir, fmt.Sprintf("%s-commit.msg", missionID))
-	if err := afero.WriteFile(a.fs, dst, []byte(commitMsg), 0644); err != nil {
+	if err := afero.WriteFile(a.FS(), dst, []byte(commitMsg), 0644); err != nil {
 		return fmt.Errorf("writing commit message: %w", err)
 	}
 
@@ -96,16 +94,16 @@ func (a *Archiver) CleanupObsoleteFiles() error {
 	filesToClean := []string{"execution.log", "mission.md", "id", "plan.json"}
 
 	for _, filename := range filesToClean {
-		filePath := filepath.Join(a.missionDir, filename)
+		filePath := filepath.Join(a.MissionDir(), filename)
 
 		// Check if file exists before attempting removal
-		exists, err := afero.Exists(a.fs, filePath)
+		exists, err := afero.Exists(a.FS(), filePath)
 		if err != nil {
 			return fmt.Errorf("checking existence of %s: %w", filename, err)
 		}
 
 		if exists {
-			if err := a.fs.Remove(filePath); err != nil {
+			if err := a.FS().Remove(filePath); err != nil {
 				return fmt.Errorf("removing %s: %w", filename, err)
 			}
 		}

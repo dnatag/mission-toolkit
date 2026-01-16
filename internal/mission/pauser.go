@@ -11,18 +11,16 @@ import (
 
 // Pauser handles pausing and restoring missions
 type Pauser struct {
-	fs         afero.Fs
-	missionDir string
-	reader     *Reader
+	*BaseService
+	reader *Reader
 }
 
 // NewPauser creates a new Pauser instance
 func NewPauser(fs afero.Fs, missionDir string) *Pauser {
-	missionPath := filepath.Join(missionDir, "mission.md")
+	base := NewBaseService(fs, missionDir)
 	return &Pauser{
-		fs:         fs,
-		missionDir: missionDir,
-		reader:     NewReader(fs, missionPath),
+		BaseService: base,
+		reader:      NewReader(fs, base.MissionPath()),
 	}
 }
 
@@ -30,10 +28,10 @@ func NewPauser(fs afero.Fs, missionDir string) *Pauser {
 // The paused mission is saved with format: TIMESTAMP-MISSIONID-mission.md
 // along with its execution log if it exists.
 func (p *Pauser) Pause() error {
-	missionPath := filepath.Join(p.missionDir, "mission.md")
+	missionPath := p.MissionPath()
 
 	// Check if mission exists
-	exists, err := afero.Exists(p.fs, missionPath)
+	exists, err := afero.Exists(p.FS(), missionPath)
 	if err != nil {
 		return fmt.Errorf("checking mission existence: %w", err)
 	}
@@ -49,8 +47,8 @@ func (p *Pauser) Pause() error {
 	}
 
 	// Create paused directory if it doesn't exist
-	pausedDir := filepath.Join(p.missionDir, "paused")
-	if err := p.fs.MkdirAll(pausedDir, 0755); err != nil {
+	pausedDir := filepath.Join(p.MissionDir(), "paused")
+	if err := p.FS().MkdirAll(pausedDir, 0755); err != nil {
 		return fmt.Errorf("creating paused directory: %w", err)
 	}
 
@@ -60,27 +58,27 @@ func (p *Pauser) Pause() error {
 	pausedPath := filepath.Join(pausedDir, pausedFilename)
 
 	// Copy mission file to paused directory
-	if err := utils.CopyFile(p.fs, missionPath, pausedPath); err != nil {
+	if err := utils.CopyFile(p.FS(), missionPath, pausedPath); err != nil {
 		return fmt.Errorf("copying mission to paused directory: %w", err)
 	}
 
 	// Copy execution log if it exists
-	logPath := filepath.Join(p.missionDir, "execution.log")
-	if exists, _ := afero.Exists(p.fs, logPath); exists {
+	logPath := filepath.Join(p.MissionDir(), "execution.log")
+	if exists, _ := afero.Exists(p.FS(), logPath); exists {
 		pausedLogFilename := fmt.Sprintf("%s-%s-execution.log", timestamp, mission.ID)
 		pausedLogPath := filepath.Join(pausedDir, pausedLogFilename)
-		if err := utils.CopyFile(p.fs, logPath, pausedLogPath); err != nil {
+		if err := utils.CopyFile(p.FS(), logPath, pausedLogPath); err != nil {
 			return fmt.Errorf("copying execution log: %w", err)
 		}
 	}
 
 	// Remove current mission files
-	if err := p.fs.Remove(missionPath); err != nil {
+	if err := p.FS().Remove(missionPath); err != nil {
 		return fmt.Errorf("removing current mission: %w", err)
 	}
 
-	if exists, _ := afero.Exists(p.fs, logPath); exists {
-		if err := p.fs.Remove(logPath); err != nil {
+	if exists, _ := afero.Exists(p.FS(), logPath); exists {
+		if err := p.FS().Remove(logPath); err != nil {
 			return fmt.Errorf("removing execution log: %w", err)
 		}
 	}
@@ -92,10 +90,10 @@ func (p *Pauser) Pause() error {
 // If missionID is empty, restores the most recently paused mission.
 // If missionID is provided, restores the specific mission with that ID.
 func (p *Pauser) Restore(missionID string) error {
-	pausedDir := filepath.Join(p.missionDir, "paused")
+	pausedDir := filepath.Join(p.MissionDir(), "paused")
 
 	// Check if paused directory exists
-	exists, err := afero.Exists(p.fs, pausedDir)
+	exists, err := afero.Exists(p.FS(), pausedDir)
 	if err != nil {
 		return fmt.Errorf("checking paused directory: %w", err)
 	}
@@ -105,7 +103,7 @@ func (p *Pauser) Restore(missionID string) error {
 	}
 
 	// List paused missions
-	files, err := afero.ReadDir(p.fs, pausedDir)
+	files, err := afero.ReadDir(p.FS(), pausedDir)
 	if err != nil {
 		return fmt.Errorf("reading paused directory: %w", err)
 	}
@@ -161,33 +159,33 @@ func (p *Pauser) Restore(missionID string) error {
 	}
 
 	// Check if current mission exists
-	currentMissionPath := filepath.Join(p.missionDir, "mission.md")
-	if exists, _ := afero.Exists(p.fs, currentMissionPath); exists {
+	currentMissionPath := filepath.Join(p.MissionDir(), "mission.md")
+	if exists, _ := afero.Exists(p.FS(), currentMissionPath); exists {
 		return fmt.Errorf("current mission exists, pause it first before restoring")
 	}
 
 	// Restore mission file
 	pausedMissionPath := filepath.Join(pausedDir, missionFile)
-	if err := utils.CopyFile(p.fs, pausedMissionPath, currentMissionPath); err != nil {
+	if err := utils.CopyFile(p.FS(), pausedMissionPath, currentMissionPath); err != nil {
 		return fmt.Errorf("restoring mission file: %w", err)
 	}
 
 	// Restore log file if it exists
 	pausedLogPath := filepath.Join(pausedDir, logFile)
-	if exists, _ := afero.Exists(p.fs, pausedLogPath); exists {
-		currentLogPath := filepath.Join(p.missionDir, "execution.log")
-		if err := utils.CopyFile(p.fs, pausedLogPath, currentLogPath); err != nil {
+	if exists, _ := afero.Exists(p.FS(), pausedLogPath); exists {
+		currentLogPath := filepath.Join(p.MissionDir(), "execution.log")
+		if err := utils.CopyFile(p.FS(), pausedLogPath, currentLogPath); err != nil {
 			return fmt.Errorf("restoring execution log: %w", err)
 		}
 	}
 
 	// Remove paused files
-	if err := p.fs.Remove(pausedMissionPath); err != nil {
+	if err := p.FS().Remove(pausedMissionPath); err != nil {
 		return fmt.Errorf("removing paused mission file: %w", err)
 	}
 
-	if exists, _ := afero.Exists(p.fs, pausedLogPath); exists {
-		if err := p.fs.Remove(pausedLogPath); err != nil {
+	if exists, _ := afero.Exists(p.FS(), pausedLogPath); exists {
+		if err := p.FS().Remove(pausedLogPath); err != nil {
 			return fmt.Errorf("removing paused log file: %w", err)
 		}
 	}

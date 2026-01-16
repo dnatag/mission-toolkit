@@ -22,22 +22,18 @@ type Status struct {
 
 // CheckService handles mission state validation using reader/writer
 type CheckService struct {
-	fs          afero.Fs
-	missionDir  string
-	missionPath string
-	reader      *Reader
-	idService   *IDService
-	context     string
+	*BaseService
+	reader    *Reader
+	idService *IDService
+	context   string
 }
 
 // NewCheckService creates a new check service
 func NewCheckService(fs afero.Fs, missionDir string) *CheckService {
-	missionPath := filepath.Join(missionDir, "mission.md")
+	base := NewBaseService(fs, missionDir)
 	return &CheckService{
-		fs:          fs,
-		missionDir:  missionDir,
-		missionPath: missionPath,
-		reader:      NewReader(fs, missionPath),
+		BaseService: base,
+		reader:      NewReader(fs, base.MissionPath()),
 		idService:   NewIDService(fs, missionDir),
 		context:     "",
 	}
@@ -53,7 +49,7 @@ func (c *CheckService) CheckMissionState() (*Status, error) {
 	status := &Status{StaleArtifacts: []string{}}
 
 	// Check for existing mission.md
-	if exists, _ := afero.Exists(c.fs, c.missionPath); exists {
+	if exists, _ := afero.Exists(c.FS(), c.MissionPath()); exists {
 		return c.handleExistingMission(status)
 	}
 
@@ -159,9 +155,9 @@ func (c *CheckService) cleanupStaleArtifacts(status *Status) error {
 	artifacts := []string{"id", "plan.json", "execution.log"}
 
 	for _, artifact := range artifacts {
-		path := filepath.Join(c.missionDir, artifact)
-		if exists, _ := afero.Exists(c.fs, path); exists {
-			if err := c.fs.Remove(path); err != nil {
+		path := filepath.Join(c.MissionDir(), artifact)
+		if exists, _ := afero.Exists(c.FS(), path); exists {
+			if err := c.FS().Remove(path); err != nil {
 				return fmt.Errorf("failed to remove stale artifact %s: %w", artifact, err)
 			}
 			status.StaleArtifacts = append(status.StaleArtifacts, artifact)

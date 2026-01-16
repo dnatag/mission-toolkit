@@ -12,18 +12,19 @@ import (
 
 // Reader handles reading and parsing mission.md files
 type Reader struct {
-	fs   afero.Fs
-	path string
+	*BaseService
 }
 
 // NewReader creates a new mission reader
 func NewReader(fs afero.Fs, path string) *Reader {
-	return &Reader{fs: fs, path: path}
+	return &Reader{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+	}
 }
 
 // Read reads and parses a mission file into a Mission struct
 func (r *Reader) Read() (*Mission, error) {
-	data, err := afero.ReadFile(r.fs, r.path)
+	data, err := afero.ReadFile(r.FS(), r.MissionPath())
 	if err != nil {
 		return nil, fmt.Errorf("failed to read mission file: %w", err)
 	}
