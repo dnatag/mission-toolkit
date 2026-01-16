@@ -73,6 +73,7 @@ Implements your authorized plan. AI handles execution while you maintain oversig
 - 🔄 WET vs DRY mission differentiation
 - ✅ Mandatory verification execution
 - 🔍 Pattern detection for future refactoring
+- 🛡️ Two-pass implementation with automatic rollback
 
 ### 📈 `/m.complete` - The Learning Handshake
 Captures what was accomplished and learned. Builds organizational memory for future missions.
@@ -86,6 +87,7 @@ Captures what was accomplished and learned. Builds organizational memory for fut
 - 📁 Mission archival with timestamps
 - 📋 Backlog updates and pattern tracking
 - 📆 Historical data preservation
+- 🎯 Rich commit message generation
 
 ## Project Structure
 
@@ -270,6 +272,20 @@ m version
    /m.complete
    ```
 
+## CLI Commands
+
+The `m` CLI provides several commands for project management:
+
+- `m init --ai <type>` - Initialize project with AI-specific templates
+- `m dashboard` - Interactive TUI dashboard for mission management
+- `m version` - Show version information
+- `m analyze <type>` - Analyze intent, scope, complexity, etc.
+- `m mission <action>` - Mission lifecycle management
+- `m backlog <action>` - Backlog management
+- `m checkpoint <action>` - Git checkpoint management
+- `m log` - Execution logging
+- `m check` - Validation and status checks
+
 ## Template System Features
 
 ### Embedded Templates
@@ -329,6 +345,54 @@ m version
 - **🔧 Template Consistency**: Embedded template system ensures reliable, predictable outputs across all AI assistants
 - **📊 Full Observability**: Execution logging and metrics provide complete visibility into mission progress and outcomes
 - **🔄 AI-Agnostic**: Works seamlessly with Amazon Q, Claude, Kiro, OpenCode, and other AI assistants
+- **🛡️ Safety Features**: Two-pass implementation with automatic rollback on polish failures
+- **📱 Interactive TUI**: Rich dashboard for mission management and progress tracking
+
+## CLI Reference
+
+### Core Commands
+
+```bash
+# Check current version
+m version
+
+# Initialize project
+m init --ai <q|claude|kiro|opencode>
+
+# Interactive dashboard
+m dashboard
+
+# Mission lifecycle
+m mission create --intent "description"
+m mission check --context <plan|apply|complete>
+m mission update --status <active|executed|completed|failed>
+m mission finalize
+m mission archive
+
+# Analysis commands
+m analyze intent "description"
+m analyze scope
+m analyze complexity
+m analyze clarify
+m analyze duplication
+m analyze decompose
+m analyze test
+
+# Backlog management
+m backlog list
+m backlog add "item" --type <decomposed|refactor>
+m backlog complete --item "exact text"
+m backlog resolve --item "pattern"
+
+# Checkpoint management
+m checkpoint create
+m checkpoint restore <name>
+m checkpoint commit -m "message"
+
+# Logging and validation
+m log --step "name" "message"
+m check "intent"
+```
 
 ## Versioning
 
