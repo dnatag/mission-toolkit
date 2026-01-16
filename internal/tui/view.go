@@ -166,12 +166,11 @@ func (m DashboardModel) renderCurrentMission() string {
 		nextSteps = "Unknown status - use '@m.plan' to create a new mission"
 	}
 
-	intent := extractIntent(mission.Body)
 	content := fmt.Sprintf("%s %s (Track %d)\n\n%s\n\n%s",
 		statusStyle.Render(strings.ToUpper(mission.Status)),
 		mission.Type,
 		mission.Track,
-		intent,
+		mission.GetIntent(),
 		nextSteps,
 	)
 
@@ -210,12 +209,11 @@ func (m DashboardModel) renderCompletedMissions() string {
 			prefix = "▶ "
 		}
 
-		intent := extractIntent(mission.Body)
 		item := fmt.Sprintf("%s%s [%s] %s",
 			prefix,
 			mission.ID,
 			mission.Type,
-			truncate(intent, 50),
+			truncate(mission.GetIntent(), 50),
 		)
 		items = append(items, item)
 	}
@@ -235,10 +233,10 @@ func (m DashboardModel) renderMissionDetails(mission *mission.Mission) string {
 		statusStyle = lipgloss.NewStyle()
 	}
 
-	intent := extractIntent(mission.Body)
-	scope := extractScope(mission.Body)
-	plan := extractPlan(mission.Body)
-	verification := extractVerification(mission.Body)
+	intent := mission.GetIntent()
+	scope := mission.GetScope()
+	plan := mission.GetPlan()
+	verification := mission.GetVerification()
 
 	var sections []string
 	sections = append(sections, fmt.Sprintf("%s %s (Track %d)",
@@ -270,59 +268,6 @@ func (m DashboardModel) renderMissionDetails(mission *mission.Mission) string {
 	}
 
 	return strings.Join(sections, "\n")
-}
-
-// Helper functions to extract sections from mission body
-func extractIntent(body string) string {
-	re := regexp.MustCompile(`(?s)## INTENT\s*\n(.*?)(?:\n##|$)`)
-	matches := re.FindStringSubmatch(body)
-	if len(matches) > 1 {
-		return strings.TrimSpace(matches[1])
-	}
-	return ""
-}
-
-func extractScope(body string) []string {
-	re := regexp.MustCompile(`(?s)## SCOPE\s*\n(.*?)(?:\n##|$)`)
-	matches := re.FindStringSubmatch(body)
-	if len(matches) > 1 {
-		lines := strings.Split(strings.TrimSpace(matches[1]), "\n")
-		var scope []string
-		for _, line := range lines {
-			line = strings.TrimSpace(line)
-			if line != "" {
-				scope = append(scope, line)
-			}
-		}
-		return scope
-	}
-	return nil
-}
-
-func extractPlan(body string) []string {
-	re := regexp.MustCompile(`(?s)## PLAN\s*\n(.*?)(?:\n##|$)`)
-	matches := re.FindStringSubmatch(body)
-	if len(matches) > 1 {
-		lines := strings.Split(strings.TrimSpace(matches[1]), "\n")
-		var plan []string
-		for _, line := range lines {
-			line = strings.TrimSpace(line)
-			if line != "" {
-				plan = append(plan, line)
-			}
-		}
-		return plan
-	}
-	return nil
-}
-
-func extractVerification(body string) string {
-	re := regexp.MustCompile(`(?s)## VERIFICATION\s*\n(.*?)(?:\n##|$)`)
-	matches := re.FindStringSubmatch(body)
-	if len(matches) > 1 {
-		return strings.TrimSpace(matches[1])
-	}
-	return ""
 }
 
 // applyFixedDimensions applies fixed width and height to pane content with scrolling support.

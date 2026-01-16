@@ -163,7 +163,11 @@ func (r *Reader) ReadIntent() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("reading mission file: %w", err)
 	}
-	return extractSection(mission.Body, "INTENT")
+	intent := mission.GetIntent()
+	if intent == "" {
+		return "", fmt.Errorf("no intent found in mission")
+	}
+	return intent, nil
 }
 
 // ReadScope extracts the SCOPE section from a mission file
@@ -172,34 +176,9 @@ func (r *Reader) ReadScope() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("reading mission file: %w", err)
 	}
-	return extractSection(mission.Body, "SCOPE")
-}
-
-// extractSection extracts a section from mission body
-func extractSection(body, sectionName string) (string, error) {
-	lines := strings.Split(body, "\n")
-	inSection := false
-	var sectionLines []string
-
-	for _, line := range lines {
-		if strings.HasPrefix(line, "## "+sectionName) {
-			inSection = true
-			continue
-		}
-		if inSection && strings.HasPrefix(line, "## ") {
-			break
-		}
-		if inSection && strings.TrimSpace(line) != "" {
-			sectionLines = append(sectionLines, line)
-		}
+	scope := mission.GetScope()
+	if len(scope) == 0 {
+		return "", fmt.Errorf("no scope found in mission")
 	}
-
-	if len(sectionLines) == 0 {
-		return "", fmt.Errorf("no %s found in mission", strings.ToLower(sectionName))
-	}
-
-	if sectionName == "INTENT" {
-		return strings.TrimSpace(strings.Join(sectionLines, " ")), nil
-	}
-	return strings.Join(sectionLines, "\n"), nil
+	return strings.Join(scope, "\n"), nil
 }

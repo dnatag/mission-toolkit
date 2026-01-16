@@ -3,7 +3,6 @@ package mission
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/spf13/afero"
 )
@@ -82,7 +81,7 @@ func (c *CheckService) handleExistingMission(status *Status) (*Status, error) {
 	status.HasActiveMission = true
 	status.MissionStatus = mission.Status
 	status.MissionID = mission.ID
-	status.MissionIntent = c.extractIntent(mission.Body)
+	status.MissionIntent = mission.GetIntent()
 	status.Ready = false
 
 	// Command-specific validation
@@ -122,25 +121,6 @@ func (c *CheckService) handleExistingMission(status *Status) (*Status, error) {
 		status.NextStep = "STOP. Use template libraries/displays/error-mission-exists.md to ask the user for a decision."
 	}
 	return status, nil
-}
-
-// extractIntent extracts the intent from mission body
-func (c *CheckService) extractIntent(body string) string {
-	lines := strings.Split(body, "\n")
-	inIntent := false
-	for _, line := range lines {
-		if line == "## INTENT" {
-			inIntent = true
-			continue
-		}
-		if inIntent && line != "" && line[0] != '#' {
-			return line
-		}
-		if inIntent && len(line) > 0 && line[0] == '#' {
-			break
-		}
-	}
-	return ""
 }
 
 // cleanupStaleArtifacts removes stale mission artifacts only when called from m.plan context.

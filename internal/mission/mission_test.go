@@ -106,3 +106,34 @@ func TestMission_DomainsField(t *testing.T) {
 	m2 := &Mission{Domains: ""}
 	assert.Equal(t, "", m2.Domains)
 }
+
+func TestMission_GetSections(t *testing.T) {
+	body := `## INTENT
+Refactor the world
+
+## SCOPE
+- file1.go
+- file2.go
+
+## PLAN
+- Step 1
+- Step 2
+
+## VERIFICATION
+go test ./...`
+
+	m := &Mission{Body: body}
+
+	t.Run("GetIntent", func(t *testing.T) {
+		assert.Equal(t, "Refactor the world", m.GetIntent())
+	})
+
+	t.Run("GetPlan", func(t *testing.T) {
+		expected := []string{"- Step 1", "- Step 2"}
+		assert.Equal(t, expected, m.GetPlan())
+	})
+
+	t.Run("GetVerification", func(t *testing.T) {
+		assert.Equal(t, "go test ./...", m.GetVerification())
+	})
+}

@@ -77,42 +77,6 @@ func TestDashboardModel_ActiveMissionLayout(t *testing.T) {
 	}
 }
 
-func TestExtractIntent(t *testing.T) {
-	body := `## INTENT
-Test mission intent
-
-## SCOPE
-test.go`
-
-	intent := extractIntent(body)
-	expected := "Test mission intent"
-
-	if intent != expected {
-		t.Errorf("Expected intent '%s', got '%s'", expected, intent)
-	}
-}
-
-func TestExtractScope(t *testing.T) {
-	body := `## SCOPE
-file1.go
-file2.go
-
-## PLAN`
-
-	scope := extractScope(body)
-	expected := []string{"file1.go", "file2.go"}
-
-	if len(scope) != len(expected) {
-		t.Errorf("Expected scope length %d, got %d", len(expected), len(scope))
-	}
-
-	for i, item := range expected {
-		if scope[i] != item {
-			t.Errorf("Expected scope[%d] to be '%s', got '%s'", i, item, scope[i])
-		}
-	}
-}
-
 func TestTruncate(t *testing.T) {
 	tests := []struct {
 		input    string

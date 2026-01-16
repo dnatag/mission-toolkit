@@ -1,6 +1,9 @@
 package mission
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+)
 
 // Mission represents a mission with YAML frontmatter metadata and markdown body
 type Mission struct {
@@ -40,4 +43,42 @@ func (m *Mission) GetScope() []string {
 		}
 	}
 	return scope
+}
+
+// GetIntent extracts the intent from mission body
+func (m *Mission) GetIntent() string {
+	return extractSection(m.Body, "INTENT")
+}
+
+// GetPlan extracts the plan steps from mission body
+func (m *Mission) GetPlan() []string {
+	content := extractSection(m.Body, "PLAN")
+	if content == "" {
+		return nil
+	}
+
+	lines := strings.Split(content, "\n")
+	var plan []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			plan = append(plan, trimmed)
+		}
+	}
+	return plan
+}
+
+// GetVerification extracts the verification command from mission body
+func (m *Mission) GetVerification() string {
+	return extractSection(m.Body, "VERIFICATION")
+}
+
+// extractSection extracts a section from mission body
+func extractSection(body, sectionName string) string {
+	re := regexp.MustCompile("(?s)## " + sectionName + "\\s*\\n(.*?)(?:\\n##|$)")
+	matches := re.FindStringSubmatch(body)
+	if len(matches) > 1 {
+		return strings.TrimSpace(matches[1])
+	}
+	return ""
 }
