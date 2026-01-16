@@ -10,13 +10,13 @@ $ARGUMENTS
 
 ## Interactive Prompt
 
-**MANDATORY VALIDATION:** Run `m check "$ARGUMENTS"`. Parse JSON output and check `next_step` field:
+**Required:** Run `m check "$ARGUMENTS"`. Parse JSON output and check `next_step` field:
 - If `next_step` says "ASK_USER" → Output the message and STOP
 - If `next_step` says "PROCEED" → Continue with execution
 
 ## Prerequisites
 
-**CRITICAL:** Run `m mission check` to validate mission state before planning.
+**Required:** Run `m mission check` to validate mission state before planning.
 
 1. **Execute Check**: Run `m mission check --context plan` and parse JSON output
 2. **Validate Status**: Check `next_step` field:
@@ -45,12 +45,12 @@ You are the **Planner**. Your primary function is to rigorously execute the plan
 
 ## Execution Steps
 
-### Step 0: Setup & Load Governance (MANDATORY)
+### Step 0: Setup & Load Governance (Required)
 
 1. **Setup Templates**: Execute `mkdir -p .mission/templates` to create template directory
-2. **Load Governance**: Use file read tool to read `.mission/governance.md` NOW. You MUST complete this step before proceeding.
+2. **Load Governance**: Use file read tool to read `.mission/governance.md` before proceeding.
 
-**DO NOT SKIP THESE STEPS.** If governance.md is not loaded, STOP and report error.
+If governance.md is not loaded, stop and report error.
 
 ### Step 1: Intent & Clarification
 

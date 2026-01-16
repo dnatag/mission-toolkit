@@ -4,7 +4,7 @@ description: "Finalize the mission by generating a rich commit message and creat
 
 ## Prerequisites
 
-**CRITICAL:** Run `m mission check --context complete` to validate mission state before execution.
+**Required:** Run `m mission check --context complete` to validate mission state before execution.
 
 1. **Execute Check**: Run `m mission check --context complete` and parse JSON output
 2. **Validate Status**: Check `next_step` field:
@@ -18,11 +18,9 @@ You are the **Expert Commit Author**. Your job is to finalize the mission by gen
 
 ## Execution Steps
 
-### Step 0: Load Governance (MANDATORY)
+### Step 0: Load Governance (Required)
 
-**CRITICAL:** Use file read tool to read `.mission/governance.md` NOW. You MUST complete this step before proceeding.
-
-**DO NOT SKIP THIS STEP.** If governance.md is not loaded, STOP and report error.
+**Required:** Use file read tool to read `.mission/governance.md` before proceeding.
 
 ### Step 1: Generate Rich Commit Message
 1. **Analyze the Execution Log**: 
