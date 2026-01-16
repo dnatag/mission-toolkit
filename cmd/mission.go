@@ -241,10 +241,10 @@ var missionRestoreCmd = &cobra.Command{
 	},
 }
 
-// missionPlanCmd manages the mission plan
-var missionPlanCmd = &cobra.Command{
-	Use:   "plan",
-	Short: "Manage mission plan",
+// missionMarkCompleteCmd marks a plan step as complete
+var missionMarkCompleteCmd = &cobra.Command{
+	Use:   "mark-complete",
+	Short: "Mark a plan step as complete",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		step, _ := cmd.Flags().GetInt("step")
 		if step == 0 {
@@ -267,7 +267,7 @@ var missionPlanCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(missionCmd)
-	missionCmd.AddCommand(missionCheckCmd, missionUpdateCmd, missionIDCmd, missionCreateCmd, missionArchiveCmd, missionFinalizeCmd, missionPauseCmd, missionRestoreCmd, missionPlanCmd)
+	missionCmd.AddCommand(missionCheckCmd, missionUpdateCmd, missionIDCmd, missionCreateCmd, missionArchiveCmd, missionFinalizeCmd, missionPauseCmd, missionRestoreCmd, missionMarkCompleteCmd)
 
 	// Add flags
 	missionCheckCmd.Flags().StringP("context", "c", "", "Context for validation (apply or complete)")
@@ -280,7 +280,7 @@ func init() {
 	missionCreateCmd.Flags().String("intent", "", "Intent text for initial mission creation")
 	missionCreateCmd.MarkFlagRequired("intent")
 	missionArchiveCmd.Flags().Bool("force", false, "Forcefully archive mission or no-op if no current mission exists")
-	missionPlanCmd.Flags().Int("step", 0, "Step number to mark as complete")
-	missionPlanCmd.Flags().String("status", "INFO", "Status level for logging (INFO, SUCCESS, FAILED, etc.)")
-	missionPlanCmd.Flags().String("message", "", "Message to log for this step")
+	missionMarkCompleteCmd.Flags().Int("step", 0, "Step number to mark as complete")
+	missionMarkCompleteCmd.Flags().String("status", "INFO", "Status level for logging (INFO, SUCCESS, FAILED, etc.)")
+	missionMarkCompleteCmd.Flags().String("message", "", "Message to log for this step")
 }
