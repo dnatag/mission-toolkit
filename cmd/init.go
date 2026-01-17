@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/dnatag/mission-toolkit/internal/docs"
+	"github.com/dnatag/mission-toolkit/internal/git"
 	"github.com/dnatag/mission-toolkit/internal/templates"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -64,6 +65,12 @@ If a Git repository is not found, it will be initialized automatically.`,
 		}
 
 		fmt.Printf("Mission Toolkit project initialized successfully for AI type: %s\n", aiType)
+
+		// Add .mission/ to .gitignore
+		if err := git.EnsureEntry(fs, cwd, ".mission/"); err != nil {
+			fmt.Fprintf(os.Stderr, "Error updating .gitignore: %v\n", err)
+			os.Exit(1)
+		}
 
 		// Check for Git repository and initialize if not found
 		if _, err := os.Stat(".git"); os.IsNotExist(err) {
