@@ -304,21 +304,21 @@ func (m DashboardModel) applyFixedDimensions(content string) string {
 // Returns the clipped lines padded to the visible dimensions.
 func clipContentToViewport(lines []string, scrollX, scrollY, visibleWidth, visibleHeight int) []string {
 	var visibleLines []string
-	
+
 	// Extract visible lines based on vertical scroll
 	for i := scrollY; i < scrollY+visibleHeight && i < len(lines); i++ {
 		if i < 0 {
 			continue
 		}
-		
+
 		line := lines[i]
-		
+
 		// Apply horizontal clipping
 		if scrollX >= len(line) {
 			visibleLines = append(visibleLines, "")
 			continue
 		}
-		
+
 		endX := scrollX + visibleWidth
 		if endX > len(line) {
 			endX = len(line)
@@ -348,10 +348,10 @@ func clipContentToViewport(lines []string, scrollX, scrollY, visibleWidth, visib
 func renderVerticalScrollbar(lines []string, scrollY, totalLines, visibleHeight int) []string {
 	needsScrollbar := totalLines > visibleHeight
 	result := make([]string, len(lines))
-	
+
 	for i := range lines {
 		var scrollbarChar string
-		
+
 		if !needsScrollbar {
 			scrollbarChar = " "
 		} else if i == 0 && scrollY > 0 {
@@ -370,10 +370,10 @@ func renderVerticalScrollbar(lines []string, scrollY, totalLines, visibleHeight 
 		} else {
 			scrollbarChar = " "
 		}
-		
+
 		result[i] = lines[i] + scrollbarChar
 	}
-	
+
 	return result
 }
 
@@ -382,17 +382,17 @@ func renderVerticalScrollbar(lines []string, scrollY, totalLines, visibleHeight 
 // Returns a string representing the scrollbar with position indicators.
 func renderHorizontalScrollbar(scrollX, maxWidth, visibleWidth, totalWidth int) string {
 	needsScrollbar := maxWidth > visibleWidth
-	
+
 	if !needsScrollbar {
 		return strings.Repeat(" ", totalWidth)
 	}
-	
+
 	var scrollbar strings.Builder
 	scrollbar.Grow(totalWidth)
-	
+
 	for i := 0; i < visibleWidth; i++ {
 		var char string
-		
+
 		if i == 0 && scrollX > 0 {
 			char = "◀" // Left arrow - can scroll left
 		} else if i == visibleWidth-1 && scrollX+visibleWidth < maxWidth {
@@ -407,10 +407,10 @@ func renderHorizontalScrollbar(scrollX, maxWidth, visibleWidth, totalWidth int) 
 				char = "─" // Scrollbar track
 			}
 		}
-		
+
 		scrollbar.WriteString(char)
 	}
-	
+
 	scrollbar.WriteString(" ") // Corner space for vertical scrollbar
 	return scrollbar.String()
 }

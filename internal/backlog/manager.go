@@ -161,7 +161,8 @@ func (m *BacklogManager) AddWithPattern(description, itemType, patternID string)
 
 	result, err := m.findAndModifySection(lines, sectionHeader, func() []string {
 		if patternID != "" {
-			return []string{fmt.Sprintf("- [ ] [PATTERN:%s][COUNT:1] %s", patternID, description)}
+			// Start count at 2 since detecting a pattern means duplication already exists (2+ instances)
+			return []string{fmt.Sprintf("- [ ] [PATTERN:%s][COUNT:2] %s", patternID, description)}
 		}
 		return []string{fmt.Sprintf("- [ ] %s", description)}
 	})

@@ -643,7 +643,7 @@ func TestBacklogManager_PatternTracking(t *testing.T) {
 	patternID := "email-validation"
 	description := "Refactor email validation in handlers"
 
-	// First occurrence - should create with count=1
+	// First detection - pattern exists in 2+ locations, so count starts at 2
 	if err := manager.AddWithPattern(description, "refactor", patternID); err != nil {
 		t.Fatalf("AddWithPattern failed: %v", err)
 	}
@@ -652,24 +652,11 @@ func TestBacklogManager_PatternTracking(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetPatternCount failed: %v", err)
 	}
-	if count != 1 {
-		t.Errorf("Expected count=1, got %d", count)
-	}
-
-	// Second occurrence - should increment to count=2
-	if err := manager.AddWithPattern(description, "refactor", patternID); err != nil {
-		t.Fatalf("AddWithPattern failed: %v", err)
-	}
-
-	count, err = manager.GetPatternCount(patternID)
-	if err != nil {
-		t.Fatalf("GetPatternCount failed: %v", err)
-	}
 	if count != 2 {
 		t.Errorf("Expected count=2, got %d", count)
 	}
 
-	// Third occurrence - should increment to count=3 (DRY threshold)
+	// Second detection - another instance found, increment to count=3 (DRY threshold)
 	if err := manager.AddWithPattern(description, "refactor", patternID); err != nil {
 		t.Fatalf("AddWithPattern failed: %v", err)
 	}
@@ -682,12 +669,25 @@ func TestBacklogManager_PatternTracking(t *testing.T) {
 		t.Errorf("Expected count=3, got %d", count)
 	}
 
+	// Third detection - increment to count=4
+	if err := manager.AddWithPattern(description, "refactor", patternID); err != nil {
+		t.Fatalf("AddWithPattern failed: %v", err)
+	}
+
+	count, err = manager.GetPatternCount(patternID)
+	if err != nil {
+		t.Fatalf("GetPatternCount failed: %v", err)
+	}
+	if count != 4 {
+		t.Errorf("Expected count=4, got %d", count)
+	}
+
 	// Verify backlog content format
 	content, err := manager.readBacklogContent()
 	if err != nil {
 		t.Fatalf("Failed to read backlog: %v", err)
 	}
-	if !strings.Contains(content, fmt.Sprintf("[PATTERN:%s][COUNT:3]", patternID)) {
+	if !strings.Contains(content, fmt.Sprintf("[PATTERN:%s][COUNT:4]", patternID)) {
 		t.Errorf("Expected pattern format in backlog, got: %s", content)
 	}
 }

@@ -224,7 +224,7 @@ func TestRenderVerticalScrollbar(t *testing.T) {
 			if len(result) != len(tt.lines) {
 				t.Errorf("expected %d lines, got %d", len(tt.lines), len(result))
 			}
-			hasScrollbar := strings.Contains(strings.Join(result, ""), "│") || 
+			hasScrollbar := strings.Contains(strings.Join(result, ""), "│") ||
 				strings.Contains(strings.Join(result, ""), "▲") ||
 				strings.Contains(strings.Join(result, ""), "▼")
 			if hasScrollbar != tt.wantScrollbar {
