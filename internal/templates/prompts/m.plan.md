@@ -70,7 +70,7 @@ If governance.md is not loaded, stop and report error.
 2.  **Analyze Test Requirements**: `m analyze test` → Parse JSON, read `template_path`, follow template
     *   If needed: `m mission update --section scope --append --item "[test_file]" ...`
 3.  **Duplication Analysis & WET→DRY Decision (Rule of Three)**:
-    *   `m backlog list --type refactor` → Review existing patterns to avoid creating duplicate pattern IDs
+    *   `m backlog list --include refactor` → Review existing patterns to avoid creating duplicate pattern IDs
     *   `m analyze duplication` → Parse JSON, read `template_path`, follow template
     *   For each pattern detected:
         - Check if semantically similar pattern already exists in backlog (reuse existing pattern-id)
@@ -96,7 +96,7 @@ If governance.md is not loaded, stop and report error.
     *   **Track 4 (Epic)**: 
         - Run `m analyze decompose` → Parse JSON, read `template_path`, follow template for decomposition guidance
         - Decompose intent into sub-intents based on template analysis
-        - `m backlog list` (parse JSON)
+        - `m backlog list --exclude refactor --exclude completed` (parse JSON)
         - `m backlog add "[sub-intent]" ... --type decomposed`
         - Execute `m mission archive --force` to clean up generated mission.md
         - Load `.mission/libraries/displays/plan-epic.md`, fill with `{{SUB_INTENTS}}`

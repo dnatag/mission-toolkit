@@ -12,7 +12,7 @@ func TestBacklogManager_List(t *testing.T) {
 	manager := NewManager(tempDir)
 
 	// Test with non-existent backlog (should create it)
-	items, err := manager.List(false, "")
+	items, err := manager.List(nil, nil)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -29,7 +29,7 @@ func TestBacklogManager_List(t *testing.T) {
 	}
 
 	// Test listing open items
-	items, err = manager.List(false, "")
+	items, err = manager.List(nil, nil)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -43,7 +43,7 @@ func TestBacklogManager_List(t *testing.T) {
 	}
 
 	// Test listing open items (should be 1)
-	items, err = manager.List(false, "")
+	items, err = manager.List(nil, nil)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestBacklogManager_List(t *testing.T) {
 	}
 
 	// Test listing all items (should be 2)
-	items, err = manager.List(true, "")
+	items, err = manager.List([]string{"completed"}, nil)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -243,7 +243,7 @@ func TestBacklogManager_AddToEmptySection(t *testing.T) {
 	}
 
 	// Verify item was added correctly
-	items, err := manager.List(false, "")
+	items, err := manager.List(nil, nil)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -260,7 +260,7 @@ func TestBacklogManager_AddToEmptySection(t *testing.T) {
 	}
 
 	// Verify both items exist
-	items, err = manager.List(false, "")
+	items, err = manager.List(nil, nil)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -309,7 +309,7 @@ func TestBacklogManager_ExistingBacklogWithEmptySections(t *testing.T) {
 	}
 
 	// Verify all items were added
-	items, err := manager.List(false, "")
+	items, err := manager.List(nil, nil)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -380,7 +380,7 @@ func TestBacklogManager_AddMultiple(t *testing.T) {
 	}
 
 	// Verify count
-	storedItems, err := manager.List(false, "")
+	storedItems, err := manager.List(nil, nil)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -444,7 +444,7 @@ func TestBacklogManager_Cleanup(t *testing.T) {
 	}
 
 	// Verify all items are in completed section
-	items, err := manager.List(true, "")
+	items, err := manager.List([]string{"completed"}, nil)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -462,7 +462,7 @@ func TestBacklogManager_Cleanup(t *testing.T) {
 	}
 
 	// Verify completed section is empty
-	items, err = manager.List(true, "")
+	items, err = manager.List([]string{"completed"}, nil)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -600,7 +600,7 @@ func TestBacklogManager_ListWithTypeFilter(t *testing.T) {
 	}
 
 	// Test filtering by refactor
-	items, err := manager.List(false, "refactor")
+	items, err := manager.List([]string{"refactor"}, nil)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -609,16 +609,17 @@ func TestBacklogManager_ListWithTypeFilter(t *testing.T) {
 	}
 
 	// Test filtering by decomposed
-	items, err = manager.List(false, "decomposed")
+	items, err = manager.List([]string{"decomposed"}, nil)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
 	if len(items) != 1 {
+		t.Logf("Items returned for decomposed: %v", items)
 		t.Errorf("Expected 1 decomposed item, got %d", len(items))
 	}
 
 	// Test filtering by future
-	items, err = manager.List(false, "future")
+	items, err = manager.List([]string{"future"}, nil)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -627,12 +628,48 @@ func TestBacklogManager_ListWithTypeFilter(t *testing.T) {
 	}
 
 	// Test no filter (should get all 3)
-	items, err = manager.List(false, "")
+	items, err = manager.List(nil, nil)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
 	if len(items) != 3 {
 		t.Errorf("Expected 3 items, got %d", len(items))
+	}
+
+	// Test exclude refactor (should get decomposed + future = 2)
+	items, err = manager.List(nil, []string{"refactor"})
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 2 {
+		t.Errorf("Expected 2 items (excluding refactor), got %d", len(items))
+	}
+
+	// Test exclude decomposed (should get refactor + future = 2)
+	items, err = manager.List(nil, []string{"decomposed"})
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 2 {
+		t.Errorf("Expected 2 items (excluding decomposed), got %d", len(items))
+	}
+
+	// Test multiple excludes (exclude refactor and decomposed, should get future = 1)
+	items, err = manager.List(nil, []string{"refactor", "decomposed"})
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Errorf("Expected 1 item (excluding refactor and decomposed), got %d", len(items))
+	}
+
+	// Test multiple includes (include refactor and future, should get 2)
+	items, err = manager.List([]string{"refactor", "future"}, nil)
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 2 {
+		t.Errorf("Expected 2 items (refactor and future), got %d", len(items))
 	}
 }
 

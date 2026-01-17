@@ -19,11 +19,16 @@ var backlogListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List backlog items",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		all, _ := cmd.Flags().GetBool("all")
-		itemType, _ := cmd.Flags().GetString("type")
+		include, _ := cmd.Flags().GetStringArray("include")
+		exclude, _ := cmd.Flags().GetStringArray("exclude")
+
+		// Validate mutual exclusivity
+		if len(include) > 0 && len(exclude) > 0 {
+			return fmt.Errorf("--include and --exclude are mutually exclusive")
+		}
 
 		manager := backlog.NewManager(missionDir)
-		items, err := manager.List(all, itemType)
+		items, err := manager.List(include, exclude)
 		if err != nil {
 			return fmt.Errorf("listing backlog: %w", err)
 		}
@@ -131,8 +136,8 @@ func init() {
 	backlogCmd.AddCommand(backlogListCmd, backlogAddCmd, backlogCompleteCmd, backlogCleanupCmd)
 
 	// Add flags
-	backlogListCmd.Flags().Bool("all", false, "Include completed items")
-	backlogListCmd.Flags().String("type", "", "Filter by item type (decomposed, refactor, future)")
+	backlogListCmd.Flags().StringArray("include", []string{}, "Include only these types (decomposed, refactor, future, completed)")
+	backlogListCmd.Flags().StringArray("exclude", []string{}, "Exclude these types (decomposed, refactor, future, completed)")
 	backlogAddCmd.Flags().String("type", "", "Item type (decomposed, refactor, future)")
 	backlogAddCmd.MarkFlagRequired("type")
 	backlogAddCmd.Flags().String("pattern-id", "", "Pattern ID for Rule-of-Three tracking (refactor type only)")

@@ -45,7 +45,7 @@ You are the **Expert Commit Author**. Your job is to finalize the mission by gen
 
 ### Step 3: Finalize Mission
 1. **Check Backlog**: 
-   - Execute `m backlog list` to get all pending backlog items
+   - Execute `m backlog list --exclude refactor --exclude completed` to get pending backlog items (excluding refactor patterns and completed items)
    - Read current `.mission/mission.md` to check the INTENT section
    - If the mission intent matches any backlog item, execute `m backlog complete --item "<exact backlog item text>"`
 2. **Update Status**: Execute `m mission update --status completed`

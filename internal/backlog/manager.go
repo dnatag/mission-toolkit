@@ -29,10 +29,21 @@ func NewManager(missionDir string) *BacklogManager {
 var patternRegex = regexp.MustCompile(`\[PATTERN:([^\]]+)\]\[COUNT:(\d+)\]`)
 
 // List returns backlog items, optionally including completed items and filtering by type
-func (m *BacklogManager) List(includeCompleted bool, itemType string) ([]string, error) {
-	if itemType != "" {
-		if err := m.validateType(itemType); err != nil {
-			return nil, err
+func (m *BacklogManager) List(include []string, exclude []string) ([]string, error) {
+	// Validate include types
+	for _, t := range include {
+		if t != "completed" {
+			if err := m.validateType(t); err != nil {
+				return nil, err
+			}
+		}
+	}
+	// Validate exclude types
+	for _, t := range exclude {
+		if t != "completed" {
+			if err := m.validateType(t); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -67,21 +78,73 @@ func (m *BacklogManager) List(includeCompleted bool, itemType string) ([]string,
 		}
 
 		if strings.HasPrefix(line, "- [ ]") || strings.HasPrefix(line, "- [x]") {
-			// Skip completed items unless includeCompleted is true
-			if inCompletedSection && !includeCompleted {
-				continue
+			// Determine if this item should be included
+			shouldInclude := false
+
+			if inCompletedSection {
+				// In completed section
+				if len(exclude) > 0 && contains(exclude, "completed") {
+					// Explicitly excluded
+					continue
+				}
+				if len(include) > 0 {
+					// Include filter specified - only include if "completed" is in the list
+					shouldInclude = contains(include, "completed")
+				} else {
+					// No include filter - exclude completed by default
+					shouldInclude = false
+				}
+			} else {
+				// Not in completed section - check type filters
+				itemType := m.getSectionType(currentSection)
+
+				// Check exclude filter
+				if contains(exclude, itemType) {
+					continue
+				}
+
+				// Check include filter
+				if len(include) > 0 {
+					// Include filter specified
+					// Check if this type is in the include list OR if "completed" is in include (which means include all types)
+					shouldInclude = contains(include, itemType) || contains(include, "completed")
+				} else {
+					// No include filter - include all non-completed by default
+					shouldInclude = true
+				}
 			}
 
-			// Filter by type if specified
-			if itemType != "" && !m.isInSection(currentSection, itemType) {
-				continue
+			if shouldInclude {
+				items = append(items, line)
 			}
-
-			items = append(items, line)
 		}
 	}
 
 	return items, scanner.Err()
+}
+
+// contains checks if a string slice contains a value
+func contains(slice []string, val string) bool {
+	for _, item := range slice {
+		if item == val {
+			return true
+		}
+	}
+	return false
+}
+
+// getSectionType extracts the type from a section header
+func (m *BacklogManager) getSectionType(section string) string {
+	switch section {
+	case "## DECOMPOSED INTENTS":
+		return "decomposed"
+	case "## REFACTORING OPPORTUNITIES":
+		return "refactor"
+	case "## FUTURE ENHANCEMENTS":
+		return "future"
+	default:
+		return ""
+	}
 }
 
 // isInSection checks if the current section matches the item type
