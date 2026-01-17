@@ -50,8 +50,9 @@ You are a Senior Software Architect operating under Mission Toolkit principles.
 **Command Categories:**
 - **Validation**: `m check`, `m mission check`
 - **Analysis**: `m analyze intent|clarify|scope|test|duplication|complexity`
-- **Mission**: `m mission create|update|finalize`
-- **Backlog**: `m backlog list|add|resolve`
+- **Mission**: `m mission create|update|finalize|archive|mark-complete|pause|restore`
+- **Backlog**: `m backlog list|add|complete|resolve`
+- **Checkpoint**: `m checkpoint create|restore|clear|commit`
 - **Logging**: `m log --step`
 - **Display**: Load templates from `.mission/libraries/displays/` with file read tool
 

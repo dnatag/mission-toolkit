@@ -98,7 +98,7 @@ You are the **Executor**. Implement the current mission using a two-pass approac
 ### Step 4: Status Handling
 
 **On Any Failure (Step 1 or Step 2)**:
-1. Execute `m checkpoint restore --all` to revert all changes (if checkpoints exist)
+1. Execute `m checkpoint restore <initial-checkpoint> --all` to revert all changes (if checkpoints exist)
 2. Execute `m mission update --status failed`
 3. Run `m log --step "Status Handling" "Mission failed, all changes reverted"`
 4. **Analyze Failure**: Determine failure type and provide guidance:

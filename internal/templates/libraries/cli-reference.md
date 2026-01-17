@@ -6,9 +6,9 @@ This document is the master reference for all `m` CLI commands available for use
 
 ### `m init`
 - **Purpose**: Initialize Mission Toolkit project with templates for specified AI type
-- **Usage**: `m init --ai-type <type>`
+- **Usage**: `m init --ai <type>`
 - **Flags**:
-  - `--ai-type`: AI assistant type (q, claude, kiro, opencode)
+  - `--ai`: AI assistant type (q, claude, kiro, opencode)
 - **Output**: Creates `.mission/` directory with governance files and AI-specific prompt templates
 
 ### `m dashboard`
@@ -75,6 +75,25 @@ This document is the master reference for all `m` CLI commands available for use
 - **Purpose**: Archive mission files to completed directory
 - **Usage**: `m mission archive`
 - **Output**: Moves mission files to `.mission/completed/<MISSION_ID>-*`
+
+### `m mission mark-complete`
+- **Purpose**: Mark a plan step as complete and log progress
+- **Usage**: `m mission mark-complete --step <N> --status <STATUS> --message "<message>"`
+- **Flags**:
+  - `--step`: Step number to mark as complete (1-indexed)
+  - `--status`: Status level for logging (INFO, SUCCESS, FAILED)
+  - `--message`: Message to log for this step
+- **Output**: Updates plan step checkbox and logs message
+
+### `m mission pause`
+- **Purpose**: Pause current mission and save to paused folder
+- **Usage**: `m mission pause`
+- **Output**: Moves mission to `.mission/paused/` with timestamp
+
+### `m mission restore`
+- **Purpose**: Restore a paused mission
+- **Usage**: `m mission restore`
+- **Output**: Restores most recent paused mission to active state
 
 ## Analysis Tools (`m analyze`)
 
@@ -163,6 +182,13 @@ This document is the master reference for all `m` CLI commands available for use
 - **Purpose**: Clear all checkpoints for current mission
 - **Usage**: `m checkpoint clear`
 - **Output**: Removes checkpoint directory
+
+### `m checkpoint commit`
+- **Purpose**: Create final commit for the mission and clear checkpoints
+- **Usage**: `m checkpoint commit -m "<message>"`
+- **Flags**:
+  - `-m`: Commit message (supports multi-line)
+- **Output**: Creates consolidated commit and clears checkpoint tags
 
 ## Logging (`m log`)
 
