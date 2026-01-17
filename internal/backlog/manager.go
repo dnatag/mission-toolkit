@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -22,6 +24,9 @@ func NewManager(missionDir string) *BacklogManager {
 		backlogPath: filepath.Join(missionDir, "backlog.md"),
 	}
 }
+
+// patternRegex matches [PATTERN:id][COUNT:n] format
+var patternRegex = regexp.MustCompile(`\[PATTERN:([^\]]+)\]\[COUNT:(\d+)\]`)
 
 // List returns backlog items, optionally including completed items and filtering by type
 func (m *BacklogManager) List(includeCompleted bool, itemType string) ([]string, error) {
@@ -112,14 +117,38 @@ func (m *BacklogManager) findAndModifySection(lines []string, sectionHeader stri
 	return nil, fmt.Errorf("section %s not found in backlog", sectionHeader)
 }
 
-// Add adds a new item to the specified section
+// Add adds a new item to the specified section.
+// If patternID is provided for refactor type, it tracks occurrence count.
 func (m *BacklogManager) Add(description, itemType string) error {
+	return m.AddWithPattern(description, itemType, "")
+}
+
+// AddWithPattern adds a new item with optional pattern ID tracking.
+// For refactor items with a patternID, increments count if pattern exists.
+func (m *BacklogManager) AddWithPattern(description, itemType, patternID string) error {
 	if err := m.validateType(itemType); err != nil {
 		return err
 	}
 
 	if err := m.ensureBacklogExists(); err != nil {
 		return err
+	}
+
+	// Pattern ID only applies to refactor type
+	patternID = strings.TrimSpace(patternID)
+	if patternID != "" && itemType != "refactor" {
+		patternID = "" // Ignore pattern ID for non-refactor types
+	}
+
+	// If pattern ID provided, check for existing pattern and increment
+	if patternID != "" {
+		count, err := m.GetPatternCount(patternID)
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			return m.incrementPatternCount(patternID)
+		}
 	}
 
 	content, err := m.readBacklogContent()
@@ -131,6 +160,9 @@ func (m *BacklogManager) Add(description, itemType string) error {
 	lines := strings.Split(content, "\n")
 
 	result, err := m.findAndModifySection(lines, sectionHeader, func() []string {
+		if patternID != "" {
+			return []string{fmt.Sprintf("- [ ] [PATTERN:%s][COUNT:1] %s", patternID, description)}
+		}
 		return []string{fmt.Sprintf("- [ ] %s", description)}
 	})
 	if err != nil {
@@ -260,7 +292,6 @@ func (m *BacklogManager) createBacklogFile() error {
 
 ## REFACTORING OPPORTUNITIES
 *This section lists technical debt and refactoring opportunities identified by the AI during planning or execution.*
-*Items marked with [RESOLVED] have been addressed via DRY conversion and should not be refactored again.*
 
 ## FUTURE ENHANCEMENTS
 *This section is for user-defined ideas and future feature requests.*
@@ -321,56 +352,46 @@ func (m *BacklogManager) getSectionHeader(itemType string) string {
 	}
 }
 
-// Resolve marks a refactor opportunity as resolved via DRY conversion.
-// This marks the item in-place with [RESOLVED] prefix and timestamp.
-func (m *BacklogManager) Resolve(itemText string) error {
+// GetPatternCount returns the occurrence count for a pattern ID.
+// Returns 0 if pattern not found.
+func (m *BacklogManager) GetPatternCount(patternID string) (int, error) {
 	if err := m.ensureBacklogExists(); err != nil {
-		return err
+		return 0, err
 	}
 
+	content, err := m.readBacklogContent()
+	if err != nil {
+		return 0, err
+	}
+
+	for _, line := range strings.Split(content, "\n") {
+		matches := patternRegex.FindStringSubmatch(line)
+		if len(matches) == 3 && matches[1] == patternID {
+			count, _ := strconv.Atoi(matches[2])
+			return count, nil
+		}
+	}
+	return 0, nil
+}
+
+// incrementPatternCount increments the count for an existing pattern ID.
+func (m *BacklogManager) incrementPatternCount(patternID string) error {
 	content, err := m.readBacklogContent()
 	if err != nil {
 		return err
 	}
 
 	lines := strings.Split(content, "\n")
-	result := make([]string, 0, len(lines))
-	itemFound := false
-	inRefactorSection := false
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-
-		// Track if we're in REFACTORING OPPORTUNITIES section
-		if trimmed == "## REFACTORING OPPORTUNITIES" {
-			inRefactorSection = true
-			result = append(result, line)
-			continue
+	for i, line := range lines {
+		matches := patternRegex.FindStringSubmatch(line)
+		if len(matches) == 3 && matches[1] == patternID {
+			count, _ := strconv.Atoi(matches[2])
+			newCount := count + 1
+			lines[i] = patternRegex.ReplaceAllString(line, fmt.Sprintf("[PATTERN:%s][COUNT:%d]", patternID, newCount))
+			return m.writeBacklogContent(strings.Join(lines, "\n"))
 		}
-		if strings.HasPrefix(trimmed, "## ") {
-			inRefactorSection = false
-			result = append(result, line)
-			continue
-		}
-
-		// Find and mark the item in REFACTORING OPPORTUNITIES
-		if inRefactorSection && strings.HasPrefix(trimmed, "- [ ]") && strings.Contains(trimmed, itemText) {
-			timestamp := time.Now().Format("2006-01-02")
-			itemDesc := strings.TrimPrefix(trimmed, "- [ ] ")
-			resolvedItem := fmt.Sprintf("- [x] [RESOLVED] %s (DRY: %s)", itemDesc, timestamp)
-			result = append(result, resolvedItem)
-			itemFound = true
-			continue
-		}
-
-		result = append(result, line)
 	}
-
-	if !itemFound {
-		return fmt.Errorf("refactor item not found: %s", itemText)
-	}
-
-	return m.writeBacklogContent(strings.Join(result, "\n"))
+	return fmt.Errorf("pattern not found: %s", patternID)
 }
 
 // Cleanup removes completed items from the COMPLETED section of the backlog.

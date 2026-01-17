@@ -42,17 +42,21 @@ var backlogAddCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		itemType, _ := cmd.Flags().GetString("type")
+		patternID, _ := cmd.Flags().GetString("pattern-id")
 
 		manager := backlog.NewManager(missionDir)
 
 		if len(args) == 1 {
-			// Single item - use existing Add method
-			if err := manager.Add(args[0], itemType); err != nil {
+			if err := manager.AddWithPattern(args[0], itemType, patternID); err != nil {
 				return fmt.Errorf("adding backlog item: %w", err)
 			}
-			fmt.Printf("Added backlog item: %s\n", args[0])
+			if patternID != "" {
+				count, _ := manager.GetPatternCount(patternID)
+				fmt.Printf("Added backlog item (pattern: %s, count: %d): %s\n", patternID, count, args[0])
+			} else {
+				fmt.Printf("Added backlog item: %s\n", args[0])
+			}
 		} else {
-			// Multiple items - use AddMultiple
 			if err := manager.AddMultiple(args, itemType); err != nil {
 				return fmt.Errorf("adding backlog items: %w", err)
 			}
@@ -111,45 +115,28 @@ Examples:
 	},
 }
 
-// backlogResolveCmd marks a refactor opportunity as resolved via DRY conversion
+// backlogResolveCmd is deprecated - pattern count tracking replaces RESOLVED workflow
 var backlogResolveCmd = &cobra.Command{
-	Use:   "resolve",
-	Short: "Mark a refactor opportunity as resolved via DRY conversion",
-	Long: `Mark a refactor opportunity as resolved via DRY conversion.
-
-This marks the item in-place with [RESOLVED] prefix and timestamp, allowing future
-duplication detection to recognize this pattern has been addressed.
-
-Example:
-  m backlog resolve --item "Refactor email validation in handlers"`,
+	Use:        "resolve",
+	Short:      "DEPRECATED: Use pattern-id tracking instead",
+	Deprecated: "Pattern count tracking (--pattern-id) replaces the RESOLVED workflow",
+	Hidden:     true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		item, _ := cmd.Flags().GetString("item")
-		if item == "" {
-			return fmt.Errorf("--item flag is required")
-		}
-
-		manager := backlog.NewManager(missionDir)
-		if err := manager.Resolve(item); err != nil {
-			return fmt.Errorf("marking item as resolved: %w", err)
-		}
-
-		fmt.Printf("Marked as resolved: %s\n", item)
-		return nil
+		return fmt.Errorf("resolve command is deprecated: use --pattern-id with 'backlog add' for Rule-of-Three tracking")
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(backlogCmd)
-	backlogCmd.AddCommand(backlogListCmd, backlogAddCmd, backlogCompleteCmd, backlogResolveCmd, backlogCleanupCmd)
+	backlogCmd.AddCommand(backlogListCmd, backlogAddCmd, backlogCompleteCmd, backlogCleanupCmd)
 
 	// Add flags
 	backlogListCmd.Flags().Bool("all", false, "Include completed items")
 	backlogListCmd.Flags().String("type", "", "Filter by item type (decomposed, refactor, future)")
 	backlogAddCmd.Flags().String("type", "", "Item type (decomposed, refactor, future)")
 	backlogAddCmd.MarkFlagRequired("type")
+	backlogAddCmd.Flags().String("pattern-id", "", "Pattern ID for Rule-of-Three tracking (refactor type only)")
 	backlogCompleteCmd.Flags().String("item", "", "Exact text of the item to complete")
 	backlogCompleteCmd.MarkFlagRequired("item")
-	backlogResolveCmd.Flags().String("item", "", "Exact text of the refactor item to mark as resolved")
-	backlogResolveCmd.MarkFlagRequired("item")
 	backlogCleanupCmd.Flags().String("type", "", "Filter by item type (decomposed, refactor, future)")
 }

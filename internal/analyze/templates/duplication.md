@@ -5,7 +5,7 @@
 {{.CurrentIntent}}
 
 ## Purpose
-Identify existing code patterns similar to the requested feature. This informs the WET→DRY workflow decision.
+Identify existing code patterns similar to the requested feature. This informs the WET→DRY workflow decision using Rule-of-Three tracking.
 
 ## Analysis Steps
 
@@ -23,23 +23,28 @@ Identify reusable patterns:
 - **Utilities**: Existing utility functions that could be reused
 - **Configuration**: Existing config structures that could be extended
 
-### 3. Decision Logic
-
-- **No duplication** → Report `duplication_detected: false`, empty patterns
-- **Duplication found** → Report `duplication_detected: true`, list specific patterns with file locations
-- **Mission type** → Always set to `"WET"` (CLI will check backlog and may override to `"DRY"`)
+### 3. Pattern ID Generation
+When duplication is found, generate a stable pattern ID:
+- Use lowercase kebab-case (e.g., `email-validation`, `db-connection`)
+- Be specific enough to identify the pattern uniquely
+- Be general enough to match future occurrences
 
 ## Output Format
 
 Produce a JSON object with duplication analysis.
 
-**Note**: This analysis does not include an `action` field because it always proceeds to the next step. The CLI handles mission type determination (WET/DRY) based on backlog state.
+**Note**: The CLI tracks pattern counts in backlog. When count reaches 3, mission type becomes DRY.
 
 ```json
 {
   "duplication_detected": true | false,
-  "patterns": ["Description with file locations"],
-  "mission_type": "WET"
+  "patterns": [
+    {
+      "id": "pattern-id",
+      "description": "Human-readable description",
+      "locations": ["file1.go:45", "file2.go:78"]
+    }
+  ]
 }
 ```
 
@@ -49,8 +54,7 @@ Produce a JSON object with duplication analysis.
 ```json
 {
   "duplication_detected": false,
-  "patterns": [],
-  "mission_type": "WET"
+  "patterns": []
 }
 ```
 
@@ -59,9 +63,16 @@ Produce a JSON object with duplication analysis.
 {
   "duplication_detected": true,
   "patterns": [
-    "Email validation regex exists in users/handler.go:45 and products/handler.go:78",
-    "Database connection logic duplicated in auth/db.go, users/db.go, and orders/db.go"
-  ],
-  "mission_type": "WET"
+    {
+      "id": "email-validation",
+      "description": "Email validation regex duplicated across handlers",
+      "locations": ["users/handler.go:45", "products/handler.go:78"]
+    },
+    {
+      "id": "db-connection",
+      "description": "Database connection logic duplicated",
+      "locations": ["auth/db.go:12", "users/db.go:15", "orders/db.go:18"]
+    }
+  ]
 }
 ```

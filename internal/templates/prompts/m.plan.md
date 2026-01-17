@@ -70,14 +70,17 @@ If governance.md is not loaded, stop and report error.
 2.  **Analyze Test Requirements**: `m analyze test` → Parse JSON, read `template_path`, follow template
     *   If needed: `m mission update --section scope --append --item "[test_file]" ...`
 3.  **Duplication Analysis & WET→DRY Decision (Rule of Three)**:
+    *   `m backlog list --type refactor` → Review existing patterns to avoid creating duplicate pattern IDs
     *   `m analyze duplication` → Parse JSON, read `template_path`, follow template
-    *   `m backlog list --type refactor` → Parse JSON for refactor opportunities
-    *   **Determine Mission Type**:
-        - No duplication → `type=WET`
-        - Duplication + not in backlog → `type=WET`, `m backlog add "Refactor [pattern]" --type refactor`
-        - Duplication + open in backlog → `type=DRY`, `m backlog resolve --item "[pattern]"`
-        - Duplication + [RESOLVED] in backlog → `type=WET`
-        - User requests refactor → `type=DRY`
+    *   For each pattern detected:
+        - Check if semantically similar pattern already exists in backlog (reuse existing pattern-id)
+        - `m backlog add "[description]" --type refactor --pattern-id "[pattern-id]"`
+        - CLI auto-increments count if pattern exists, or creates with count=1
+    *   **Determine Mission Type based on pattern counts**:
+        - No duplication detected → `type=WET`
+        - All pattern counts < 3 → `type=WET`
+        - Any pattern count >= 3 → `type=DRY` (refactor that pattern)
+        - User explicitly requests refactor → `type=DRY`
     *   `m mission update --frontmatter type=[WET|DRY]`
 4.  **Log**: `m log --step "Context" "Context analyzed and mission updated"`
 

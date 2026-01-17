@@ -636,55 +636,71 @@ func TestBacklogManager_ListWithTypeFilter(t *testing.T) {
 	}
 }
 
-func TestBacklogManager_Resolve(t *testing.T) {
+func TestBacklogManager_PatternTracking(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
-	// Add a refactor item
-	refactorItem := "Refactor email validation in handlers"
-	if err := manager.Add(refactorItem, "refactor"); err != nil {
-		t.Fatalf("Failed to add refactor item: %v", err)
+	patternID := "email-validation"
+	description := "Refactor email validation in handlers"
+
+	// First occurrence - should create with count=1
+	if err := manager.AddWithPattern(description, "refactor", patternID); err != nil {
+		t.Fatalf("AddWithPattern failed: %v", err)
 	}
 
-	// Mark it as resolved
-	if err := manager.Resolve(refactorItem); err != nil {
-		t.Fatalf("Resolve failed: %v", err)
-	}
-
-	// Verify item is marked as [RESOLVED] in-place
-	items, err := manager.List(false, "refactor")
+	count, err := manager.GetPatternCount(patternID)
 	if err != nil {
-		t.Fatalf("List failed: %v", err)
+		t.Fatalf("GetPatternCount failed: %v", err)
 	}
-	if len(items) != 1 {
-		t.Fatalf("Expected 1 item, got %d", len(items))
+	if count != 1 {
+		t.Errorf("Expected count=1, got %d", count)
 	}
 
-	item := items[0]
-	if !strings.Contains(item, "[RESOLVED]") {
-		t.Errorf("Expected [RESOLVED] marker in item: %s", item)
+	// Second occurrence - should increment to count=2
+	if err := manager.AddWithPattern(description, "refactor", patternID); err != nil {
+		t.Fatalf("AddWithPattern failed: %v", err)
 	}
-	if !strings.Contains(item, refactorItem) {
-		t.Errorf("Expected original text in item: %s", item)
+
+	count, err = manager.GetPatternCount(patternID)
+	if err != nil {
+		t.Fatalf("GetPatternCount failed: %v", err)
 	}
-	if !strings.Contains(item, "(DRY:") {
-		t.Errorf("Expected DRY timestamp in item: %s", item)
+	if count != 2 {
+		t.Errorf("Expected count=2, got %d", count)
 	}
-	if !strings.HasPrefix(item, "- [x]") {
-		t.Errorf("Expected item to be marked as completed: %s", item)
+
+	// Third occurrence - should increment to count=3 (DRY threshold)
+	if err := manager.AddWithPattern(description, "refactor", patternID); err != nil {
+		t.Fatalf("AddWithPattern failed: %v", err)
+	}
+
+	count, err = manager.GetPatternCount(patternID)
+	if err != nil {
+		t.Fatalf("GetPatternCount failed: %v", err)
+	}
+	if count != 3 {
+		t.Errorf("Expected count=3, got %d", count)
+	}
+
+	// Verify backlog content format
+	content, err := manager.readBacklogContent()
+	if err != nil {
+		t.Fatalf("Failed to read backlog: %v", err)
+	}
+	if !strings.Contains(content, fmt.Sprintf("[PATTERN:%s][COUNT:3]", patternID)) {
+		t.Errorf("Expected pattern format in backlog, got: %s", content)
 	}
 }
 
-func TestBacklogManager_ResolveNonExistentItem(t *testing.T) {
+func TestBacklogManager_GetPatternCount_NotFound(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
-	// Try to mark non-existent item as resolved
-	err := manager.Resolve("Non-existent item")
-	if err == nil {
-		t.Error("Expected error for non-existent item, got nil")
+	count, err := manager.GetPatternCount("non-existent")
+	if err != nil {
+		t.Fatalf("GetPatternCount failed: %v", err)
 	}
-	if !strings.Contains(err.Error(), "not found") {
-		t.Errorf("Expected 'not found' error, got: %v", err)
+	if count != 0 {
+		t.Errorf("Expected count=0 for non-existent pattern, got %d", count)
 	}
 }
