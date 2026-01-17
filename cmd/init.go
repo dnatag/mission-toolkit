@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
+	"github.com/dnatag/mission-toolkit/internal/docs"
 	"github.com/dnatag/mission-toolkit/internal/templates"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -50,6 +52,14 @@ If a Git repository is not found, it will be initialized automatically.`,
 		// Write library templates
 		if err := templates.WriteLibraryTemplates(fs, cwd, aiType); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing library templates: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Generate cli-reference.md from Cobra commands
+		cliRefPath := filepath.Join(cwd, ".mission", "libraries", "cli-reference.md")
+		cliRefContent := docs.GenerateMarkdown(rootCmd)
+		if err := afero.WriteFile(fs, cliRefPath, []byte(cliRefContent), 0644); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing cli-reference.md: %v\n", err)
 			os.Exit(1)
 		}
 
