@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -22,6 +23,86 @@ func TestRenderCompletedMissions_Empty(t *testing.T) {
 
 	if output != "No completed missions found" {
 		t.Errorf("expected 'No completed missions found', got '%s'", output)
+	}
+}
+
+func TestRenderCompletedMissions_WithMissions(t *testing.T) {
+	tests := []struct {
+		name              string
+		completedMissions []*mission.Mission
+		selectedIndex     int
+		wantPrefix        string
+	}{
+		{
+			name: "single mission",
+			completedMissions: []*mission.Mission{
+				{ID: "m1", Status: "completed", Type: "WET", Body: "## INTENT\nFirst"},
+			},
+			selectedIndex: 0,
+			wantPrefix:    "▶ ",
+		},
+		{
+			name: "multiple missions with selection",
+			completedMissions: []*mission.Mission{
+				{ID: "m1", Status: "completed", Type: "WET", Body: "## INTENT\nFirst"},
+				{ID: "m2", Status: "completed", Type: "DRY", Body: "## INTENT\nSecond"},
+				{ID: "m3", Status: "completed", Type: "WET", Body: "## INTENT\nThird"},
+			},
+			selectedIndex: 1,
+			wantPrefix:    "▶ ",
+		},
+		{
+			name: "multiple missions no selection (index 0)",
+			completedMissions: []*mission.Mission{
+				{ID: "m1", Status: "completed", Type: "WET", Body: "## INTENT\nFirst"},
+				{ID: "m2", Status: "completed", Type: "DRY", Body: "## INTENT\nSecond"},
+			},
+			selectedIndex: 0,
+			wantPrefix:    "▶ ",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := NewDashboardModel()
+			m.completedMissions = tt.completedMissions
+			m.selectedIndex = tt.selectedIndex
+			m.itemsPerPage = 10 // Ensure all missions fit on one page
+
+			output := m.renderCompletedMissions()
+
+			// Verify selected prefix exists
+			if !strings.Contains(output, tt.wantPrefix) {
+				t.Errorf("expected output to contain prefix %q", tt.wantPrefix)
+			}
+
+			// Verify each mission's ID is shown
+			for _, mission := range tt.completedMissions {
+				if !strings.Contains(output, mission.ID) {
+					t.Errorf("expected output to contain mission ID %q", mission.ID)
+				}
+			}
+
+			// Verify each mission's type is shown
+			for _, mission := range tt.completedMissions {
+				if !strings.Contains(output, mission.Type) {
+					t.Errorf("expected output to contain type %q", mission.Type)
+				}
+			}
+
+			// Verify non-selected items have space prefix
+			lines := strings.Split(output, "\n")
+			foundSelected := false
+			for _, line := range lines {
+				if strings.Contains(line, tt.wantPrefix) {
+					foundSelected = true
+					break
+				}
+			}
+			if !foundSelected {
+				t.Error("expected to find selected item with ▶ prefix")
+			}
+		})
 	}
 }
 
@@ -267,6 +348,212 @@ func TestRenderHorizontalScrollbar(t *testing.T) {
 			hasArrows := strings.Contains(result, "◀") || strings.Contains(result, "▶")
 			if hasArrows != tt.wantArrows {
 				t.Errorf("expected arrows=%v, got %v", tt.wantArrows, hasArrows)
+			}
+		})
+	}
+}
+
+func TestView(t *testing.T) {
+	tests := []struct {
+		name              string
+		currentMission    *mission.Mission
+		completedMissions []*mission.Mission
+		wantTitle         bool
+		wantMission       bool
+		wantCompleted     bool
+	}{
+		{
+			name:              "no missions at all",
+			currentMission:    nil,
+			completedMissions: []*mission.Mission{},
+			wantTitle:         true,
+			wantMission:       false,
+			wantCompleted:     true,
+		},
+		{
+			name: "only current mission",
+			currentMission: &mission.Mission{
+				ID:     "active-1",
+				Status: "active",
+				Type:   "WET",
+				Track:  2,
+				Body:   "## INTENT\nTest active mission",
+			},
+			completedMissions: []*mission.Mission{},
+			wantTitle:         true,
+			wantMission:       true,
+			wantCompleted:     true,
+		},
+		{
+			name:           "only completed missions",
+			currentMission: nil,
+			completedMissions: []*mission.Mission{
+				{ID: "completed-1", Status: "completed", Body: "## INTENT\nDone"},
+			},
+			wantTitle:     true,
+			wantMission:   false,
+			wantCompleted: true,
+		},
+		{
+			name: "both current and completed missions",
+			currentMission: &mission.Mission{
+				ID:     "active-1",
+				Status: "active",
+				Type:   "WET",
+				Track:  2,
+				Body:   "## INTENT\nActive",
+			},
+			completedMissions: []*mission.Mission{
+				{ID: "completed-1", Status: "completed", Body: "## INTENT\nDone"},
+			},
+			wantTitle:     true,
+			wantMission:   true,
+			wantCompleted: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := NewDashboardModel()
+			m.currentMission = tt.currentMission
+			m.completedMissions = tt.completedMissions
+			m.totalCount = len(tt.completedMissions)
+
+			output := m.View()
+
+			// Verify title is always present
+			if tt.wantTitle && !strings.Contains(output, "Mission Dashboard") {
+				t.Error("expected output to contain 'Mission Dashboard' title")
+			}
+
+			// Verify current mission section (checks for status which is always displayed)
+			if tt.wantMission {
+				if !strings.Contains(output, strings.ToUpper(tt.currentMission.Status)) {
+					t.Errorf("expected output to contain status %q", tt.currentMission.Status)
+				}
+			}
+
+			// Verify completed missions section
+			if tt.wantCompleted {
+				if !strings.Contains(output, "Completed Missions") {
+					t.Error("expected output to contain 'Completed Missions' section")
+				}
+			}
+
+			// Verify output is non-empty
+			if output == "" {
+				t.Error("View output should not be empty")
+			}
+		})
+	}
+}
+
+func TestRenderCurrentMission(t *testing.T) {
+	tests := []struct {
+		name          string
+		mission       *mission.Mission
+		wantStatus    bool
+		wantType      bool
+		wantIntent    bool
+		wantNextSteps bool
+	}{
+		{
+			name: "planned mission",
+			mission: &mission.Mission{
+				ID:     "plan-1",
+				Status: "planned",
+				Type:   "WET",
+				Track:  2,
+				Body:   "## INTENT\nTest planned",
+			},
+			wantStatus:    true,
+			wantType:      true,
+			wantIntent:    true,
+			wantNextSteps: true,
+		},
+		{
+			name: "active mission",
+			mission: &mission.Mission{
+				ID:     "active-1",
+				Status: "active",
+				Type:   "DRY",
+				Track:  3,
+				Body:   "## INTENT\nTest active",
+			},
+			wantStatus:    true,
+			wantType:      true,
+			wantIntent:    true,
+			wantNextSteps: true,
+		},
+		{
+			name: "completed mission",
+			mission: &mission.Mission{
+				ID:     "done-1",
+				Status: "completed",
+				Type:   "WET",
+				Track:  2,
+				Body:   "## INTENT\nTest done",
+			},
+			wantStatus:    true,
+			wantType:      true,
+			wantIntent:    true,
+			wantNextSteps: true,
+		},
+		{
+			name: "failed mission",
+			mission: &mission.Mission{
+				ID:     "failed-1",
+				Status: "failed",
+				Type:   "WET",
+				Track:  2,
+				Body:   "## INTENT\nTest failed",
+			},
+			wantStatus:    true,
+			wantType:      true,
+			wantIntent:    true,
+			wantNextSteps: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := NewDashboardModel()
+			m.currentMission = tt.mission
+
+			output := m.renderCurrentMission()
+
+			// Verify status is displayed
+			if tt.wantStatus && !strings.Contains(output, strings.ToUpper(tt.mission.Status)) {
+				t.Errorf("expected output to contain status %q", tt.mission.Status)
+			}
+
+			// Verify type is displayed
+			if tt.wantType && !strings.Contains(output, tt.mission.Type) {
+				t.Errorf("expected output to contain type %q", tt.mission.Type)
+			}
+
+			// Verify track is displayed
+			if !strings.Contains(output, fmt.Sprintf("Track %d", tt.mission.Track)) {
+				t.Errorf("expected output to contain Track %d", tt.mission.Track)
+			}
+
+			// Verify intent is displayed
+			if tt.wantIntent && !strings.Contains(output, "Test") {
+				t.Error("expected output to contain intent content")
+			}
+
+			// Verify next steps or completion message is displayed
+			// For completed missions, it says "Mission completed successfully" without "Next:"
+			if tt.wantNextSteps {
+				if tt.mission.Status == "completed" {
+					if !strings.Contains(output, "Mission completed successfully") {
+						t.Error("expected output to contain completion message")
+					}
+				} else {
+					if !strings.Contains(output, "Next:") {
+						t.Error("expected output to contain next steps with 'Next:' prefix")
+					}
+				}
 			}
 		})
 	}

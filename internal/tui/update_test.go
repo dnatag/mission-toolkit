@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/charmbracelet/bubbletea"
@@ -253,5 +254,171 @@ func TestUpdate_KeyPagination(t *testing.T) {
 	model = updated.(DashboardModel)
 	if model.currentPage != 0 {
 		t.Errorf("expected page 0 (bound), got %d", model.currentPage)
+	}
+}
+
+func TestLoadCurrentMission(t *testing.T) {
+	// loadCurrentMission loads from .mission/mission.md
+	// This test verifies the function can be called and returns a proper message type
+	msg := loadCurrentMission()
+
+	if msg == nil {
+		t.Fatal("loadCurrentMission should return a non-nil message")
+	}
+
+	// Verify it's the correct message type
+	missionMsg, ok := msg.(currentMissionMsg)
+	if !ok {
+		t.Fatalf("expected currentMissionMsg, got %T", msg)
+	}
+
+	// If there's no active mission, err should be set or mission should be nil
+	if missionMsg.err != nil {
+		// Expected - no mission file exists in test environment
+		return
+	}
+	if missionMsg.mission == nil {
+		// Also expected - no active mission
+		return
+	}
+
+	// If we got here, a mission was loaded successfully
+	if missionMsg.mission.ID == "" {
+		t.Error("loaded mission should have a non-empty ID")
+	}
+}
+
+func TestLoadCommitMessage(t *testing.T) {
+	tests := []struct {
+		name         string
+		missionID    string
+		setupCommit  bool
+		wantContains string
+	}{
+		{
+			name:         "no commit file exists",
+			missionID:    "nonexistent-mission",
+			setupCommit:  false,
+			wantContains: "Commit message not found",
+		},
+		{
+			name:         "mission ID in message",
+			missionID:    "test-mission-123",
+			setupCommit:  false,
+			wantContains: "test-mission-123",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := loadCommitMessage(tt.missionID)
+
+			if cmd == nil {
+				t.Fatal("loadCommitMessage should return a non-nil command")
+			}
+
+			// Execute the command to get the message
+			msg := cmd()
+
+			commitMsg, ok := msg.(commitMsg)
+			if !ok {
+				t.Fatalf("expected commitMsg, got %T", msg)
+			}
+
+			// Verify content contains expected text
+			if !strings.Contains(commitMsg.content, tt.wantContains) {
+				t.Errorf("expected content to contain %q, got %q", tt.wantContains, commitMsg.content)
+			}
+		})
+	}
+}
+
+func TestLoadInitialMissions(t *testing.T) {
+	// loadInitialMissions loads all completed missions
+	msg := loadInitialMissions()
+
+	if msg == nil {
+		t.Fatal("loadInitialMissions should return a non-nil message")
+	}
+
+	missionsMsg, ok := msg.(initialMissionsMsg)
+	if !ok {
+		t.Fatalf("expected initialMissionsMsg, got %T", msg)
+	}
+
+	// If .mission/completed directory doesn't exist, err should be set
+	if missionsMsg.err != nil {
+		// Expected in test environment
+		return
+	}
+
+	// Verify fields are initialized
+	if missionsMsg.offset != 0 {
+		t.Errorf("expected offset 0, got %d", missionsMsg.offset)
+	}
+}
+
+func TestLoadCompletedMissionsBatch(t *testing.T) {
+	tests := []struct {
+		name     string
+		offset   int
+		limit    int
+		setupDir bool
+	}{
+		{
+			name:     "load all missions (limit -1)",
+			offset:   0,
+			limit:    -1,
+			setupDir: false,
+		},
+		{
+			name:     "load with offset",
+			offset:   5,
+			limit:    10,
+			setupDir: false,
+		},
+		{
+			name:     "load with zero offset",
+			offset:   0,
+			limit:    5,
+			setupDir: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			msg := loadCompletedMissionsBatch(tt.offset, tt.limit)
+
+			if msg == nil {
+				t.Fatal("loadCompletedMissionsBatch should return a non-nil message")
+			}
+
+			batchMsg, ok := msg.(initialMissionsMsg)
+			if !ok {
+				t.Fatalf("expected initialMissionsMsg, got %T", msg)
+			}
+
+			// If .mission/completed directory doesn't exist, err should be set
+			if batchMsg.err != nil {
+				// Expected in test environment
+				return
+			}
+
+			// Verify offset is preserved
+			if batchMsg.offset != tt.offset {
+				t.Errorf("expected offset %d, got %d", tt.offset, batchMsg.offset)
+			}
+
+			// Verify totalCount is non-negative
+			if batchMsg.totalCount < 0 {
+				t.Errorf("expected totalCount >= 0, got %d", batchMsg.totalCount)
+			}
+
+			// Verify loadedCount matches missions length
+			if batchMsg.loadedCount != len(batchMsg.missions) {
+				t.Errorf("expected loadedCount %d to match missions length %d",
+					batchMsg.loadedCount, len(batchMsg.missions))
+			}
+		})
 	}
 }
