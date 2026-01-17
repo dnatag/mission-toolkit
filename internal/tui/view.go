@@ -299,6 +299,122 @@ func (m DashboardModel) applyFixedDimensions(content string) string {
 	return strings.Join(lines, "\n")
 }
 
+// clipContentToViewport extracts the visible portion of content based on scroll position.
+// It handles both horizontal and vertical clipping, padding the result to fill the viewport.
+// Returns the clipped lines padded to the visible dimensions.
+func clipContentToViewport(lines []string, scrollX, scrollY, visibleWidth, visibleHeight int) []string {
+	var visibleLines []string
+	
+	// Extract visible lines based on vertical scroll
+	for i := scrollY; i < scrollY+visibleHeight && i < len(lines); i++ {
+		if i < 0 {
+			continue
+		}
+		
+		line := lines[i]
+		
+		// Apply horizontal clipping
+		if scrollX >= len(line) {
+			visibleLines = append(visibleLines, "")
+			continue
+		}
+		
+		endX := scrollX + visibleWidth
+		if endX > len(line) {
+			endX = len(line)
+		}
+		visibleLines = append(visibleLines, line[scrollX:endX])
+	}
+
+	// Pad to visible height
+	for len(visibleLines) < visibleHeight {
+		visibleLines = append(visibleLines, "")
+	}
+
+	// Pad each line to visible width
+	for i, line := range visibleLines {
+		lineWidth := displayWidth(line)
+		if lineWidth < visibleWidth {
+			visibleLines[i] = line + strings.Repeat(" ", visibleWidth-lineWidth)
+		}
+	}
+
+	return visibleLines
+}
+
+// renderVerticalScrollbar adds vertical scrollbar indicators to each line.
+// The scrollbar shows navigation arrows and a position indicator when content exceeds viewport.
+// Returns the lines with scrollbar characters appended.
+func renderVerticalScrollbar(lines []string, scrollY, totalLines, visibleHeight int) []string {
+	needsScrollbar := totalLines > visibleHeight
+	result := make([]string, len(lines))
+	
+	for i := range lines {
+		var scrollbarChar string
+		
+		if !needsScrollbar {
+			scrollbarChar = " "
+		} else if i == 0 && scrollY > 0 {
+			scrollbarChar = "▲" // Up arrow - can scroll up
+		} else if i == len(lines)-1 && scrollY+visibleHeight < totalLines {
+			scrollbarChar = "▼" // Down arrow - can scroll down
+		} else if totalLines > visibleHeight {
+			// Show position indicator
+			scrollPosition := float64(scrollY) / float64(totalLines-visibleHeight)
+			indicatorPos := int(scrollPosition*float64(visibleHeight-2)) + 1
+			if i == indicatorPos {
+				scrollbarChar = "█" // Position indicator
+			} else {
+				scrollbarChar = "│" // Scrollbar track
+			}
+		} else {
+			scrollbarChar = " "
+		}
+		
+		result[i] = lines[i] + scrollbarChar
+	}
+	
+	return result
+}
+
+// renderHorizontalScrollbar creates the horizontal scrollbar line.
+// Shows navigation arrows and position indicator when content width exceeds viewport.
+// Returns a string representing the scrollbar with position indicators.
+func renderHorizontalScrollbar(scrollX, maxWidth, visibleWidth, totalWidth int) string {
+	needsScrollbar := maxWidth > visibleWidth
+	
+	if !needsScrollbar {
+		return strings.Repeat(" ", totalWidth)
+	}
+	
+	var scrollbar strings.Builder
+	scrollbar.Grow(totalWidth)
+	
+	for i := 0; i < visibleWidth; i++ {
+		var char string
+		
+		if i == 0 && scrollX > 0 {
+			char = "◀" // Left arrow - can scroll left
+		} else if i == visibleWidth-1 && scrollX+visibleWidth < maxWidth {
+			char = "▶" // Right arrow - can scroll right
+		} else {
+			// Show position indicator
+			scrollPosition := float64(scrollX) / float64(maxWidth-visibleWidth)
+			indicatorPos := int(scrollPosition*float64(visibleWidth-2)) + 1
+			if i == indicatorPos {
+				char = "█" // Position indicator
+			} else {
+				char = "─" // Scrollbar track
+			}
+		}
+		
+		scrollbar.WriteString(char)
+	}
+	
+	scrollbar.WriteString(" ") // Corner space for vertical scrollbar
+	return scrollbar.String()
+}
+
 // applyScrollableContent handles content clipping and scrollbar rendering for panes.
 // It supports both horizontal and vertical scrolling with visual indicators.
 // Parameters:
@@ -339,88 +455,13 @@ func (m *DashboardModel) applyScrollableContent(content string, isLeftPane bool)
 	visibleHeight := fixedPaneHeight - 1 // Reserve 1 line for horizontal scrollbar
 
 	// Clip content based on scroll position
-	var visibleLines []string
-	for i := scrollY; i < scrollY+visibleHeight && i < len(lines); i++ {
-		if i >= 0 {
-			line := lines[i]
-			// Horizontal clipping
-			startX := scrollX
-			endX := scrollX + visibleWidth
-			if startX < len(line) {
-				if endX > len(line) {
-					endX = len(line)
-				}
-				line = line[startX:endX]
-			} else {
-				line = ""
-			}
-			visibleLines = append(visibleLines, line)
-		}
-	}
-
-	// Pad to visible height
-	for len(visibleLines) < visibleHeight {
-		visibleLines = append(visibleLines, "")
-	}
-
-	// Pad each line to visible width
-	for i, line := range visibleLines {
-		lineWidth := displayWidth(line)
-		if lineWidth < visibleWidth {
-			visibleLines[i] = line + strings.Repeat(" ", visibleWidth-lineWidth)
-		}
-	}
+	visibleLines := clipContentToViewport(lines, scrollX, scrollY, visibleWidth, visibleHeight)
 
 	// Add vertical scrollbar with position indicator
-	needsVerticalScrollbar := len(lines) > visibleHeight
-	for i := range visibleLines {
-		if needsVerticalScrollbar {
-			if i == 0 && scrollY > 0 {
-				visibleLines[i] += "▲" // Up arrow
-			} else if i == len(visibleLines)-1 && scrollY+visibleHeight < len(lines) {
-				visibleLines[i] += "▼" // Down arrow
-			} else if len(lines) > visibleHeight {
-				// Show position indicator
-				scrollPosition := float64(scrollY) / float64(len(lines)-visibleHeight)
-				indicatorPos := int(scrollPosition*float64(visibleHeight-2)) + 1
-				if i == indicatorPos {
-					visibleLines[i] += "█" // Position indicator
-				} else {
-					visibleLines[i] += "│" // Scrollbar track
-				}
-			} else {
-				visibleLines[i] += " "
-			}
-		} else {
-			visibleLines[i] += " "
-		}
-	}
+	visibleLines = renderVerticalScrollbar(visibleLines, scrollY, len(lines), visibleHeight)
 
 	// Add horizontal scrollbar with position indicator
-	var horizontalScrollbar string
-	needsHorizontalScrollbar := maxWidth > visibleWidth
-	if needsHorizontalScrollbar {
-		for i := 0; i < visibleWidth; i++ {
-			if i == 0 && scrollX > 0 {
-				horizontalScrollbar += "◀" // Left arrow
-			} else if i == visibleWidth-1 && scrollX+visibleWidth < maxWidth {
-				horizontalScrollbar += "▶" // Right arrow
-			} else {
-				// Show position indicator
-				scrollPosition := float64(scrollX) / float64(maxWidth-visibleWidth)
-				indicatorPos := int(scrollPosition*float64(visibleWidth-2)) + 1
-				if i == indicatorPos {
-					horizontalScrollbar += "█" // Position indicator
-				} else {
-					horizontalScrollbar += "─" // Scrollbar track
-				}
-			}
-		}
-		horizontalScrollbar += " " // Corner space
-	} else {
-		horizontalScrollbar = strings.Repeat(" ", fixedPaneWidth)
-	}
-
+	horizontalScrollbar := renderHorizontalScrollbar(scrollX, maxWidth, visibleWidth, fixedPaneWidth)
 	visibleLines = append(visibleLines, horizontalScrollbar)
 
 	return strings.Join(visibleLines, "\n")
