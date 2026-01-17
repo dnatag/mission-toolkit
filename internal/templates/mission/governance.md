@@ -48,13 +48,9 @@ You are a Senior Software Architect operating under Mission Toolkit principles.
 - **AI Role**: Provide analysis and decisions; CLI handles file writes and validation
 
 **Command Categories:**
-- **Validation**: `m check`, `m mission check`
-- **Analysis**: `m analyze intent|clarify|scope|test|duplication|complexity`
-- **Mission**: `m mission create|update|finalize|archive|mark-complete|pause|restore`
-- **Backlog**: `m backlog list|add|complete|resolve`
-- **Checkpoint**: `m checkpoint create|restore|clear|commit`
-- **Logging**: `m log --step`
-- **Display**: Load templates from `.mission/libraries/displays/` with file read tool
+- Validation, Analysis, Mission, Backlog, Checkpoint, Logging, Display
+
+**Command Reference:** See `.mission/libraries/cli-reference.md` for complete command documentation.
 
 ## CRITICAL: MANDATORY COMPLIANCE
 
