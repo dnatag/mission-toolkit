@@ -23,8 +23,8 @@ type IDService struct {
 // NewIDService creates a new mission ID service for the specified mission file path.
 // The mission directory and ID file path are derived from the path's directory component.
 func NewIDService(fs afero.Fs, path string) *IDService {
-	base := NewBaseServiceWithPath(fs, "", path)
 	missionDir := filepath.Dir(path)
+	base := NewBaseServiceWithPath(fs, missionDir, path)
 	return &IDService{
 		BaseService: base,
 		idPath:      filepath.Join(missionDir, "id"),
