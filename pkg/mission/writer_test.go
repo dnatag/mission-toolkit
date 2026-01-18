@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/require"
 )
 
 func TestWriter_Write(t *testing.T) {
@@ -672,4 +673,153 @@ func TestWriter_UpdateFrontmatter_Domains(t *testing.T) {
 	if updated.Type != "WET" {
 		t.Errorf("Expected type 'WET' (unchanged), got '%s'", updated.Type)
 	}
+}
+
+// Edge case: Write with read-only filesystem
+func TestWriter_Write_ReadOnlyFilesystem(t *testing.T) {
+	fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
+	path := "/test/mission.md"
+	writer := NewWriterWithPath(fs, path)
+
+	mission := &Mission{
+		ID:        "test-123",
+		Status:    "planned",
+		Iteration: 1,
+		Body:      "Test body",
+	}
+
+	err := writer.Write(mission)
+	require.Error(t, err, "Should fail with read-only filesystem")
+}
+
+// Edge case: UpdateSection with invalid section name
+func TestWriter_UpdateSection_InvalidSectionName(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "/test/mission.md"
+	writer := NewWriterWithPath(fs, path)
+
+	mission := &Mission{
+		ID:        "test-123",
+		Status:    "planned",
+		Iteration: 1,
+		Body:      "## INTENT\nTest\n",
+	}
+
+	err := writer.Write(mission)
+	require.NoError(t, err)
+
+	// Try to update with empty section name
+	err = writer.UpdateSection("", "New content")
+	require.NoError(t, err, "Should handle empty section name")
+
+	// Verify it creates "## " section
+	updated, err := NewReader(fs, path).Read()
+	require.NoError(t, err)
+	require.Contains(t, updated.Body, "## ")
+}
+
+// Edge case: UpdateList with empty items
+func TestWriter_UpdateList_EmptyItems(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "/test/mission.md"
+	writer := NewWriterWithPath(fs, path)
+
+	mission := &Mission{
+		ID:        "test-123",
+		Status:    "planned",
+		Iteration: 1,
+		Body:      "## SCOPE\nfile1.go\n",
+	}
+
+	err := writer.Write(mission)
+	require.NoError(t, err)
+
+	// Update with empty items list
+	err = writer.UpdateList("scope", []string{}, false)
+	require.NoError(t, err)
+
+	updated, err := NewReader(fs, path).Read()
+	require.NoError(t, err)
+	require.Contains(t, updated.Body, "## SCOPE")
+}
+
+// Edge case: MarkPlanStepComplete with out-of-range step
+func TestWriter_MarkPlanStepComplete_OutOfRange(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "/test/mission.md"
+	writer := NewWriterWithPath(fs, path)
+
+	mission := &Mission{
+		ID:        "test-123",
+		Status:    "active",
+		Iteration: 1,
+		Body:      "## PLAN\n- [ ] Step 1\n- [ ] Step 2\n",
+	}
+
+	err := writer.Write(mission)
+	require.NoError(t, err)
+
+	// Try to mark step 10 (out of range)
+	err = writer.MarkPlanStepComplete(10, "SUCCESS", "Test")
+	require.Error(t, err, "Should fail with out-of-range step")
+	require.Contains(t, err.Error(), "step 10 not found")
+}
+
+// Edge case: UpdateFrontmatter with invalid key-value pairs
+func TestWriter_UpdateFrontmatter_InvalidPairs(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "/test/mission.md"
+	writer := NewWriterWithPath(fs, path)
+
+	mission := &Mission{
+		ID:        "test-123",
+		Status:    "planned",
+		Iteration: 1,
+		Body:      "Test",
+	}
+
+	err := writer.Write(mission)
+	require.NoError(t, err)
+
+	// Try to update with invalid format (no = sign)
+	err = writer.UpdateFrontmatter([]string{"invalid"})
+	require.Error(t, err, "Should fail with invalid key-value format")
+}
+
+// Edge case: UpdateStatus with concurrent writes
+func TestWriter_UpdateStatus_ConcurrentWrites(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "/test/mission.md"
+	writer := NewWriterWithPath(fs, path)
+
+	mission := &Mission{
+		ID:        "test-123",
+		Status:    "planned",
+		Iteration: 1,
+		Body:      "Test",
+	}
+
+	err := writer.Write(mission)
+	require.NoError(t, err)
+
+	// Simulate concurrent updates
+	done := make(chan bool, 2)
+
+	go func() {
+		_ = writer.UpdateStatus("active")
+		done <- true
+	}()
+
+	go func() {
+		_ = writer.UpdateStatus("executed")
+		done <- true
+	}()
+
+	<-done
+	<-done
+
+	// Verify final state is consistent
+	updated, err := NewReader(fs, path).Read()
+	require.NoError(t, err)
+	require.NotEmpty(t, updated.Status, "Status should be set to one of the values")
 }

@@ -1,9 +1,11 @@
 package mission
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCheckService_CheckMissionState_NoMission(t *testing.T) {
@@ -487,4 +489,34 @@ func TestCheckService_StaleArtifactCleanup_PartialArtifacts(t *testing.T) {
 			t.Error("execution.log should not be in cleaned artifacts since it didn't exist")
 		}
 	}
+}
+
+// Edge case: Check with corrupted mission file
+func TestCheckService_CheckMissionState_CorruptedMission(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	missionDir := ".mission"
+
+	err := fs.MkdirAll(missionDir, 0755)
+	require.NoError(t, err)
+
+	// Write corrupted mission file
+	err = afero.WriteFile(fs, filepath.Join(missionDir, "mission.md"), []byte("invalid yaml content"), 0644)
+	require.NoError(t, err)
+
+	service := NewCheckService(fs, missionDir)
+	status, err := service.CheckMissionState()
+	require.Error(t, err, "Should fail with corrupted mission file")
+	require.Nil(t, status)
+}
+
+// Edge case: Check with missing mission directory
+func TestCheckService_CheckMissionState_MissingDirectory(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	missionDir := ".mission"
+
+	service := NewCheckService(fs, missionDir)
+	status, err := service.CheckMissionState()
+	require.NoError(t, err, "Should handle missing directory gracefully")
+	require.NotNil(t, status)
+	require.False(t, status.HasActiveMission)
 }

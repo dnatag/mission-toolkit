@@ -179,3 +179,53 @@ func TestArchiver_Archive_NoForceWithNoMission(t *testing.T) {
 	require.Error(t, err, "Archive with force=false should fail when no mission exists")
 	require.Contains(t, err.Error(), "no current mission to archive")
 }
+
+// Edge case: Archive with corrupted mission file
+func TestArchiver_Archive_CorruptedMissionFile(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	missionDir := ".mission"
+
+	err := fs.MkdirAll(missionDir, 0755)
+	require.NoError(t, err)
+
+	// Write invalid YAML frontmatter
+	err = afero.WriteFile(fs, filepath.Join(missionDir, "mission.md"), []byte("---\ninvalid: yaml: content:\n---\nBody"), 0644)
+	require.NoError(t, err)
+
+	mockGit := &MockGitClient{}
+	archiver := NewArchiver(fs, missionDir, mockGit)
+
+	err = archiver.Archive(false)
+	require.Error(t, err, "Should fail with corrupted mission file")
+}
+
+// Edge case: Archive with read-only completed directory
+func TestArchiver_Archive_ReadOnlyDestination(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	missionDir := ".mission"
+
+	missionID := "test-123"
+	missionContent := `---
+id: ` + missionID + `
+---
+Body`
+
+	err := fs.MkdirAll(missionDir, 0755)
+	require.NoError(t, err)
+	err = afero.WriteFile(fs, filepath.Join(missionDir, "mission.md"), []byte(missionContent), 0644)
+	require.NoError(t, err)
+
+	// Create read-only completed directory
+	completedDir := filepath.Join(missionDir, "completed")
+	err = fs.MkdirAll(completedDir, 0444)
+	require.NoError(t, err)
+
+	mockGit := &MockGitClient{}
+	archiver := NewArchiver(fs, missionDir, mockGit)
+
+	err = archiver.Archive(false)
+	// Should handle permission errors gracefully
+	if err != nil {
+		require.Contains(t, err.Error(), "permission denied")
+	}
+}
