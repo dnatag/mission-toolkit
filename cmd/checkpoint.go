@@ -156,12 +156,23 @@ var checkpointCommitCmd = &cobra.Command{
 		}
 
 		// Consolidate and commit
-		commitHash, err := svc.Consolidate(missionID, commitMsg)
+		result, err := svc.Consolidate(missionID, commitMsg)
 		if err != nil {
 			return fmt.Errorf("consolidating commit: %w", err)
 		}
 
-		fmt.Printf("Final commit created: %s\n", commitHash)
+		fmt.Printf("Final commit created: %s\n", result.CommitHash)
+
+		if len(result.UnstagedFiles) > 0 {
+			fmt.Printf("\n⚠️  UNSTAGED FILES DETECTED:\n")
+			for _, f := range result.UnstagedFiles {
+				fmt.Printf("   - %s\n", f)
+			}
+			fmt.Printf("\n💡 OPTIONS:\n")
+			fmt.Printf("   • Amend commit: git add <files> && git commit --amend --no-edit\n")
+			fmt.Printf("   • Add to .gitignore: echo '<pattern>' >> .gitignore\n")
+		}
+
 		return nil
 	},
 }

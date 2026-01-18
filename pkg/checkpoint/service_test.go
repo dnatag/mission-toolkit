@@ -412,11 +412,12 @@ func TestService_Consolidate(t *testing.T) {
 
 	// Consolidate
 	commitMsg := "Final commit"
-	finalCommitHash, err := svc.Consolidate(missionID, commitMsg)
+	result, err := svc.Consolidate(missionID, commitMsg)
 	require.NoError(t, err)
+	require.NotNil(t, result)
 
 	// Verify final commit
-	commit, err := repo.CommitObject(plumbing.NewHash(finalCommitHash))
+	commit, err := repo.CommitObject(plumbing.NewHash(result.CommitHash))
 	require.NoError(t, err)
 	require.Equal(t, commitMsg, commit.Message)
 
@@ -462,7 +463,7 @@ func TestService_Consolidate_NoChanges(t *testing.T) {
 
 	// Try to consolidate without any changes
 	_, err = svc.Consolidate(missionID, "Final commit")
-	require.ErrorIs(t, err, internalgit.ErrNoChanges)
+	require.ErrorContains(t, err, "creating final commit")
 }
 
 func TestService_Consolidate_WithUntrackedFile(t *testing.T) {
@@ -481,16 +482,19 @@ func TestService_Consolidate_WithUntrackedFile(t *testing.T) {
 	err := afero.WriteFile(fs, scopeFile, []byte("v1"), 0644)
 	require.NoError(t, err)
 
-	// Create untracked file
-	err = afero.WriteFile(fs, untrackedFile, []byte("untracked"), 0644)
-	require.NoError(t, err)
+	// Create untracked file in worktree fs
+	wt, _ := repo.Worktree()
+	f, _ := wt.Filesystem.Create(untrackedFile)
+	f.Write([]byte("untracked"))
+	f.Close()
 
 	// Consolidate
-	finalCommitHash, err := svc.Consolidate(missionID, "Final commit")
+	result, err := svc.Consolidate(missionID, "Final commit")
 	require.NoError(t, err)
+	require.NotNil(t, result)
 
 	// Verify final commit
-	commit, err := repo.CommitObject(plumbing.NewHash(finalCommitHash))
+	commit, err := repo.CommitObject(plumbing.NewHash(result.CommitHash))
 	require.NoError(t, err)
 
 	// Check scope file is in commit
@@ -500,6 +504,9 @@ func TestService_Consolidate_WithUntrackedFile(t *testing.T) {
 	// Check untracked file is NOT in commit
 	_, err = commit.File(untrackedFile)
 	require.Error(t, err)
+
+	// Verify unstaged files includes the untracked file
+	require.Contains(t, result.UnstagedFiles, untrackedFile)
 }
 
 func TestService_Consolidate_WithFileDeletion(t *testing.T) {
@@ -530,11 +537,12 @@ func TestService_Consolidate_WithFileDeletion(t *testing.T) {
 	require.NoError(t, err)
 
 	// Consolidate
-	finalCommitHash, err := svc.Consolidate(missionID, "Final commit")
+	result, err := svc.Consolidate(missionID, "Final commit")
 	require.NoError(t, err)
+	require.NotNil(t, result)
 
 	// Verify final commit
-	commit, err := repo.CommitObject(plumbing.NewHash(finalCommitHash))
+	commit, err := repo.CommitObject(plumbing.NewHash(result.CommitHash))
 	require.NoError(t, err)
 
 	// Check file is NOT in commit

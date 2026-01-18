@@ -17,4 +17,5 @@ type GitClient interface {
 	GetCommitMessage(commitHash string) (string, error)
 	IsTracked(path string) (bool, error)
 	GetCommitParent(commitHash string) (string, error)
+	GetUnstagedFiles() ([]string, error)
 }

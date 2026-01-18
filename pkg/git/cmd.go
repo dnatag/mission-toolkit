@@ -132,3 +132,23 @@ func (c *CmdGitClient) GetCommitParent(commitHash string) (string, error) {
 	out, err := c.run("rev-parse", commitHash+"^")
 	return strings.TrimSpace(out), err
 }
+
+func (c *CmdGitClient) GetUnstagedFiles() ([]string, error) {
+	out, err := c.run("status", "--porcelain")
+	if err != nil {
+		return nil, err
+	}
+	var files []string
+	for _, line := range strings.Split(out, "\n") {
+		if len(line) < 3 {
+			continue
+		}
+		// Porcelain format: XY filename (X=index, Y=worktree)
+		// Unstaged: Y is not space and X is space or ?
+		x, y := line[0], line[1]
+		if y != ' ' && (x == ' ' || x == '?') {
+			files = append(files, strings.TrimSpace(line[3:]))
+		}
+	}
+	return files, nil
+}

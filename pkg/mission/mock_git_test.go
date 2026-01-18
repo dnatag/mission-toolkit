@@ -48,3 +48,7 @@ func (m *MockGitClient) IsTracked(path string) (bool, error) {
 func (m *MockGitClient) GetCommitParent(commitHash string) (string, error) {
 	return "mock-parent-hash", nil
 }
+
+func (m *MockGitClient) GetUnstagedFiles() ([]string, error) {
+	return []string{}, nil
+}

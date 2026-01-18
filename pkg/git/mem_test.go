@@ -662,3 +662,34 @@ func TestMemGitClient_GetCommitParent(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, parent)
 }
+
+func TestMemGitClient_GetUnstagedFiles(t *testing.T) {
+	fs, repo := setupTestRepo(t)
+	client := NewMemGitClient(repo, fs)
+
+	// Initially no unstaged files
+	unstaged, err := client.GetUnstagedFiles()
+	require.NoError(t, err)
+	assert.Empty(t, unstaged)
+
+	// Create untracked file in worktree fs
+	wt, _ := repo.Worktree()
+	f, _ := wt.Filesystem.Create("untracked.txt")
+	f.Write([]byte("untracked"))
+	f.Close()
+
+	unstaged, err = client.GetUnstagedFiles()
+	require.NoError(t, err)
+	assert.Contains(t, unstaged, "untracked.txt")
+
+	// Stage and commit the file
+	wt.Add("untracked.txt")
+	wt.Commit("Add file", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	// Now no unstaged files
+	unstaged, err = client.GetUnstagedFiles()
+	require.NoError(t, err)
+	assert.Empty(t, unstaged)
+}

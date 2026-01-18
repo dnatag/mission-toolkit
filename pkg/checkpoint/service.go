@@ -115,38 +115,49 @@ func (s *Service) Clear(missionID string) (int, error) {
 	return len(tags), nil
 }
 
+// ConsolidateResult contains the result of a consolidate operation
+type ConsolidateResult struct {
+	CommitHash    string
+	UnstagedFiles []string
+}
+
 // Consolidate creates a final commit with all changes from the mission and clears checkpoints.
-func (s *Service) Consolidate(missionID, message string) (string, error) {
+func (s *Service) Consolidate(missionID, message string) (*ConsolidateResult, error) {
 	targetHash, err := s.squashCheckpoints(missionID)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if targetHash != "" {
 		if err := s.git.SoftReset(targetHash); err != nil {
-			return "", fmt.Errorf("soft reset to %s failed: %w", targetHash, err)
+			return nil, fmt.Errorf("soft reset to %s failed: %w", targetHash, err)
 		}
 	}
 
 	stagableFiles, err := s.getStagableScope()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if err := s.git.Add(stagableFiles); err != nil {
-		return "", fmt.Errorf("staging final files: %w", err)
+		return nil, fmt.Errorf("staging final files: %w", err)
 	}
 
 	finalCommitHash, err := s.git.Commit(message)
 	if err != nil {
-		return "", fmt.Errorf("creating final commit: %w", err)
+		return nil, fmt.Errorf("creating final commit: %w", err)
 	}
 
 	if _, err := s.Clear(missionID); err != nil {
 		fmt.Printf("Warning: failed to clear all checkpoints: %v\n", err)
 	}
 
-	return finalCommitHash, nil
+	unstaged, _ := s.git.GetUnstagedFiles()
+
+	return &ConsolidateResult{
+		CommitHash:    finalCommitHash,
+		UnstagedFiles: unstaged,
+	}, nil
 }
 
 // squashCheckpoints finds the initial checkpoint and determines the target commit for squashing.

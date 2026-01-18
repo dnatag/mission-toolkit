@@ -260,3 +260,22 @@ func (c *MemGitClient) GetCommitParent(commitHash string) (string, error) {
 	}
 	return parent.Hash.String(), nil
 }
+
+func (c *MemGitClient) GetUnstagedFiles() ([]string, error) {
+	wt, err := c.repo.Worktree()
+	if err != nil {
+		return nil, err
+	}
+	status, err := wt.Status()
+	if err != nil {
+		return nil, err
+	}
+	var files []string
+	for path, s := range status {
+		// Worktree status: untracked or modified but not staged
+		if s.Worktree == git.Untracked || s.Worktree == git.Modified {
+			files = append(files, path)
+		}
+	}
+	return files, nil
+}

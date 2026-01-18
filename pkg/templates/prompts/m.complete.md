@@ -42,7 +42,10 @@ You are the **Expert Commit Author**. Your job is to finalize the mission by gen
    - **On Commit Failure**:
      - If the error is "no changes to commit", this is a critical failure. Mark the mission as failed and display an error.
      - For other errors, display the error and halt.
-2. **Log**: Run `m log --step "Final Commit" "Consolidated commit created"`
+2. **Handle Unstaged Files**: If the commit output shows "UNSTAGED FILES DETECTED":
+   - Note the files listed in the output
+   - These will be displayed in the success template
+3. **Log**: Run `m log --step "Final Commit" "Consolidated commit created"`
 
 ### Step 3: Finalize Mission
 1. **Check Backlog**: 
@@ -52,7 +55,9 @@ You are the **Expert Commit Author**. Your job is to finalize the mission by gen
 2. **Update Status**: Execute `m mission update --status completed`
 3. **Log**: Run `m log --step "Finalize" "Mission completed and archived"`
 4. **Archive Mission**: Execute `m mission archive`
-5. **Display Success**: Use file read tool to load template `.mission/libraries/displays/complete-success.md` with the final commit hash.
+5. **Display Success**: Use file read tool to load template `.mission/libraries/displays/complete-success.md` with variables:
+   - {{MISSION_ID}}, {{DURATION}}, {{FINAL_COMMIT_HASH}}, {{TRACK}}, {{MISSION_TYPE}}
+   - {{UNSTAGED_FILES}} = List of unstaged files from commit output (or empty if none)
 
 ## Error Handling
 
