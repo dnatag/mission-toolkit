@@ -212,6 +212,12 @@ func TestWriter_UpdateSection(t *testing.T) {
 	if strings.Contains(updated.Body, "Old intent") {
 		t.Error("Body still contains old intent")
 	}
+
+	// Verify exactly one empty line between sections
+	expected := "## INTENT\nNew intent\n\n## SCOPE\nfile.go\n"
+	if updated.Body != expected {
+		t.Errorf("Incorrect spacing. Expected:\n%q\nGot:\n%q", expected, updated.Body)
+	}
 }
 
 func TestWriter_UpdateSectionCreatesNew(t *testing.T) {
@@ -264,7 +270,7 @@ func TestWriter_UpdateList(t *testing.T) {
 		ID:        "test-123",
 		Status:    "planning",
 		Iteration: 1,
-		Body:      "## INTENT\nTest\n\n## SCOPE\n",
+		Body:      "## INTENT\nTest\n\n## SCOPE\n\n## PLAN\n- [ ] Step 1\n",
 	}
 
 	if err := writer.Write(mission); err != nil {
@@ -286,6 +292,12 @@ func TestWriter_UpdateList(t *testing.T) {
 	}
 	if !strings.Contains(updated.Body, "file2.go") {
 		t.Error("Body missing file2.go")
+	}
+
+	// Verify exactly one empty line between sections
+	expected := "## INTENT\nTest\n\n## SCOPE\nfile1.go\nfile2.go\n\n## PLAN\n- [ ] Step 1\n"
+	if updated.Body != expected {
+		t.Errorf("Incorrect spacing. Expected:\n%q\nGot:\n%q", expected, updated.Body)
 	}
 }
 

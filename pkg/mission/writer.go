@@ -61,6 +61,8 @@ func (w *Writer) CreateWithIntent(missionID string, intent string) error {
 }
 
 // UpdateSection updates a text section (intent, verification).
+// UpdateSection updates a text section (intent, verification).
+// Ensures exactly one empty line between sections for consistent formatting.
 func (w *Writer) UpdateSection(section string, content string) error {
 	mission, err := NewReader(w.FS(), w.MissionPath()).Read()
 	if err != nil {
@@ -75,18 +77,12 @@ func (w *Writer) UpdateSection(section string, content string) error {
 	for i, line := range lines {
 		if strings.TrimSpace(line) == sectionHeader {
 			foundSection = true
-			result = append(result, line)
-			result = append(result, content)
+			result = append(result, line, content, "")
 
 			// Skip old content until next section or end
 			for j := i + 1; j < len(lines); j++ {
 				if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
-					result = append(result, "")
 					result = append(result, lines[j:]...)
-					break
-				}
-				if j == len(lines)-1 {
-					// Reached end without finding next section
 					break
 				}
 			}
@@ -97,8 +93,7 @@ func (w *Writer) UpdateSection(section string, content string) error {
 
 	if !foundSection {
 		// Add new section at end
-		result = append(result, "", sectionHeader)
-		result = append(result, content)
+		result = append(result, "", sectionHeader, content)
 	}
 
 	mission.Body = strings.Join(result, "\n")
@@ -106,8 +101,7 @@ func (w *Writer) UpdateSection(section string, content string) error {
 }
 
 // UpdateList updates a list section (scope, plan) with optional append mode.
-// This method preserves the structure of the mission file by properly handling
-// section boundaries and ensuring subsequent sections remain intact.
+// Ensures exactly one empty line between sections for consistent formatting.
 func (w *Writer) UpdateList(section string, items []string, appendMode bool) error {
 	mission, err := NewReader(w.FS(), w.MissionPath()).Read()
 	if err != nil {
@@ -120,36 +114,33 @@ func (w *Writer) UpdateList(section string, items []string, appendMode bool) err
 	foundSection := false
 	lineIndex := 0
 
-	// Process each line, looking for the target section
 	for lineIndex < len(lines) {
 		currentLine := lines[lineIndex]
 
 		if strings.TrimSpace(currentLine) == sectionHeader {
-			// Found the target section header
 			result = append(result, currentLine)
 
 			if appendMode {
-				// Preserve existing items and add new ones
 				existingItems := w.extractExistingItems(lines, lineIndex+1)
 				result = append(result, existingItems...)
 			}
 
-			// Add new items with appropriate formatting
 			w.addFormattedItems(&result, section, items)
 
 			foundSection = true
-			// Skip existing content in this section and continue processing
-			lineIndex = w.skipSectionContent(lines, lineIndex+1)
+			nextSectionIndex := w.skipSectionContent(lines, lineIndex+1)
+			if nextSectionIndex < len(lines) {
+				result = append(result, "")
+			}
+			lineIndex = nextSectionIndex
 			continue
 		}
 
-		// Copy non-target lines as-is
 		result = append(result, currentLine)
 		lineIndex++
 	}
 
 	if !foundSection {
-		// Add new section at end if it doesn't exist
 		result = append(result, "", sectionHeader)
 		w.addFormattedItems(&result, section, items)
 	}
