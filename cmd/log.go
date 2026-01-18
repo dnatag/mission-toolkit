@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/dnatag/mission-toolkit/internal/logger"
-	"github.com/dnatag/mission-toolkit/internal/mission"
+	"github.com/dnatag/mission-toolkit/pkg/logger"
+	"github.com/dnatag/mission-toolkit/pkg/mission"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )

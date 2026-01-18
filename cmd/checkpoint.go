@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dnatag/mission-toolkit/internal/checkpoint"
-	"github.com/dnatag/mission-toolkit/internal/mission"
+	"github.com/dnatag/mission-toolkit/pkg/checkpoint"
+	"github.com/dnatag/mission-toolkit/pkg/mission"
 	"github.com/spf13/cobra"
 )
 

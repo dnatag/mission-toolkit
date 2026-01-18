@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/dnatag/mission-toolkit/internal/git"
-	"github.com/dnatag/mission-toolkit/internal/mission"
+	"github.com/dnatag/mission-toolkit/pkg/git"
+	"github.com/dnatag/mission-toolkit/pkg/mission"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )

@@ -9,9 +9,9 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/dnatag/mission-toolkit/internal/docs"
-	"github.com/dnatag/mission-toolkit/internal/git"
-	"github.com/dnatag/mission-toolkit/internal/templates"
+	"github.com/dnatag/mission-toolkit/pkg/docs"
+	"github.com/dnatag/mission-toolkit/pkg/git"
+	"github.com/dnatag/mission-toolkit/pkg/templates"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
