@@ -549,3 +549,208 @@ func TestService_Consolidate_WithFileDeletion(t *testing.T) {
 	_, err = commit.File(scopeFile)
 	require.Error(t, err)
 }
+
+// Edge case tests for checkpoint service
+
+// TestService_Create_InvalidMissionIDFormat verifies that Create fails gracefully
+// when the mission ID is empty or invalid.
+func TestService_Create_InvalidMissionIDFormat(t *testing.T) {
+	fs, repo := setupTestRepo(t)
+
+	missionID := ""
+	createMissionFile(t, fs, missionID, []string{"test.txt"})
+
+	// Create test file in git worktree
+	wt, _ := repo.Worktree()
+	f, _ := wt.Filesystem.Create("test.txt")
+	f.Write([]byte("content"))
+	f.Close()
+
+	gitClient := internalgit.NewMemGitClient(repo, fs)
+	svc := NewServiceWithGit(fs, ".mission", gitClient)
+
+	// Test with empty mission ID - should fail
+	_, err := svc.Create(missionID)
+	require.Error(t, err)
+}
+
+// TestService_Create_MultipleCheckpoints verifies that multiple checkpoints
+// can be created for the same mission with incrementing numbers.
+func TestService_Create_MultipleCheckpoints(t *testing.T) {
+	fs, repo := setupTestRepo(t)
+
+	missionID := "test-mission"
+	scopeFile := "test.txt"
+	createMissionFile(t, fs, missionID, []string{scopeFile})
+
+	err := afero.WriteFile(fs, scopeFile, []byte("initial"), 0644)
+	require.NoError(t, err)
+
+	gitClient := internalgit.NewMemGitClient(repo, fs)
+	svc := NewServiceWithGit(fs, ".mission", gitClient)
+
+	// Create first checkpoint successfully
+	name1, err := svc.Create(missionID)
+	require.NoError(t, err)
+	require.Equal(t, fmt.Sprintf("%s-1", missionID), name1)
+
+	// Verify tag exists
+	_, err = repo.Tag(name1)
+	require.NoError(t, err)
+}
+
+// TestService_Restore_NonExistentCheckpoint verifies that Restore fails with
+// an appropriate error when attempting to restore a checkpoint that doesn't exist.
+func TestService_Restore_NonExistentCheckpoint(t *testing.T) {
+	fs, repo := setupTestRepo(t)
+
+	missionID := "test-mission"
+	createMissionFile(t, fs, missionID, []string{"test.txt"})
+
+	gitClient := internalgit.NewMemGitClient(repo, fs)
+	svc := NewServiceWithGit(fs, ".mission", gitClient)
+
+	// Try to restore non-existent checkpoint
+	err := svc.Restore("non-existent-checkpoint")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "tag not found")
+}
+
+func TestService_Restore_GitOperationsFail(t *testing.T) {
+	fs, repo := setupTestRepo(t)
+
+	missionID := "test-mission"
+	scopeFile := "test.txt"
+	createMissionFile(t, fs, missionID, []string{scopeFile})
+
+	err := afero.WriteFile(fs, scopeFile, []byte("initial"), 0644)
+	require.NoError(t, err)
+
+	gitClient := internalgit.NewMemGitClient(repo, fs)
+	svc := NewServiceWithGit(fs, ".mission", gitClient)
+
+	// Create checkpoint
+	name, err := svc.Create(missionID)
+	require.NoError(t, err)
+
+	// Modify file
+	err = afero.WriteFile(fs, scopeFile, []byte("modified"), 0644)
+	require.NoError(t, err)
+
+	// Restore should work
+	err = svc.Restore(name)
+	require.NoError(t, err)
+
+	// Verify file was restored
+	content, err := afero.ReadFile(fs, scopeFile)
+	require.NoError(t, err)
+	require.Equal(t, "initial", string(content))
+}
+
+func TestService_Clear_NoCheckpointsToClean(t *testing.T) {
+	fs, repo := setupTestRepo(t)
+	gitClient := internalgit.NewMemGitClient(repo, fs)
+	svc := NewServiceWithGit(fs, ".mission", gitClient)
+
+	missionID := "test-mission"
+
+	// Clear when no checkpoints exist
+	count, err := svc.Clear(missionID)
+	require.NoError(t, err)
+	require.Equal(t, 0, count)
+}
+
+func TestService_Clear_RemovesAllCheckpoints(t *testing.T) {
+	fs, repo := setupTestRepo(t)
+
+	missionID := "test-mission"
+	scopeFile := "test.txt"
+	createMissionFile(t, fs, missionID, []string{scopeFile})
+
+	err := afero.WriteFile(fs, scopeFile, []byte("content"), 0644)
+	require.NoError(t, err)
+
+	gitClient := internalgit.NewMemGitClient(repo, fs)
+	svc := NewServiceWithGit(fs, ".mission", gitClient)
+
+	// Create checkpoint (creates baseline tag)
+	name, err := svc.Create(missionID)
+	require.NoError(t, err)
+
+	// Verify baseline tag exists
+	baselineTag := fmt.Sprintf("%s-baseline", missionID)
+	_, err = repo.Tag(baselineTag)
+	require.NoError(t, err)
+
+	// Clear should work and remove checkpoint (count includes baseline)
+	count, err := svc.Clear(missionID)
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, count, 1)
+
+	// Verify checkpoint tag is removed
+	_, err = repo.Tag(name)
+	require.Error(t, err)
+}
+
+func TestService_Consolidate_EmptyScope(t *testing.T) {
+	fs, repo := setupTestRepo(t)
+
+	missionID := "test-mission"
+	createMissionFile(t, fs, missionID, []string{}) // Empty scope
+
+	gitClient := internalgit.NewMemGitClient(repo, fs)
+	svc := NewServiceWithGit(fs, ".mission", gitClient)
+
+	// Consolidate with empty scope should fail
+	_, err := svc.Consolidate(missionID, "Empty commit")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "no files in mission scope")
+}
+
+func TestService_Consolidate_UnstagedFiles(t *testing.T) {
+	fs, repo := setupTestRepo(t)
+
+	missionID := "test-mission"
+	scopeFile := "test.txt"
+	unstagedFile := "unstaged.txt"
+	createMissionFile(t, fs, missionID, []string{scopeFile})
+
+	gitClient := internalgit.NewMemGitClient(repo, fs)
+	svc := NewServiceWithGit(fs, ".mission", gitClient)
+
+	// Create scope file in both filesystems
+	err := afero.WriteFile(fs, scopeFile, []byte("content"), 0644)
+	require.NoError(t, err)
+
+	wt, _ := repo.Worktree()
+	f, _ := wt.Filesystem.Create(scopeFile)
+	f.Write([]byte("content"))
+	f.Close()
+
+	// Create unstaged file (not in scope) in git worktree only
+	f2, _ := wt.Filesystem.Create(unstagedFile)
+	f2.Write([]byte("unstaged"))
+	f2.Close()
+
+	// Consolidate
+	result, err := svc.Consolidate(missionID, "Commit with unstaged")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Verify unstaged file is reported
+	require.Contains(t, result.UnstagedFiles, unstagedFile)
+}
+
+func TestService_Consolidate_CommitCreationFails(t *testing.T) {
+	fs, repo := setupTestRepo(t)
+
+	missionID := "test-mission"
+	createMissionFile(t, fs, missionID, []string{"test.txt"})
+
+	gitClient := internalgit.NewMemGitClient(repo, fs)
+	svc := NewServiceWithGit(fs, ".mission", gitClient)
+
+	// Try to consolidate with empty commit message (should fail)
+	_, err := svc.Consolidate(missionID, "")
+	require.Error(t, err)
+}
