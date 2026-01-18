@@ -12,20 +12,23 @@ import (
 // Writer handles writing mission files and updating status.
 type Writer struct {
 	*BaseService
+	loggerConfig *logger.Config // Optional logger config; nil uses default
 }
 
 // NewWriter creates a new mission writer rooted at missionDir.
 // The mission file path is always <missionDir>/mission.md.
 func NewWriter(fs afero.Fs, missionDir string) *Writer {
 	return &Writer{
-		BaseService: NewBaseService(fs, missionDir),
+		BaseService:  NewBaseService(fs, missionDir),
+		loggerConfig: nil,
 	}
 }
 
 // NewWriterWithPath creates a new mission writer for an explicit mission file path.
 func NewWriterWithPath(fs afero.Fs, path string) *Writer {
 	return &Writer{
-		BaseService: NewBaseServiceWithPath(fs, "", path),
+		BaseService:  NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: nil,
 	}
 }
 
@@ -199,7 +202,12 @@ func (w *Writer) MarkPlanStepComplete(step int, status, message string) error {
 		if status == "" {
 			status = "INFO"
 		}
-		log := logger.New(mission.ID)
+		var log *logger.Logger
+		if w.loggerConfig != nil {
+			log = logger.NewWithConfig(mission.ID, w.loggerConfig)
+		} else {
+			log = logger.New(mission.ID)
+		}
 		log.LogStep(status, fmt.Sprintf("Plan Step %d", step), message)
 	}
 

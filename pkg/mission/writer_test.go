@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dnatag/mission-toolkit/pkg/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
@@ -11,7 +12,12 @@ import (
 func TestWriter_Write(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "test-mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole, // Console only, no file
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-456",
@@ -70,7 +76,12 @@ file1.go
 	afero.WriteFile(fs, path, []byte(initialContent), 0644)
 
 	// Update status
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 	err := writer.UpdateStatus("active")
 	if err != nil {
 		t.Fatalf("UpdateStatus() error = %v", err)
@@ -124,7 +135,12 @@ go test ./...
 `
 	afero.WriteFile(fs, path, []byte(initialContent), 0644)
 
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 	err := writer.UpdateStatus("completed")
 	if err != nil {
 		t.Fatalf("UpdateStatus() error = %v", err)
@@ -160,7 +176,12 @@ go test ./...
 func TestWriter_CreateWithIntent(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "/test/mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	if err := writer.CreateWithIntent("test-123", "Add user authentication"); err != nil {
 		t.Fatalf("CreateWithIntent failed: %v", err)
@@ -185,7 +206,12 @@ func TestWriter_CreateWithIntent(t *testing.T) {
 func TestWriter_UpdateSection(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "/test/mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -224,7 +250,12 @@ func TestWriter_UpdateSection(t *testing.T) {
 func TestWriter_UpdateSectionCreatesNew(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "/test/mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -265,7 +296,12 @@ func TestWriter_UpdateSectionCreatesNew(t *testing.T) {
 func TestWriter_UpdateList(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "/test/mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -305,7 +341,12 @@ func TestWriter_UpdateList(t *testing.T) {
 func TestWriter_UpdateListAppend(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "/test/mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -347,7 +388,12 @@ func TestWriter_UpdateListAppend(t *testing.T) {
 func TestWriter_UpdateList_PlanEntries(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "/test/mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -391,7 +437,12 @@ func TestWriter_UpdateList_PlanEntries(t *testing.T) {
 func TestWriter_UpdateList_PreservesSubsequentSections(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "/test/mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -444,7 +495,12 @@ func TestWriter_UpdateList_PreservesSubsequentSections(t *testing.T) {
 func TestWriter_MarkPlanStepComplete(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:     "test-123",
@@ -491,7 +547,12 @@ func TestWriter_MarkPlanStepComplete(t *testing.T) {
 func TestWriter_MarkPlanStepComplete_InvalidStep(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:     "test-123",
@@ -511,7 +572,12 @@ func TestWriter_MarkPlanStepComplete_InvalidStep(t *testing.T) {
 func TestWriter_MarkPlanStepComplete_AfterOtherStepsComplete(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:     "test-123",
@@ -566,7 +632,12 @@ func TestWriter_MarkPlanStepComplete_AfterOtherStepsComplete(t *testing.T) {
 func TestWriter_UpdateFrontmatter(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "/test/mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -602,7 +673,12 @@ func TestWriter_UpdateFrontmatter(t *testing.T) {
 func TestWriter_WriteWithDomains(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "test-mission-with-domains.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-789",
@@ -639,7 +715,12 @@ func TestWriter_WriteWithDomains(t *testing.T) {
 func TestWriter_UpdateFrontmatter_Domains(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "/test/mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-456",
@@ -679,7 +760,12 @@ func TestWriter_UpdateFrontmatter_Domains(t *testing.T) {
 func TestWriter_Write_ReadOnlyFilesystem(t *testing.T) {
 	fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 	path := "/test/mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -696,7 +782,12 @@ func TestWriter_Write_ReadOnlyFilesystem(t *testing.T) {
 func TestWriter_UpdateSection_InvalidSectionName(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "/test/mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -722,7 +813,12 @@ func TestWriter_UpdateSection_InvalidSectionName(t *testing.T) {
 func TestWriter_UpdateList_EmptyItems(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "/test/mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -747,7 +843,12 @@ func TestWriter_UpdateList_EmptyItems(t *testing.T) {
 func TestWriter_MarkPlanStepComplete_OutOfRange(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "/test/mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -769,7 +870,12 @@ func TestWriter_MarkPlanStepComplete_OutOfRange(t *testing.T) {
 func TestWriter_UpdateFrontmatter_InvalidPairs(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "/test/mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-123",
@@ -790,7 +896,12 @@ func TestWriter_UpdateFrontmatter_InvalidPairs(t *testing.T) {
 func TestWriter_UpdateStatus_ConcurrentWrites(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "/test/mission.md"
-	writer := NewWriterWithPath(fs, path)
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
 
 	mission := &Mission{
 		ID:        "test-123",
