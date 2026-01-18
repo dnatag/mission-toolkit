@@ -168,9 +168,8 @@ var checkpointCommitCmd = &cobra.Command{
 			for _, f := range result.UnstagedFiles {
 				fmt.Printf("   - %s\n", f)
 			}
-			fmt.Printf("\n💡 OPTIONS:\n")
-			fmt.Printf("   • Amend commit: git add <files> && git commit --amend --no-edit\n")
-			fmt.Printf("   • Add to .gitignore: echo '<pattern>' >> .gitignore\n")
+			fmt.Printf("\nStatus: Recorded for display in completion template.\n")
+			fmt.Printf("No action needed - user will handle after mission completion.\n")
 		}
 
 		return nil

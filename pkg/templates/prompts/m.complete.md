@@ -44,7 +44,7 @@ You are the **Expert Commit Author**. Your job is to finalize the mission by gen
      - For other errors, display the error and halt.
 2. **Handle Unstaged Files**: If the commit output shows "UNSTAGED FILES DETECTED":
    - Note the files listed in the output
-   - These will be displayed in the success template
+   - No action needed - files are recorded for display in the success template
 3. **Log**: Run `m log --step "Final Commit" "Consolidated commit created"`
 
 ### Step 3: Finalize Mission
