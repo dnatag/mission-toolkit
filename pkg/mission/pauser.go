@@ -15,12 +15,14 @@ type Pauser struct {
 	reader *Reader
 }
 
-// NewPauser creates a new Pauser instance
-func NewPauser(fs afero.Fs, missionDir string) *Pauser {
-	base := NewBaseService(fs, missionDir)
+// NewPauser creates a new Pauser instance for the specified mission file path.
+// The mission directory is derived from the path's directory component.
+func NewPauser(fs afero.Fs, path string) *Pauser {
+	missionDir := filepath.Dir(path)
+	base := NewBaseServiceWithPath(fs, missionDir, path)
 	return &Pauser{
 		BaseService: base,
-		reader:      NewReader(fs, base.MissionPath()),
+		reader:      NewReader(fs, path),
 	}
 }
 

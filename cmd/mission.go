@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	missionFs  = afero.NewOsFs()
-	missionDir = ".mission"
+	missionFs   = afero.NewOsFs()
+	missionDir  = ".mission"
+	missionPath = ".mission/mission.md"
 )
 
 // missionCmd represents the mission command
@@ -27,7 +28,7 @@ var missionCheckCmd = &cobra.Command{
 	Use:   "check",
 	Short: "Check mission state and validate artifacts",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		checkService := mission.NewCheckService(missionFs, missionDir)
+		checkService := mission.NewCheckService(missionFs, missionPath)
 
 		// Set command context if provided
 		context, _ := cmd.Flags().GetString("context")
@@ -54,7 +55,7 @@ var missionUpdateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update mission status or sections",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		writer := mission.NewWriter(missionFs, missionDir)
+		writer := mission.NewWriter(missionFs, missionPath)
 
 		// Handle status update
 		if cmd.Flags().Changed("status") {
@@ -113,7 +114,7 @@ var missionIDCmd = &cobra.Command{
 	Use:   "id",
 	Short: "Get or create mission ID",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		idService := mission.NewIDService(missionFs, missionDir)
+		idService := mission.NewIDService(missionFs, missionPath)
 
 		id, err := idService.GetCurrentID()
 		if err != nil {
@@ -140,13 +141,13 @@ var missionCreateCmd = &cobra.Command{
 		}
 
 		// Get mission ID
-		idService := mission.NewIDService(missionFs, missionDir)
+		idService := mission.NewIDService(missionFs, missionPath)
 		missionID, err := idService.GetOrCreateID()
 		if err != nil {
 			return fmt.Errorf("getting mission ID: %w", err)
 		}
 
-		writer := mission.NewWriter(missionFs, missionDir)
+		writer := mission.NewWriter(missionFs, missionPath)
 
 		if err := writer.CreateWithIntent(missionID, intent); err != nil {
 			return fmt.Errorf("creating mission with intent: %w", err)
@@ -170,7 +171,7 @@ The --force flag controls behavior when no mission exists:
 		force, _ := cmd.Flags().GetBool("force")
 
 		gitClient := git.NewCmdGitClient(".")
-		archiver := mission.NewArchiver(missionFs, missionDir, gitClient)
+		archiver := mission.NewArchiver(missionFs, missionPath, gitClient)
 
 		if err := archiver.Archive(force); err != nil {
 			return fmt.Errorf("archiving mission: %w", err)
@@ -191,7 +192,7 @@ var missionFinalizeCmd = &cobra.Command{
 	Use:   "finalize",
 	Short: "Validate and display mission.md for review",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		finalizer := mission.NewFinalizeService(missionFs, missionDir)
+		finalizer := mission.NewFinalizeService(missionFs, missionPath)
 
 		result, err := finalizer.Finalize()
 		if err != nil {
@@ -208,7 +209,7 @@ var missionPauseCmd = &cobra.Command{
 	Use:   "pause",
 	Short: "Pause current mission and save to .mission/paused/ folder",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		pauser := mission.NewPauser(missionFs, missionDir)
+		pauser := mission.NewPauser(missionFs, missionPath)
 
 		if err := pauser.Pause(); err != nil {
 			return fmt.Errorf("pausing mission: %w", err)
@@ -225,7 +226,7 @@ var missionRestoreCmd = &cobra.Command{
 	Short: "Restore a paused mission from .mission/paused/ folder",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		pauser := mission.NewPauser(missionFs, missionDir)
+		pauser := mission.NewPauser(missionFs, missionPath)
 
 		var missionID string
 		if len(args) > 0 {
@@ -251,7 +252,7 @@ var missionMarkCompleteCmd = &cobra.Command{
 			return fmt.Errorf("--step is required")
 		}
 
-		writer := mission.NewWriter(missionFs, missionDir)
+		writer := mission.NewWriter(missionFs, missionPath)
 
 		status, _ := cmd.Flags().GetString("status")
 		message, _ := cmd.Flags().GetString("message")

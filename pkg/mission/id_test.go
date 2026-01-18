@@ -11,7 +11,7 @@ import (
 func TestIDService_GetOrCreateID(t *testing.T) {
 	// Create in-memory filesystem
 	fs := afero.NewMemMapFs()
-	service := NewIDService(fs, "/tmp")
+	service := NewIDService(fs, "/tmp/mission.md")
 
 	// First call should create new ID
 	id1, err := service.GetOrCreateID()
@@ -36,7 +36,7 @@ func TestIDService_GetOrCreateID(t *testing.T) {
 
 func TestIDService_CleanupStaleID(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	service := NewIDService(fs, "/tmp")
+	service := NewIDService(fs, "/tmp/mission.md")
 
 	// Create stale ID file
 	idPath := "/tmp/id"
@@ -60,7 +60,7 @@ func TestIDService_CleanupStaleID(t *testing.T) {
 
 func TestIDService_GetCurrentID(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	service := NewIDService(fs, "/tmp")
+	service := NewIDService(fs, "/tmp/mission.md")
 
 	// Create mission.md with ID in YAML frontmatter
 	missionPath := "/tmp/mission.md"
@@ -93,7 +93,7 @@ Test mission`
 
 func TestIDService_isValidID(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	service := NewIDService(fs, "")
+	service := NewIDService(fs, "mission.md")
 
 	testCases := []struct {
 		id    string
@@ -119,7 +119,7 @@ func TestIDService_isValidID(t *testing.T) {
 
 func TestIDService_generateID(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	service := NewIDService(fs, "")
+	service := NewIDService(fs, "mission.md")
 
 	id := service.generateID()
 

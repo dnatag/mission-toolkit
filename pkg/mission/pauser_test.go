@@ -38,7 +38,7 @@ test.go`
 	require.NoError(t, err)
 
 	// Pause mission
-	pauser := NewPauser(fs, missionDir)
+	pauser := NewPauser(fs, filepath.Join(missionDir, "mission.md"))
 	err = pauser.Pause()
 	require.NoError(t, err)
 
@@ -85,7 +85,7 @@ func TestPauser_Pause_NoMission(t *testing.T) {
 	err := fs.MkdirAll(missionDir, 0755)
 	require.NoError(t, err)
 
-	pauser := NewPauser(fs, missionDir)
+	pauser := NewPauser(fs, filepath.Join(missionDir, "mission.md"))
 	err = pauser.Pause()
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "no current mission to pause")
@@ -120,7 +120,7 @@ Test restore mission`
 	require.NoError(t, err)
 
 	// Restore mission
-	pauser := NewPauser(fs, missionDir)
+	pauser := NewPauser(fs, filepath.Join(missionDir, "mission.md"))
 	err = pauser.Restore(missionID)
 	require.NoError(t, err)
 
@@ -175,7 +175,7 @@ func TestPauser_Restore_NoMissionID(t *testing.T) {
 	require.NoError(t, err)
 
 	// Restore without specifying mission ID (should restore most recent)
-	pauser := NewPauser(fs, missionDir)
+	pauser := NewPauser(fs, filepath.Join(missionDir, "mission.md"))
 	err = pauser.Restore("")
 	require.NoError(t, err)
 
@@ -217,7 +217,7 @@ func TestPauser_Restore_CurrentMissionExists(t *testing.T) {
 	require.NoError(t, err)
 
 	// Try to restore (should fail)
-	pauser := NewPauser(fs, missionDir)
+	pauser := NewPauser(fs, filepath.Join(missionDir, "mission.md"))
 	err = pauser.Restore("test")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "current mission exists")
@@ -230,7 +230,7 @@ func TestPauser_Restore_NoPausedMissions(t *testing.T) {
 	err := fs.MkdirAll(missionDir, 0755)
 	require.NoError(t, err)
 
-	pauser := NewPauser(fs, missionDir)
+	pauser := NewPauser(fs, filepath.Join(missionDir, "mission.md"))
 	err = pauser.Restore("")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "no paused missions found")
@@ -248,7 +248,7 @@ func TestPauser_Pause_CorruptedMission(t *testing.T) {
 	err = afero.WriteFile(fs, filepath.Join(missionDir, "mission.md"), []byte("invalid yaml"), 0644)
 	require.NoError(t, err)
 
-	pauser := NewPauser(fs, missionDir)
+	pauser := NewPauser(fs, filepath.Join(missionDir, "mission.md"))
 	err = pauser.Pause()
 	require.Error(t, err, "Should fail with corrupted mission file")
 }
@@ -274,7 +274,7 @@ Body`
 	err = fs.MkdirAll(pausedDir, 0444)
 	require.NoError(t, err)
 
-	pauser := NewPauser(fs, missionDir)
+	pauser := NewPauser(fs, filepath.Join(missionDir, "mission.md"))
 	err = pauser.Pause()
 	// Should handle permission errors
 	if err != nil {
@@ -296,7 +296,7 @@ func TestPauser_Restore_InvalidMissionID(t *testing.T) {
 	err = afero.WriteFile(fs, filepath.Join(pausedDir, invalidFile), []byte("content"), 0644)
 	require.NoError(t, err)
 
-	pauser := NewPauser(fs, missionDir)
+	pauser := NewPauser(fs, filepath.Join(missionDir, "mission.md"))
 	err = pauser.Restore("")
 	require.Error(t, err, "Should fail with invalid mission ID format")
 }
@@ -315,7 +315,7 @@ func TestPauser_Restore_CorruptedPausedMission(t *testing.T) {
 	err = afero.WriteFile(fs, filepath.Join(pausedDir, pausedFile), []byte("corrupted yaml"), 0644)
 	require.NoError(t, err)
 
-	pauser := NewPauser(fs, missionDir)
+	pauser := NewPauser(fs, filepath.Join(missionDir, "mission.md"))
 	err = pauser.Restore("")
 	require.Error(t, err, "Should fail with corrupted paused mission")
 }
@@ -345,7 +345,7 @@ Body 2`
 	err = afero.WriteFile(fs, filepath.Join(pausedDir, "20260118130000-mission.md"), []byte(mission2), 0644)
 	require.NoError(t, err)
 
-	pauser := NewPauser(fs, missionDir)
+	pauser := NewPauser(fs, filepath.Join(missionDir, "mission.md"))
 	err = pauser.Restore("")
 	// Should restore the most recent one or prompt for selection
 	require.NoError(t, err, "Should handle multiple paused missions")

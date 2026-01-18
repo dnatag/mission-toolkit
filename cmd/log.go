@@ -22,7 +22,7 @@ var logCmd = &cobra.Command{
 		message := args[0]
 
 		// Get mission ID from centralized service
-		idService := mission.NewIDService(afero.NewOsFs(), ".mission")
+		idService := mission.NewIDService(afero.NewOsFs(), ".mission/mission.md")
 		missionID, err := idService.GetCurrentID()
 		if err != nil {
 			fmt.Printf("Warning: Could not get mission ID: %v\n", err)

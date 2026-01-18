@@ -13,7 +13,7 @@ func TestCheckService_CheckMissionState_NoMission(t *testing.T) {
 	missionDir := ".mission"
 	fs.MkdirAll(missionDir, 0755)
 
-	service := NewCheckService(fs, missionDir)
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 	status, err := service.CheckMissionState()
 	if err != nil {
 		t.Fatalf("CheckMissionState() error = %v", err)
@@ -51,7 +51,7 @@ file1.go
 `
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
-	service := NewCheckService(fs, missionDir)
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 	status, err := service.CheckMissionState()
 	if err != nil {
 		t.Fatalf("CheckMissionState() error = %v", err)
@@ -95,7 +95,7 @@ file2.go
 `
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
-	service := NewCheckService(fs, missionDir)
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 	status, err := service.CheckMissionState()
 	if err != nil {
 		t.Fatalf("CheckMissionState() error = %v", err)
@@ -130,7 +130,7 @@ file3.go
 `
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
-	service := NewCheckService(fs, missionDir)
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 	status, err := service.CheckMissionState()
 	if err != nil {
 		t.Fatalf("CheckMissionState() error = %v", err)
@@ -159,7 +159,7 @@ Test intent
 `
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
-	service := NewCheckService(fs, missionDir)
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 	service.SetContext("apply")
 	status, err := service.CheckMissionState()
 	if err != nil {
@@ -186,7 +186,7 @@ Test intent
 `
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
-	service := NewCheckService(fs, missionDir)
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 	service.SetContext("apply")
 	status, err := service.CheckMissionState()
 	if err != nil {
@@ -213,7 +213,7 @@ Test intent
 `
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
-	service := NewCheckService(fs, missionDir)
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 	service.SetContext("apply")
 	status, err := service.CheckMissionState()
 	if err != nil {
@@ -241,7 +241,7 @@ Test intent
 `
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
-	service := NewCheckService(fs, missionDir)
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 	service.SetContext("apply")
 	status, err := service.CheckMissionState()
 	if err != nil {
@@ -274,7 +274,7 @@ Test intent
 `
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
-	service := NewCheckService(fs, missionDir)
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 	service.SetContext("complete")
 	status, err := service.CheckMissionState()
 	if err != nil {
@@ -301,7 +301,7 @@ Test intent
 `
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
-	service := NewCheckService(fs, missionDir)
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 	service.SetContext("complete")
 	status, err := service.CheckMissionState()
 	if err != nil {
@@ -328,7 +328,7 @@ Test intent
 `
 	afero.WriteFile(fs, missionDir+"/mission.md", []byte(missionContent), 0644)
 
-	service := NewCheckService(fs, missionDir)
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 	service.SetContext("complete")
 	status, err := service.CheckMissionState()
 	if err != nil {
@@ -351,7 +351,7 @@ func TestCheckService_StaleArtifactCleanup_PlanContext(t *testing.T) {
 	afero.WriteFile(fs, missionDir+"/plan.json", []byte(`{"old": "plan"}`), 0644)
 	afero.WriteFile(fs, missionDir+"/execution.log", []byte("old log"), 0644)
 
-	service := NewCheckService(fs, missionDir)
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 	service.SetContext("plan")
 	status, err := service.CheckMissionState()
 	if err != nil {
@@ -422,7 +422,7 @@ func TestCheckService_StaleArtifactCleanup_NonPlanContext(t *testing.T) {
 			afero.WriteFile(fs, missionDir+"/plan.json", []byte(`{"old": "plan"}`), 0644)
 			afero.WriteFile(fs, missionDir+"/execution.log", []byte("old log"), 0644)
 
-			service := NewCheckService(fs, missionDir)
+			service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 			service.SetContext(tc.context)
 			status, err := service.CheckMissionState()
 			if err != nil {
@@ -457,7 +457,7 @@ func TestCheckService_StaleArtifactCleanup_PartialArtifacts(t *testing.T) {
 	afero.WriteFile(fs, missionDir+"/plan.json", []byte(`{"old": "plan"}`), 0644)
 	// execution.log intentionally not created
 
-	service := NewCheckService(fs, missionDir)
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 	service.SetContext("plan")
 	status, err := service.CheckMissionState()
 	if err != nil {
@@ -503,7 +503,7 @@ func TestCheckService_CheckMissionState_CorruptedMission(t *testing.T) {
 	err = afero.WriteFile(fs, filepath.Join(missionDir, "mission.md"), []byte("invalid yaml content"), 0644)
 	require.NoError(t, err)
 
-	service := NewCheckService(fs, missionDir)
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 	status, err := service.CheckMissionState()
 	require.Error(t, err, "Should fail with corrupted mission file")
 	require.Nil(t, status)
@@ -514,7 +514,7 @@ func TestCheckService_CheckMissionState_MissingDirectory(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	missionDir := ".mission"
 
-	service := NewCheckService(fs, missionDir)
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
 	status, err := service.CheckMissionState()
 	require.NoError(t, err, "Should handle missing directory gracefully")
 	require.NotNil(t, status)

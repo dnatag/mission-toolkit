@@ -33,7 +33,7 @@ Body
 	}
 
 	// Archive
-	archiver := NewArchiver(fs, missionDir, mockGit)
+	archiver := NewArchiver(fs, filepath.Join(missionDir, "mission.md"), mockGit)
 	err = archiver.Archive(false)
 	require.NoError(t, err)
 
@@ -81,7 +81,7 @@ Body
 	}
 
 	// Archive
-	archiver := NewArchiver(fs, missionDir, mockGit)
+	archiver := NewArchiver(fs, filepath.Join(missionDir, "mission.md"), mockGit)
 	err = archiver.Archive(false)
 	require.NoError(t, err)
 
@@ -116,7 +116,7 @@ func TestArchiver_CleanupObsoleteFiles(t *testing.T) {
 	mockGit := &MockGitClient{}
 
 	// Execute cleanup
-	archiver := NewArchiver(fs, missionDir, mockGit)
+	archiver := NewArchiver(fs, filepath.Join(missionDir, "mission.md"), mockGit)
 	err = archiver.CleanupObsoleteFiles()
 	require.NoError(t, err)
 
@@ -140,7 +140,7 @@ func TestArchiver_CleanupObsoleteFiles_MissingFiles(t *testing.T) {
 	mockGit := &MockGitClient{}
 
 	// Cleanup should not fail if files don't exist
-	archiver := NewArchiver(fs, missionDir, mockGit)
+	archiver := NewArchiver(fs, filepath.Join(missionDir, "mission.md"), mockGit)
 	err = archiver.CleanupObsoleteFiles()
 	require.NoError(t, err)
 }
@@ -157,7 +157,7 @@ func TestArchiver_Archive_ForceWithNoMission(t *testing.T) {
 	mockGit := &MockGitClient{}
 
 	// Archive with force=true should succeed as no-op when no mission exists
-	archiver := NewArchiver(fs, missionDir, mockGit)
+	archiver := NewArchiver(fs, filepath.Join(missionDir, "mission.md"), mockGit)
 	err = archiver.Archive(true)
 	require.NoError(t, err, "Archive with force=true should succeed when no mission exists")
 }
@@ -174,7 +174,7 @@ func TestArchiver_Archive_NoForceWithNoMission(t *testing.T) {
 	mockGit := &MockGitClient{}
 
 	// Archive with force=false should return error when no mission exists
-	archiver := NewArchiver(fs, missionDir, mockGit)
+	archiver := NewArchiver(fs, filepath.Join(missionDir, "mission.md"), mockGit)
 	err = archiver.Archive(false)
 	require.Error(t, err, "Archive with force=false should fail when no mission exists")
 	require.Contains(t, err.Error(), "no current mission to archive")
@@ -193,7 +193,7 @@ func TestArchiver_Archive_CorruptedMissionFile(t *testing.T) {
 	require.NoError(t, err)
 
 	mockGit := &MockGitClient{}
-	archiver := NewArchiver(fs, missionDir, mockGit)
+	archiver := NewArchiver(fs, filepath.Join(missionDir, "mission.md"), mockGit)
 
 	err = archiver.Archive(false)
 	require.Error(t, err, "Should fail with corrupted mission file")
@@ -221,7 +221,7 @@ Body`
 	require.NoError(t, err)
 
 	mockGit := &MockGitClient{}
-	archiver := NewArchiver(fs, missionDir, mockGit)
+	archiver := NewArchiver(fs, filepath.Join(missionDir, "mission.md"), mockGit)
 
 	err = archiver.Archive(false)
 	// Should handle permission errors gracefully

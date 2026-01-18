@@ -16,12 +16,14 @@ type Archiver struct {
 	git    git.GitClient
 }
 
-// NewArchiver creates a new Archiver instance
-func NewArchiver(fs afero.Fs, missionDir string, git git.GitClient) *Archiver {
-	base := NewBaseService(fs, missionDir)
+// NewArchiver creates a new Archiver instance for the specified mission file path.
+// The mission directory is derived from the path's directory component.
+func NewArchiver(fs afero.Fs, path string, git git.GitClient) *Archiver {
+	missionDir := filepath.Dir(path)
+	base := NewBaseServiceWithPath(fs, missionDir, path)
 	return &Archiver{
 		BaseService: base,
-		reader:      NewReader(fs, base.MissionPath()),
+		reader:      NewReader(fs, path),
 		git:         git,
 	}
 }

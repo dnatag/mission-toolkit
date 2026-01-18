@@ -27,13 +27,15 @@ type CheckService struct {
 	context   string
 }
 
-// NewCheckService creates a new check service
-func NewCheckService(fs afero.Fs, missionDir string) *CheckService {
-	base := NewBaseService(fs, missionDir)
+// NewCheckService creates a new check service for the specified mission file path.
+// The mission directory is derived from the path's directory component.
+func NewCheckService(fs afero.Fs, path string) *CheckService {
+	missionDir := filepath.Dir(path)
+	base := NewBaseServiceWithPath(fs, missionDir, path)
 	return &CheckService{
 		BaseService: base,
-		reader:      NewReader(fs, base.MissionPath()),
-		idService:   NewIDService(fs, missionDir),
+		reader:      NewReader(fs, path),
+		idService:   NewIDService(fs, path),
 		context:     "",
 	}
 }

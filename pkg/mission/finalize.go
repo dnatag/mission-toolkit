@@ -22,10 +22,12 @@ type FinalizeResult struct {
 	Message         string   `json:"message"`
 }
 
-// NewFinalizeService creates a new FinalizeService
-func NewFinalizeService(fs afero.Fs, dir string) *FinalizeService {
+// NewFinalizeService creates a new FinalizeService for the specified mission file path.
+// The mission directory is derived from the path's directory component.
+func NewFinalizeService(fs afero.Fs, path string) *FinalizeService {
+	missionDir := filepath.Dir(path)
 	return &FinalizeService{
-		BaseService: NewBaseService(fs, dir),
+		BaseService: NewBaseServiceWithPath(fs, missionDir, path),
 	}
 }
 
@@ -79,7 +81,7 @@ func (s *FinalizeService) cleanupTemplates() error {
 
 // updateStatusToPlanned changes mission status from planning to planned
 func (s *FinalizeService) updateStatusToPlanned(missionPath string) error {
-	writer := NewWriterWithPath(s.FS(), missionPath)
+	writer := NewWriter(s.FS(), missionPath)
 	return writer.UpdateStatus("planned")
 }
 

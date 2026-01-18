@@ -35,7 +35,7 @@ go test ./...`
 
 	afero.WriteFile(fs, ".mission/mission.md", []byte(missionContent), 0644)
 
-	service := NewFinalizeService(fs, ".mission")
+	service := NewFinalizeService(fs, ".mission/mission.md")
 	output, err := service.Finalize()
 
 	if err != nil {
@@ -70,7 +70,7 @@ auth.go`
 
 	afero.WriteFile(fs, ".mission/mission.md", []byte(missionContent), 0644)
 
-	service := NewFinalizeService(fs, ".mission")
+	service := NewFinalizeService(fs, ".mission/mission.md")
 	output, err := service.Finalize()
 
 	if err != nil {
@@ -113,7 +113,7 @@ go test ./...`
 
 	afero.WriteFile(fs, ".mission/mission.md", []byte(missionContent), 0644)
 
-	service := NewFinalizeService(fs, ".mission")
+	service := NewFinalizeService(fs, ".mission/mission.md")
 	output, err := service.Finalize()
 
 	if err != nil {
@@ -139,7 +139,7 @@ go test ./...`
 func TestFinalizeService_Finalize_MissingFile(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
-	service := NewFinalizeService(fs, ".mission")
+	service := NewFinalizeService(fs, ".mission/mission.md")
 	_, err := service.Finalize()
 
 	if err == nil {
@@ -182,7 +182,7 @@ go test ./...`
 	fs.Mkdir(".mission/templates", 0755)
 	afero.WriteFile(fs, ".mission/templates/test.md", []byte("test"), 0644)
 
-	service := NewFinalizeService(fs, ".mission")
+	service := NewFinalizeService(fs, ".mission/mission.md")
 	_, err := service.Finalize()
 
 	if err != nil {
@@ -219,7 +219,7 @@ go test ./...`
 
 	afero.WriteFile(fs, ".mission/mission.md", []byte(missionContent), 0644)
 
-	service := NewFinalizeService(fs, ".mission")
+	service := NewFinalizeService(fs, ".mission/mission.md")
 	_, err := service.Finalize()
 
 	if err != nil {

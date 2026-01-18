@@ -2,6 +2,7 @@ package mission
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/dnatag/mission-toolkit/pkg/logger"
@@ -12,23 +13,17 @@ import (
 // Writer handles writing mission files and updating status.
 type Writer struct {
 	*BaseService
-	loggerConfig *logger.Config // Optional logger config; nil uses default
+	loggerConfig *logger.Config // Logger configuration for execution logging
 }
 
-// NewWriter creates a new mission writer rooted at missionDir.
-// The mission file path is always <missionDir>/mission.md.
-func NewWriter(fs afero.Fs, missionDir string) *Writer {
+// NewWriter creates a new mission writer for the specified mission file path.
+// The mission directory is derived from the path's directory component.
+// Logger is configured with default settings (both console and file output).
+func NewWriter(fs afero.Fs, path string) *Writer {
+	missionDir := filepath.Dir(path)
 	return &Writer{
-		BaseService:  NewBaseService(fs, missionDir),
-		loggerConfig: nil,
-	}
-}
-
-// NewWriterWithPath creates a new mission writer for an explicit mission file path.
-func NewWriterWithPath(fs afero.Fs, path string) *Writer {
-	return &Writer{
-		BaseService:  NewBaseServiceWithPath(fs, "", path),
-		loggerConfig: nil,
+		BaseService:  NewBaseServiceWithPath(fs, missionDir, path),
+		loggerConfig: logger.DefaultConfig(),
 	}
 }
 

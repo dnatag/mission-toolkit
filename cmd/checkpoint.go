@@ -22,7 +22,7 @@ var checkpointCreateCmd = &cobra.Command{
 	Short: "Create a checkpoint of current working directory state",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get mission ID
-		idService := mission.NewIDService(missionFs, missionDir)
+		idService := mission.NewIDService(missionFs, missionPath)
 		missionID, err := idService.GetCurrentID()
 		if err != nil {
 			return fmt.Errorf("getting mission ID: %w", err)
@@ -64,7 +64,7 @@ var checkpointRestoreCmd = &cobra.Command{
 		// Handle --all flag
 		if cmd.Flags().Changed("all") {
 			// Get mission ID
-			idService := mission.NewIDService(missionFs, missionDir)
+			idService := mission.NewIDService(missionFs, missionPath)
 			missionID, err := idService.GetCurrentID()
 			if err != nil {
 				return fmt.Errorf("getting mission ID: %w", err)
@@ -108,7 +108,7 @@ var checkpointClearCmd = &cobra.Command{
 	Short: "Clear all checkpoints for current mission",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get mission ID
-		idService := mission.NewIDService(missionFs, missionDir)
+		idService := mission.NewIDService(missionFs, missionPath)
 		missionID, err := idService.GetCurrentID()
 		if err != nil {
 			return fmt.Errorf("getting mission ID: %w", err)
@@ -137,7 +137,7 @@ var checkpointCommitCmd = &cobra.Command{
 	Short: "Create final commit for the mission and clear checkpoints",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get mission ID
-		idService := mission.NewIDService(missionFs, missionDir)
+		idService := mission.NewIDService(missionFs, missionPath)
 		missionID, err := idService.GetCurrentID()
 		if err != nil {
 			return fmt.Errorf("getting mission ID: %w", err)
