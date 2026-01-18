@@ -64,10 +64,81 @@ For EACH implementation file:
 - Field additions
 - Pass-through functions
 
-**Output:** List test files to add to scope or create.
+## Output Format
 
----
+**REQUIRED:** Produce a JSON object with your analysis results.
 
-**Optional: If test files are needed, consider:**
-- Test approach: table-driven, mocks, fixtures
-- Verification command: `go test ./...`, `npm test`, etc.
+```json
+{
+  "action": "ADD_TESTS" | "SKIP_TESTS",
+  "analysis": [
+    {
+      "file": "pkg/checkpoint/service.go",
+      "test_file": "pkg/checkpoint/service_test.go",
+      "exists": true,
+      "change_type": "substantive",
+      "decision": "add_to_scope",
+      "reason": "Consolidate() signature change requires test updates"
+    }
+  ],
+  "test_files_to_add": ["pkg/checkpoint/service_test.go"]
+}
+```
+
+### Field Definitions
+
+- **action**: `ADD_TESTS` if any test files need to be added to scope, `SKIP_TESTS` if none needed
+- **analysis**: Array with one entry per implementation file in scope
+  - **file**: The implementation file being analyzed
+  - **test_file**: Derived test filename (or "N/A" for non-code files)
+  - **exists**: Whether the test file exists (`true`/`false`/`"N/A"`)
+  - **change_type**: `"substantive"` or `"trivial"` based on decision matrix
+  - **decision**: `"add_to_scope"`, `"create_new"`, or `"skip"`
+  - **reason**: Brief justification for the decision
+- **test_files_to_add**: Array of test file paths to add to mission scope (empty if none)
+
+### Examples
+
+**Example 1: Substantive change with existing test**
+```json
+{
+  "action": "ADD_TESTS",
+  "analysis": [
+    {
+      "file": "pkg/git/client.go",
+      "test_file": "pkg/git/client_test.go",
+      "exists": false,
+      "change_type": "substantive",
+      "decision": "skip",
+      "reason": "Interface-only file, implementations tested separately"
+    },
+    {
+      "file": "pkg/checkpoint/service.go",
+      "test_file": "pkg/checkpoint/service_test.go",
+      "exists": true,
+      "change_type": "substantive",
+      "decision": "add_to_scope",
+      "reason": "Return type change affects existing test assertions"
+    }
+  ],
+  "test_files_to_add": ["pkg/checkpoint/service_test.go"]
+}
+```
+
+**Example 2: No tests needed**
+```json
+{
+  "action": "SKIP_TESTS",
+  "analysis": [
+    {
+      "file": "pkg/templates/displays/success.md",
+      "test_file": "N/A",
+      "exists": "N/A",
+      "change_type": "trivial",
+      "decision": "skip",
+      "reason": "Markdown template, not executable code"
+    }
+  ],
+  "test_files_to_add": []
+}
+```
