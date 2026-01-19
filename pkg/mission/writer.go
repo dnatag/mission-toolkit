@@ -261,7 +261,7 @@ func (w *Writer) UpdateFrontmatter(pairs []string) error {
 		case "type":
 			mission.Type = value
 		case "domains":
-			mission.Domains = value
+			mission.Domains = append(mission.Domains, value)
 		}
 	}
 
@@ -282,7 +282,7 @@ func (w *Writer) format(mission *Mission) (string, error) {
 		frontmatter["parent_mission"] = mission.ParentMission
 	}
 
-	if mission.Domains != "" {
+	if len(mission.Domains) > 0 {
 		frontmatter["domains"] = mission.Domains
 	}
 

@@ -99,12 +99,12 @@ func TestMission_DomainsField(t *testing.T) {
 	m := &Mission{}
 
 	// Test setting domains field
-	m.Domains = "security,performance"
-	assert.Equal(t, "security,performance", m.Domains)
+	m.Domains = []string{"security", "performance"}
+	assert.Equal(t, []string{"security", "performance"}, m.Domains)
 
 	// Test empty domains field
-	m2 := &Mission{Domains: ""}
-	assert.Equal(t, "", m2.Domains)
+	m2 := &Mission{Domains: nil}
+	assert.Nil(t, m2.Domains)
 }
 
 func TestMission_GetSections(t *testing.T) {

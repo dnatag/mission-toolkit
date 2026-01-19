@@ -686,7 +686,7 @@ func TestWriter_WriteWithDomains(t *testing.T) {
 		Track:     2,
 		Iteration: 1,
 		Status:    "planned",
-		Domains:   "security,performance",
+		Domains:   []string{"security", "performance"},
 		Body:      "## INTENT\nTest body content\n",
 	}
 
@@ -702,7 +702,7 @@ func TestWriter_WriteWithDomains(t *testing.T) {
 	}
 
 	content := string(data)
-	if !strings.Contains(content, "domains: security,performance") {
+	if !strings.Contains(content, "domains:") || !strings.Contains(content, "security") {
 		t.Error("Write() content should contain domains field")
 	}
 
@@ -736,7 +736,7 @@ func TestWriter_UpdateFrontmatter_Domains(t *testing.T) {
 	}
 
 	// Update domains field
-	pairs := []string{"domains=security,performance"}
+	pairs := []string{"domains=security", "domains=performance"}
 	if err := writer.UpdateFrontmatter(pairs); err != nil {
 		t.Fatalf("UpdateFrontmatter failed: %v", err)
 	}
@@ -746,8 +746,14 @@ func TestWriter_UpdateFrontmatter_Domains(t *testing.T) {
 		t.Fatalf("Read failed: %v", err)
 	}
 
-	if updated.Domains != "security,performance" {
-		t.Errorf("Expected domains 'security,performance', got '%s'", updated.Domains)
+	expected := []string{"security", "performance"}
+	if len(updated.Domains) != len(expected) {
+		t.Errorf("Expected domains %v, got %v", expected, updated.Domains)
+	}
+	for i, d := range expected {
+		if updated.Domains[i] != d {
+			t.Errorf("Expected domains[%d] '%s', got '%s'", i, d, updated.Domains[i])
+		}
 	}
 
 	// Verify that type field is NOT affected by domains update
