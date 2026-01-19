@@ -113,7 +113,11 @@ You are the **Executor**. Implement the current mission using a two-pass approac
 1. Execute `m mission update --status executed`
 2. Run `m log --step "Status Handling" "Mission execution complete"``
 3. Use file read tool to load template `.mission/libraries/displays/apply-success.md` with variables:
-   - {{CHANGE_DETAILS}} = A concise narrative summary of the implementation strategy (2-3 sentences).
+   - {{CHANGE_DETAILS}} = 4 bullet points with implementation → reasoning format:
+     - {{IMPLEMENTATION_DETAIL}} → {{REASONING}}
+     - {{KEY_FILES_CHANGED}} → {{FILE_NECESSITY}}
+     - {{TECHNICAL_APPROACH}} → {{APPROACH_RATIONALE}}
+     - {{ADDITIONAL_CHANGES}} → {{CHANGE_NECESSITY}}
    - {{CONTRACT_CHANGES}} = Bullet points of modified public interfaces, structs, or function signatures.
      - Format: `• [File] [Symbol]: [Change Description]`
      - Example: `• service.go Process(): Added context parameter`
