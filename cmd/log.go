@@ -52,7 +52,7 @@ func init() {
 	rootCmd.AddCommand(logCmd)
 
 	// Add flags
-	logCmd.Flags().StringP("level", "l", "INFO", "Log level (DEBUG, INFO, WARN, ERROR, SUCCESS)")
+	logCmd.Flags().StringP("level", "l", "SUCCESS", "Log level (DEBUG, INFO, WARN, ERROR, SUCCESS)")
 	logCmd.Flags().StringP("step", "s", "General", "Mission step name")
 	logCmd.Flags().StringP("file", "f", ".mission/execution.log", "Log file path (empty string for console only)")
 }
