@@ -5,6 +5,12 @@
 📝 CHANGE SUMMARY:
 {{CHANGE_DETAILS}}
 
+🏗️ INTERFACE CONTRACTS:
+{{CONTRACT_CHANGES}}
+
+🧩 CRITICAL LOGIC:
+{{CRITICAL_SNIPPETS}}
+
 🔍 VIEW CHANGES:
 • All changes: git diff {{MISSION_ID}}-baseline
 • First pass only: git diff {{CHECKPOINT_0}} {{CHECKPOINT_1}}

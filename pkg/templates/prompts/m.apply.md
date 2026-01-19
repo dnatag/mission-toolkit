@@ -113,11 +113,14 @@ You are the **Executor**. Implement the current mission using a two-pass approac
 1. Execute `m mission update --status executed`
 2. Run `m log --step "Status Handling" "Mission execution complete"``
 3. Use file read tool to load template `.mission/libraries/displays/apply-success.md` with variables:
-   - {{CHANGE_DETAILS}} = 4 bullet points with implementation → reasoning format:
-     - {{IMPLEMENTATION_DETAIL}} → {{REASONING}}
-     - {{KEY_FILES_CHANGED}} → {{FILE_NECESSITY}}
-     - {{TECHNICAL_APPROACH}} → {{APPROACH_RATIONALE}}
-     - {{ADDITIONAL_CHANGES}} → {{CHANGE_NECESSITY}}
+   - {{CHANGE_DETAILS}} = A concise narrative summary of the implementation strategy (2-3 sentences).
+   - {{CONTRACT_CHANGES}} = Bullet points of modified public interfaces, structs, or function signatures.
+     - Format: `• [File] [Symbol]: [Change Description]`
+     - Example: `• service.go Process(): Added context parameter`
+     - If no structural changes, set to "No public API changes."
+   - {{CRITICAL_SNIPPETS}} = The single most important code block (max 15 lines) showing the core logic change.
+     - Include file path.
+     - Wrap in markdown code block.
    - {{CHECKPOINT_0}} = Initial checkpoint name from Step 1 (e.g., "MISS-20260103-143022-0")
    - {{CHECKPOINT_1}} = Polish checkpoint name from Step 3.1 (e.g., "MISS-20260103-143022-1", or "N/A" if polish skipped)
    - {{CHECKPOINT_2}} = Final checkpoint name from Step 3.4 (e.g., "MISS-20260103-143022-2", or "N/A" if polish failed/skipped)

@@ -30,6 +30,8 @@
 {{ADDITIONAL_CHANGES}}  # Other changes made
 {{CHANGE_NECESSITY}}    # Why additional changes were needed
 {{CHANGE_DETAILS}}      # 3-4 bullet points with reasoning
+{{CONTRACT_CHANGES}}    # Bullet points of modified public interfaces/structs
+{{CRITICAL_SNIPPETS}}   # Code block showing core logic change
 ```
 
 ### Completion Variables
@@ -69,15 +71,12 @@
 - {{SUB_INTENTS}}
 
 ### apply-success.md
-- {{IMPLEMENTATION_DETAIL}}
-- {{REASONING}}
-- {{KEY_FILES_CHANGED}}
-- {{FILE_NECESSITY}}
-- {{TECHNICAL_APPROACH}}
-- {{APPROACH_RATIONALE}}
-- {{ADDITIONAL_CHANGES}}
-- {{CHANGE_NECESSITY}}
 - {{CHANGE_DETAILS}}
+- {{CONTRACT_CHANGES}}
+- {{CRITICAL_SNIPPETS}}
+- {{CHECKPOINT_0}}
+- {{CHECKPOINT_1}}
+- {{CHECKPOINT_2}}
 
 ### apply-failure.md
 - {{FAILURE_REASON}}
@@ -111,15 +110,9 @@ SUB_INTENTS        # For Track 4 only
 
 ### m.apply.md Must Provide
 ```
-IMPLEMENTATION_DETAIL
-REASONING
-KEY_FILES_CHANGED
-FILE_NECESSITY
-TECHNICAL_APPROACH
-APPROACH_RATIONALE
-ADDITIONAL_CHANGES
-CHANGE_NECESSITY
-CHANGE_DETAILS
+CHANGE_DETAILS     # Narrative summary
+CONTRACT_CHANGES   # Interface/struct changes
+CRITICAL_SNIPPETS  # Core logic code block
 FAILURE_REASON     # If failure
 RETRY_ADVICE       # If failure
 CHECKPOINT_*       # If checkpoints used
@@ -152,6 +145,8 @@ All variables except those listed below are strings.
 {{MISSION_CONTENT}}    # Full markdown content
 {{SUB_INTENTS}}        # Formatted list with bullets
 {{CHANGE_DETAILS}}     # Formatted list with bullets
+{{CONTRACT_CHANGES}}   # Formatted list with bullets
+{{CRITICAL_SNIPPETS}}  # Markdown code block
 ```
 
 ## FORMATTING GUIDELINES
