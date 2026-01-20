@@ -5,7 +5,7 @@
 
 ## 🧠 The Philosophy
 
-Intent-Driven Atomic Development is a minimalist workflow designed to bridge the gap between "Vibe Coding" (Chaos) and "Spec-Driven Development" (Bureaucracy).
+Atomic Intent-Driven Development is a minimalist workflow designed to bridge the gap between "Vibe Coding" (Chaos) and "Spec-Driven Development" (Bureaucracy).
 
 We believe that AI coding fails in two extremes:
 
@@ -13,7 +13,7 @@ We believe that AI coding fails in two extremes:
 
 **📝 The Spec Trap:** You write exhaustive documentation before coding. AI generates large implementations that work, but the sheer volume alienates you from the codebase. You feel like a contributor, not an owner.
 
-**✨ Intent-Driven Atomic Development is the Golden Ratio.** It forces a "🤝 Handshake" before every coding task and keeps changes within human comprehension limits. You don't write the code, but you authorize the architecture and verify the implementation.
+**✨ Atomic Intent-Driven Development is the Golden Ratio.** It forces a "🤝 Handshake" before every coding task and keeps changes within human comprehension limits. You don't write the code, but you authorize the architecture and verify the implementation.
 
 ## ⚛️ Why Atomic?
 
@@ -42,7 +42,7 @@ The Mission Toolkit implements this philosophy through a systematic approach tha
 ## 🤝 The Slash Commands
 
 *Note: Amazon Q CLI and Kiro CLI differences:*
-- *Use '@' commands instead of '/' (e.g., @m.plan, @m.clarify, @m.apply, @m.complete)*
+- *Use '@' commands instead of '/' (e.g., @m.plan, @m.apply, @m.complete)*
 - *Inline arguments are ignored - the AI will prompt for input*
 
 ### 📝 `/m.plan` - The Planning Handshake
@@ -58,20 +58,8 @@ Converts your intent into a structured mission. You define what, AI proposes how
 - 📁 Automatic scope estimation and file identification
 - 🔒 Security validation and input sanitization
 - 📋 Backlog management for complex intents
-
-### 🔍 `/m.clarify` - The Clarification Handshake (Optional)
-Refines vague or complex intents before planning. Helps break down ambiguous requirements into actionable missions.
-
-```bash
-# Example usage
-/m.clarify
-```
-
-**Features:**
-- 🎯 Intent disambiguation and scope refinement
-- 📋 Requirement extraction from vague descriptions
-- 🔄 Interactive clarification process
-- 📝 Structured output ready for m.apply
+- 🔍 Integrated clarification for ambiguous requirements
+- 🛡️ CLI-exclusive state management
 
 ### 🚀 `/m.apply` - The Execution Handshake  
 Implements your authorized plan. AI handles execution while you maintain oversight.
@@ -86,6 +74,8 @@ Implements your authorized plan. AI handles execution while you maintain oversig
 - 🔄 WET vs DRY mission differentiation
 - ✅ Mandatory verification execution
 - 🔍 Pattern detection for future refactoring
+- 🛡️ Two-pass implementation with automatic rollback
+- 💾 Automatic checkpoint creation and restoration
 
 ### 📈 `/m.complete` - The Learning Handshake
 Captures what was accomplished and learned. Builds organizational memory for future missions.
@@ -97,9 +87,10 @@ Captures what was accomplished and learned. Builds organizational memory for fut
 
 **Features:**
 - 📁 Mission archival with timestamps
-- 📊 Metrics collection and analysis
 - 📋 Backlog updates and pattern tracking
 - 📆 Historical data preservation
+- 🎯 Rich commit message generation from execution logs
+- 📦 Consolidated commit creation
 
 ## Project Structure
 
@@ -107,30 +98,22 @@ Captures what was accomplished and learned. Builds organizational memory for fut
 .mission/
 ├── governance.md          # Core principles and workflow rules
 ├── backlog.md            # Future work and refactoring opportunities
-├── metrics.md            # Aggregate performance statistics
 ├── mission.md            # Current active mission (auto-generated)
 ├── execution.log         # Current mission execution log
 ├── completed/            # Archived missions and detailed metrics
 │   ├── MISSION-ID-mission.md
-│   ├── MISSION-ID-metrics.md
+│   ├── MISSION-ID-commit.msg
 │   └── MISSION-ID-execution.log
 ├── paused/               # Temporarily paused missions
 │   └── TIMESTAMP-mission.md
 └── libraries/            # Template system (embedded)
-    ├── analysis/         # Analysis guidance templates
-    ├── displays/         # User output templates
-    ├── logs/             # Execution logging templates
-    ├── metrics/          # Metrics templates
-    ├── missions/         # Mission file templates
-    ├── scripts/          # Operation templates
-    └── variables/        # Variable calculation rules
+    └── displays/         # User output templates
 
 # AI-specific prompt directories:
 .amazonq/prompts/         # Amazon Q prompts
 .claude/commands/         # Claude commands
 .kiro/prompts/           # Kiro prompts
 .opencode/command/       # OpenCode commands
-├── m.clarify.md        # Clarification prompt for vague intents
 ├── m.plan.md           # Planning prompt and complexity matrix
 ├── m.apply.md          # Execution prompt and safety checks
 └── m.complete.md       # Completion prompt and observability
@@ -162,10 +145,18 @@ Captures what was accomplished and learned. Builds organizational memory for fut
 ## Mission Lifecycle
 
 ```
-User Intent → [m.clarify] → m.plan → .mission/mission.md → m.apply → Verification → m.complete → Archive
-                              ↓                                                                    ↓
-                          .mission/backlog.md ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←← .mission/metrics.md
+m.plan → 🤝 Review mission.md → m.apply → 🤝 Review code → [Adjustments] → m.complete
+(Handshake #1)                  (Handshake #2)
 ```
+
+**How it works:**
+1. **m.plan** creates mission.md with INTENT, SCOPE, PLAN, VERIFICATION (includes clarification if needed)
+2. **🤝 Review & approve** the mission before execution (authorize the architecture)
+3. **m.apply** executes, polishes, and generates commit message
+4. **🤝 Review code** and optionally request adjustments (verify the implementation)
+5. **m.complete** archives mission and creates git commit
+
+[See detailed workflow diagram →](docs/workflows/01-mission-lifecycle.md)
 
 ## Key Principles
 
@@ -262,10 +253,10 @@ m version
 
 2. **📊 Check Project Status**
    ```bash
-   # Display interactive TUI showing current and completed missions
-   m status
+   # Display comprehensive mission dashboard with execution logs
+   m dashboard
    
-   # Use ↑/↓ to navigate missions, Enter to view details, / to search
+   # Use ↑/↓ to navigate missions, Enter to view details, Tab to switch panes
    # Shows mission progress and provides clear next steps
    ```
 
@@ -284,15 +275,25 @@ m version
    /m.complete
    ```
 
+## CLI Commands
+
+The `m` CLI provides several commands for project management:
+
+- `m init --ai <type>` - Initialize project with AI-specific templates
+- `m dashboard` - Interactive TUI dashboard for mission management
+- `m version` - Show version information
+- `m analyze <type>` - Analyze intent, scope, complexity, etc.
+- `m mission <action>` - Mission lifecycle management
+- `m backlog <action>` - Backlog management
+- `m checkpoint <action>` - Git checkpoint management
+- `m log` - Execution logging
+- `m check` - Validation and status checks
+
 ## Template System Features
 
 ### Embedded Templates
 - **Analysis Templates**: Clarification and complexity assessment guidance
 - **Display Templates**: Consistent user output for all command outcomes
-- **Mission Templates**: WET, DRY, and clarification mission structures
-- **Script Templates**: Standardized operations for status updates and archival
-- **Metrics Templates**: Individual mission and aggregate project metrics
-- **Logging Templates**: Execution step tracking and debugging
 
 ### Variable Standardization
 - Consistent naming across all templates ({{TRACK}}, {{MISSION_TYPE}}, etc.)
@@ -314,24 +315,11 @@ m version
 - Archived logs with completed missions
 - Debugging support for failed missions
 
-### Metrics Tracking
-- Mission duration and complexity correlation
-- Track distribution and success rates
-- WET→DRY evolution effectiveness
-- Verification success/failure patterns
-- Template system usage analytics
-
 ### Pattern Detection
 - Automatic duplication identification
 - Abstraction opportunity recognition
 - Common failure pattern analysis
 - Process bottleneck identification
-
-### Historical Analysis
-- Timestamped mission archives with full context
-- Performance trend analysis
-- Process evolution tracking
-- Evidence-based improvements
 
 ## ✨ Benefits
 
@@ -343,6 +331,54 @@ m version
 - **🔧 Template Consistency**: Embedded template system ensures reliable, predictable outputs across all AI assistants
 - **📊 Full Observability**: Execution logging and metrics provide complete visibility into mission progress and outcomes
 - **🔄 AI-Agnostic**: Works seamlessly with Amazon Q, Claude, Kiro, OpenCode, and other AI assistants
+- **🛡️ Safety Features**: Two-pass implementation with automatic rollback on polish failures
+- **📱 Interactive TUI**: Rich dashboard for mission management and progress tracking
+
+## CLI Reference
+
+### Core Commands
+
+```bash
+# Check current version
+m version
+
+# Initialize project
+m init --ai <q|claude|kiro|opencode>
+
+# Interactive dashboard
+m dashboard
+
+# Mission lifecycle
+m mission create --intent "description"
+m mission check --context <plan|apply|complete>
+m mission update --status <active|executed|completed|failed>
+m mission finalize
+m mission archive
+
+# Analysis commands
+m analyze intent "description"
+m analyze scope
+m analyze complexity
+m analyze clarify
+m analyze duplication
+m analyze decompose
+m analyze test
+
+# Backlog management
+m backlog list
+m backlog add "item" --type <decomposed|refactor>
+m backlog complete --item "exact text"
+m backlog resolve --item "pattern"
+
+# Checkpoint management
+m checkpoint create
+m checkpoint restore <name>
+m checkpoint commit -m "message"
+
+# Logging and validation
+m log --step "name" "message"
+m check "intent"
+```
 
 ## Versioning
 

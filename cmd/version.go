@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/dnatag/mission-toolkit/internal/version"
+	"github.com/dnatag/mission-toolkit/pkg/version"
 	"github.com/spf13/cobra"
 )
 
