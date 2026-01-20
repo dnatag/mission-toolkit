@@ -91,6 +91,7 @@ func (c *MemGitClient) CreateTag(name string, commitHash string) error {
 	hash := plumbing.NewHash(commitHash)
 	_, err := c.repo.CreateTag(name, hash, &git.CreateTagOptions{
 		Message: name,
+		Tagger:  &object.Signature{Name: "Mission Toolkit", Email: "mission@toolkit.local"},
 	})
 	return err
 }
