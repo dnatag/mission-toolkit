@@ -1,5 +1,18 @@
-.idea/
-.amazonq/cli-todo-lists/
-# m
+# Binaries
 bin/
 m
+
+# IDEs
+.idea/
+.vscode/
+
+# AI & Mission Runtime
+.opencode/
+.claude/
+.amazonq/
+.kiro/
+.mission/
+
+# Documentation Extras (Private/Pro features)
+docs/extra/
+COMPREHENSIVE_REVIEW.md

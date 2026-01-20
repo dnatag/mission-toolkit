@@ -1,0 +1,12 @@
+✅ MISSION CREATED: .mission/mission.md
+- Track {{TRACK}} {{MISSION_TYPE}} mission
+- {{FILE_COUNT}} files in scope
+
+📋 MISSION:
+{{MISSION_CONTENT}}
+
+🚀 NEXT STEPS:
+• Execute: /m.apply
+• Refine: Chat to revise mission plan
+• Modify: Edit .mission/mission.md directly
+• Cancel: Delete .mission/mission.md
