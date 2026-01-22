@@ -52,10 +52,13 @@ You are the **Expert Commit Author**. Your job is to finalize the mission by gen
    - Execute `m backlog list --exclude refactor --exclude completed` to get pending backlog items (excluding refactor patterns and completed items)
    - Read current `.mission/mission.md` to check the INTENT section
    - If the mission intent matches any backlog item, execute `m backlog complete --item "<exact backlog item text>"`
-2. **Update Status**: Execute `m mission update --status completed`
-3. **Log**: Run `m log --step "Finalize" "Mission completed and archived"`
-4. **Archive Mission**: Execute `m mission archive`
-5. **Display Success**: Use file read tool to load template `.mission/libraries/displays/complete-success.md` with variables:
+2. **Log Outcome**:
+   - If an item was completed: Run `m log --step "Complete" "Backlog item matched and marked as completed"`
+   - If no item was matched: Run `m log --step "Complete" "No matching backlog item found"`
+3. **Update Status**: Execute `m mission update --status completed`
+4. **Log**: Run `m log --step "Finalize" "Mission completed and archived"`
+5. **Archive Mission**: Execute `m mission archive`
+6. **Display Success**: Use file read tool to load template `.mission/libraries/displays/complete-success.md` with variables:
    - {{MISSION_ID}}, {{DURATION}}, {{FINAL_COMMIT_HASH}}, {{TRACK}}, {{MISSION_TYPE}}
    - {{UNSTAGED_FILES}} = List of unstaged files from commit output (or empty if none)
 
