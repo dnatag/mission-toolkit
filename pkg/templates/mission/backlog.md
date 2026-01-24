@@ -1,11 +1,16 @@
 # MISSION TOOLKIT BACKLOG
 
+## FEATURES
+(User-defined feature requests and enhancements)
+
+## BUGFIXES
+(Bug reports and issues to be fixed)
+
 ## DECOMPOSED INTENTS
 (Sub-intents from Track 4 Epic requests that need separate missions)
 
 ## REFACTORING OPPORTUNITIES  
 (Detected duplication patterns that need DRY missions)
-- Pattern: [Description] - Files: [file1, file2, file3] - Added: [YYYY-MM-DD]
 
 ## FUTURE ENHANCEMENTS
 (Ideas and improvements for later consideration)
@@ -14,6 +19,12 @@
 (History of completed backlog items)
 
 ---
+
+**Format for features:**
+- [ ] [Feature description]
+
+**Format for bugfixes:**
+- [ ] [Bug description] - Symptom: [what's happening]
 
 **Format for refactoring opportunities:**
 - [ ] Extract [pattern name] from [file list] (detected: [YYYY-MM-DD])

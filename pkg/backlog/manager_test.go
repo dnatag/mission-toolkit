@@ -967,3 +967,62 @@ func TestBacklogManager_Cleanup_AllCompletedItems(t *testing.T) {
 		t.Errorf("Expected non-negative cleanup count, got %d", count)
 	}
 }
+
+func TestBacklogManager_AddFeature(t *testing.T) {
+	dir := t.TempDir()
+	manager := NewManager(dir)
+
+	err := manager.Add("Add user authentication", "feature")
+	if err != nil {
+		t.Fatalf("Add feature failed: %v", err)
+	}
+
+	items, err := manager.List([]string{"feature"}, nil)
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Errorf("Expected 1 feature item, got %d", len(items))
+	}
+	if !strings.Contains(items[0], "Add user authentication") {
+		t.Errorf("Expected item to contain 'Add user authentication', got %s", items[0])
+	}
+}
+
+func TestBacklogManager_AddBugfix(t *testing.T) {
+	dir := t.TempDir()
+	manager := NewManager(dir)
+
+	err := manager.Add("Fix login timeout issue", "bugfix")
+	if err != nil {
+		t.Fatalf("Add bugfix failed: %v", err)
+	}
+
+	items, err := manager.List([]string{"bugfix"}, nil)
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Errorf("Expected 1 bugfix item, got %d", len(items))
+	}
+	if !strings.Contains(items[0], "Fix login timeout issue") {
+		t.Errorf("Expected item to contain 'Fix login timeout issue', got %s", items[0])
+	}
+}
+
+func TestBacklogManager_ListExcludeFeatureAndBugfix(t *testing.T) {
+	dir := t.TempDir()
+	manager := NewManager(dir)
+
+	manager.Add("Feature item", "feature")
+	manager.Add("Bugfix item", "bugfix")
+	manager.Add("Decomposed item", "decomposed")
+
+	items, err := manager.List(nil, []string{"feature", "bugfix"})
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Errorf("Expected 1 item after excluding feature and bugfix, got %d", len(items))
+	}
+}
