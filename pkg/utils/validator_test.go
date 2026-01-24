@@ -18,8 +18,8 @@ func TestValidateTemplate(t *testing.T) {
 			name:           "validate backlog template",
 			templatePath:   "../../pkg/templates/mission/backlog.md",
 			expectValid:    true,
-			expectSections: 4, // DECOMPOSED INTENTS, REFACTORING OPPORTUNITIES, FUTURE ENHANCEMENTS, COMPLETED
-			expectUnparsed: 4, // title + separator + 2 format instructions
+			expectSections: 6, // FEATURES, BUGFIXES, DECOMPOSED INTENTS, REFACTORING OPPORTUNITIES, FUTURE ENHANCEMENTS, COMPLETED
+			expectUnparsed: 6, // title + separator + 2 format instructions
 		},
 	}
 

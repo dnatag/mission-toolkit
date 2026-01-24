@@ -17,8 +17,8 @@ type Diagnosis struct {
 	Status     string    `yaml:"status"`
 	Confidence string    `yaml:"confidence"`
 	Created    time.Time `yaml:"created"`
-	Symptom    string
-	Body       string
+	Symptom    string    `yaml:"-"`
+	Body       string    `yaml:"-"`
 }
 
 // ReadDiagnosis reads and parses a diagnosis.md file.
@@ -89,13 +89,19 @@ func UpdateSection(fs afero.Fs, diagnosisPath string, section string, content st
 			result = append(result, line)
 
 			if isListSection {
-				// For list sections, append to existing content
+				// For list sections, append to existing content (skip placeholders)
 				j := i + 1
 				for ; j < len(lines); j++ {
 					if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
 						break
 					}
-					result = append(result, lines[j])
+					line := strings.TrimSpace(lines[j])
+					// Skip placeholder lines
+					if line != "- [ ] Initial investigation pending" &&
+						line != "1. **[UNKNOWN]** Investigation not yet started" &&
+						line != "- TBD" {
+						result = append(result, lines[j])
+					}
 				}
 				result = append(result, content, "")
 				if j < len(lines) {

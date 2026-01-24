@@ -30,8 +30,10 @@ type UnparsedElement struct {
 // AllowedUnparsedContent defines content that's expected to be unparsed
 var AllowedUnparsedContent = map[string]map[string]bool{
 	"backlog.md": {
-		"# MISSION TOOLKIT BACKLOG": true,
-		"---":                       true,
+		"# MISSION TOOLKIT BACKLOG":                 true,
+		"---":                                       true,
+		"**Format for features:**":                  true,
+		"**Format for bugfixes:**":                  true,
 		"**Format for refactoring opportunities:**": true,
 		"**Format for decomposed intents:**":        true,
 	},

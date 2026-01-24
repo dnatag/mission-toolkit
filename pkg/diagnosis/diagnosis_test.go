@@ -54,6 +54,8 @@ func TestCreateDiagnosis(t *testing.T) {
 			require.Contains(t, contentStr, "id: DIAG-")
 			require.Contains(t, contentStr, "status: investigating")
 			require.Contains(t, contentStr, "confidence: low")
+			require.NotContains(t, contentStr, "symptom:", "Symptom should not be in frontmatter")
+			require.NotContains(t, contentStr, "body:", "Body should not be in frontmatter")
 			require.Contains(t, contentStr, "## SYMPTOM")
 			require.Contains(t, contentStr, tt.symptom)
 			require.Contains(t, contentStr, "## INVESTIGATION")
@@ -222,20 +224,19 @@ id: DIAG-123
 status: investigating
 confidence: low
 created: 2026-01-24T10:00:00Z
-symptom: test
 ---
 
 ## SYMPTOM
 test
 
 ## INVESTIGATION
-- [x] Checked file.go
+- [ ] Initial investigation pending
 
 ## ROOT CAUSE
 TBD
 `,
 			section:      "INVESTIGATION",
-			newContent:   "- [ ] Review logs",
+			newContent:   "- [x] Checked file.go",
 			wantContains: "- [x] Checked file.go",
 			wantErr:      false,
 		},
@@ -246,20 +247,19 @@ id: DIAG-123
 status: investigating
 confidence: low
 created: 2026-01-24T10:00:00Z
-symptom: test
 ---
 
 ## SYMPTOM
 test
 
 ## HYPOTHESES
-1. **[HIGH]** First hypothesis
+1. **[UNKNOWN]** Investigation not yet started
 
 ## ROOT CAUSE
 TBD
 `,
 			section:      "HYPOTHESES",
-			newContent:   "2. **[LOW]** Second hypothesis",
+			newContent:   "1. **[HIGH]** First hypothesis",
 			wantContains: "1. **[HIGH]** First hypothesis",
 			wantErr:      false,
 		},
@@ -338,6 +338,13 @@ Old cause
 			// For append tests, verify new content is also present
 			if strings.Contains(tt.name, "appends") {
 				require.Contains(t, string(content), tt.newContent)
+				// Verify placeholders are filtered out
+				if tt.section == "INVESTIGATION" {
+					require.NotContains(t, string(content), "- [ ] Initial investigation pending", "Placeholder should be filtered")
+				}
+				if tt.section == "HYPOTHESES" {
+					require.NotContains(t, string(content), "1. **[UNKNOWN]** Investigation not yet started", "Placeholder should be filtered")
+				}
 			}
 
 			// For replace tests, verify old content is gone
