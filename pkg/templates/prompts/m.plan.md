@@ -13,7 +13,17 @@ $ARGUMENTS
 
 **Required:** Run `m check "$ARGUMENTS"`. Parse JSON output and check `next_step` field:
 - If `next_step` says "ASK_USER" → Output the message and STOP
-- If `next_step` says "PROCEED" → Continue with execution
+- If `next_step` says "DIAGNOSIS_DETECTED" → Display diagnosis summary and ask for confirmation:
+  ```
+  📋 Diagnosis detected: .mission/diagnosis.md
+  Root Cause: [diagnosis.root_cause from JSON]
+  Affected Files: [diagnosis.affected_files from JSON]
+  
+  Use diagnosis to create fix mission? (y/n)
+  ```
+  - If user confirms (y) → Set REFINED_INTENT = "Fix: [root_cause]", skip Step 1, proceed to Step 2
+  - If user declines (n) → Continue with normal Step 1 (Intent Analysis)
+- If `next_step` says "PROCEED" → Continue with Step 1
 
 ## Prerequisites
 
@@ -63,6 +73,19 @@ If governance.md is not loaded, stop and report error.
     *   "⚠️ PROCEEDING WITH ASSUMPTIONS" → Display assumptions, proceed to Step 2
     *   "🛑 CLARIFICATION NEEDED" → Display questions, **STOP**. When user responds, `m mission update --section intent --content "[REFINED_INTENT]"`, then proceed
 4.  **Log**: `m log --step "Intent" "Intent analyzed and refined"`
+
+### Step 1.5: Diagnosis Detection (Debug Workflow Integration)
+
+1.  **Check for Diagnosis**: Execute `m mission check --context debug` and parse JSON output
+2.  **Handle Diagnosis**:
+    *   **If diagnosis.md exists and valid** (message contains "Diagnosis file exists"):
+        - Use file read tool to read `.mission/diagnosis.md`
+        - Extract AFFECTED FILES section → Use as basis for SCOPE (validate files exist)
+        - Extract RECOMMENDED FIX section → Use as basis for PLAN
+        - Extract diagnosis ID from frontmatter → Add `diagnosis: <DIAG-ID>` to mission frontmatter via `m mission update --frontmatter diagnosis="<DIAG-ID>"`
+        - Run `m log --step "Diagnosis" "Diagnosis detected and consumed"`
+    *   **If no diagnosis or invalid**: Continue with normal planning flow (no action needed)
+3.  **Continue**: Proceed to Step 2
 
 ### Step 2: Context Analysis
 

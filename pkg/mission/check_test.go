@@ -520,3 +520,109 @@ func TestCheckService_CheckMissionState_MissingDirectory(t *testing.T) {
 	require.NotNil(t, status)
 	require.False(t, status.HasActiveMission)
 }
+
+func TestCheckService_WithCommand_Debug_NoDiagnosis(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	missionDir := ".mission"
+	fs.MkdirAll(missionDir, 0755)
+
+	missionContent := `---
+id: test-123
+type: WET
+track: 2
+iteration: 1
+status: planned
+---
+
+## INTENT
+Test mission intent
+
+## SCOPE
+file1.go`
+
+	afero.WriteFile(fs, filepath.Join(missionDir, "mission.md"), []byte(missionContent), 0644)
+
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
+	service.SetContext("debug")
+
+	status, err := service.CheckMissionState()
+	require.NoError(t, err)
+	require.True(t, status.HasActiveMission)
+	require.Equal(t, "No diagnosis.md found", status.Message)
+	require.Contains(t, status.NextStep, "PROCEED with m.plan execution")
+}
+
+func TestCheckService_WithCommand_Debug_WithDiagnosis(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	missionDir := ".mission"
+	fs.MkdirAll(missionDir, 0755)
+
+	missionContent := `---
+id: test-123
+type: WET
+track: 2
+iteration: 1
+status: planned
+---
+
+## INTENT
+Test mission intent
+
+## SCOPE
+file1.go`
+
+	diagnosisContent := `---
+id: DIAG-20260124-120000
+status: confirmed
+confidence: high
+---
+
+## SYMPTOM
+Test symptom`
+
+	afero.WriteFile(fs, filepath.Join(missionDir, "mission.md"), []byte(missionContent), 0644)
+	afero.WriteFile(fs, filepath.Join(missionDir, "diagnosis.md"), []byte(diagnosisContent), 0644)
+
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
+	service.SetContext("debug")
+
+	status, err := service.CheckMissionState()
+	require.NoError(t, err)
+	require.True(t, status.HasActiveMission)
+	require.Equal(t, "Diagnosis file exists and mission is ready for planning", status.Message)
+	require.Contains(t, status.NextStep, "PROCEED with m.plan execution")
+}
+
+func TestCheckService_WithCommand_Debug_InvalidDiagnosis(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	missionDir := ".mission"
+	fs.MkdirAll(missionDir, 0755)
+
+	missionContent := `---
+id: test-123
+type: WET
+track: 2
+iteration: 1
+status: planned
+---
+
+## INTENT
+Test mission intent
+
+## SCOPE
+file1.go`
+
+	invalidDiagnosisContent := `invalid yaml content`
+
+	afero.WriteFile(fs, filepath.Join(missionDir, "mission.md"), []byte(missionContent), 0644)
+	afero.WriteFile(fs, filepath.Join(missionDir, "diagnosis.md"), []byte(invalidDiagnosisContent), 0644)
+
+	service := NewCheckService(fs, filepath.Join(missionDir, "mission.md"))
+	service.SetContext("debug")
+
+	status, err := service.CheckMissionState()
+	require.NoError(t, err)
+	require.True(t, status.HasActiveMission)
+	require.Contains(t, status.Message, "Invalid diagnosis.md")
+	require.Contains(t, status.NextStep, "STOP")
+}

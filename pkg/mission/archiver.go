@@ -62,7 +62,7 @@ func (a *Archiver) Archive(force bool) error {
 	}
 
 	// Archive mission artifacts
-	for _, filename := range []string{"mission.md", "execution.log"} {
+	for _, filename := range []string{"mission.md", "execution.log", "diagnosis.md"} {
 		src := filepath.Join(a.MissionDir(), filename)
 		if exists, _ := afero.Exists(a.FS(), src); !exists {
 			continue
@@ -93,7 +93,7 @@ func (a *Archiver) Archive(force bool) error {
 // after the mission has been archived to the completed directory.
 func (a *Archiver) CleanupObsoleteFiles() error {
 	// Files to clean up after successful archive
-	filesToClean := []string{"execution.log", "mission.md", "id", "plan.json"}
+	filesToClean := []string{"execution.log", "mission.md", "id", "plan.json", "diagnosis.md"}
 
 	for _, filename := range filesToClean {
 		filePath := filepath.Join(a.MissionDir(), filename)

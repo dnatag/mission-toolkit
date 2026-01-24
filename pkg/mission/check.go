@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/dnatag/mission-toolkit/pkg/diagnosis"
 	"github.com/spf13/afero"
 )
 
@@ -107,6 +108,29 @@ func (c *CheckService) handleExistingMission(status *Status) (*Status, error) {
 		}
 		status.Message = fmt.Sprintf("Mission status '%s' is not valid for m.complete", mission.Status)
 		status.NextStep = "STOP. Mission must be in 'executed' or 'completed' status for m.complete."
+		return status, nil
+	}
+
+	if c.context == "debug" {
+		// Check if diagnosis.md exists and validate it
+		diagnosisPath := filepath.Join(c.MissionDir(), "diagnosis.md")
+		exists, _ := afero.Exists(c.FS(), diagnosisPath)
+
+		if !exists {
+			status.Message = "No diagnosis.md found"
+			status.NextStep = "PROCEED with m.plan execution. Create diagnosis.md first with: m diagnosis create --symptom \"...\""
+			return status, nil
+		}
+
+		// Validate diagnosis file structure
+		if _, err := diagnosis.ReadDiagnosis(c.FS(), diagnosisPath); err != nil {
+			status.Message = fmt.Sprintf("Invalid diagnosis.md: %v", err)
+			status.NextStep = "STOP. Fix diagnosis.md structure or recreate with: m diagnosis create --symptom \"...\""
+			return status, nil
+		}
+
+		status.Message = "Diagnosis file exists and mission is ready for planning"
+		status.NextStep = "PROCEED with m.plan execution. The diagnosis will be consumed automatically."
 		return status, nil
 	}
 
