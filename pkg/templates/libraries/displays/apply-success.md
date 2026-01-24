@@ -11,10 +11,12 @@
 🧩 CRITICAL LOGIC:
 {{CRITICAL_SNIPPETS}}
 
-🔍 VIEW CHANGES:
-• All changes: git diff {{MISSION_ID}}-baseline
-• First pass only: git diff {{CHECKPOINT_0}} {{CHECKPOINT_1}}
-• Polish changes: git diff {{CHECKPOINT_1}} {{CHECKPOINT_2}}
+🔍 VIEW CHANGES (pick one - run the EXACT command shown):
+[A] split view: `git diff {{MISSION_ID}}-baseline | diff2html -i stdin -s side -o preview`
+[B] unified view: `git diff {{MISSION_ID}}-baseline | diff2html -i stdin -s line -o preview`
+[C] terminal view: `git diff {{MISSION_ID}}-baseline`
+
+📦 [A] and [B] require: npm install -g diff2html-cli
 
 🔄 CHECKPOINTS CREATED:
 - {{CHECKPOINT_0}} (initial state)
