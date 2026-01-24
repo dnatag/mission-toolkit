@@ -119,7 +119,7 @@ Use file read tool to read `.mission/governance.md` before proceeding.
    - {{CONFIDENCE}} — high | medium | low
    - {{ROOT_CAUSE_SUMMARY}} — One-line summary
    - {{AFFECTED_FILE_COUNT}} — Number of files identified
-   - {{NEXT_STEP}} — "Run @m.plan to create fix mission" or "Gather more information"
+   - {{NEXT_STEP}} — "Run /m.plan to create fix mission" or "Gather more information"
 
 ## Output Format
 
@@ -132,7 +132,7 @@ Status: {{STATUS}} ({{CONFIDENCE}} confidence)
 Root Cause: {{ROOT_CAUSE_SUMMARY}}
 Affected Files: {{AFFECTED_FILE_COUNT}}
 
-Next: Run @m.plan to create a fix mission
+Next: Run /m.plan to create a fix mission
       (diagnosis.md will be automatically consumed)
 ```
 
