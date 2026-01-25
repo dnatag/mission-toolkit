@@ -92,6 +92,22 @@ Captures what was accomplished and learned. Builds organizational memory for fut
 - 🎯 Rich commit message generation from execution logs
 - 📦 Consolidated commit creation
 
+### 🔍 `/m.debug` - The Investigation Handshake
+Systematically diagnoses bugs and issues to produce structured root cause analysis. Investigation only - no fixes applied.
+
+```bash
+# Example usage
+/m.debug "API returns 500 error on user login"
+```
+
+**Features:**
+- 🎯 Evidence-based hypothesis generation
+- 🔬 Systematic investigation workflow
+- 📋 Structured diagnosis output (diagnosis.md)
+- 🔍 Root cause identification with confidence levels
+- 📁 Affected file identification for fix planning
+- 🛡️ Read-only analysis mode (no source modifications)
+
 ## Project Structure
 
 ```
@@ -99,6 +115,7 @@ Captures what was accomplished and learned. Builds organizational memory for fut
 ├── governance.md          # Core principles and workflow rules
 ├── backlog.md            # Future work and refactoring opportunities
 ├── mission.md            # Current active mission (auto-generated)
+├── diagnosis.md          # Current bug diagnosis (auto-generated)
 ├── execution.log         # Current mission execution log
 ├── completed/            # Archived missions and detailed metrics
 │   ├── MISSION-ID-mission.md
@@ -116,7 +133,8 @@ Captures what was accomplished and learned. Builds organizational memory for fut
 .opencode/command/       # OpenCode commands
 ├── m.plan.md           # Planning prompt and complexity matrix
 ├── m.apply.md          # Execution prompt and safety checks
-└── m.complete.md       # Completion prompt and observability
+├── m.complete.md       # Completion prompt and observability
+└── m.debug.md          # Debug prompt and investigation workflow
 ```
 
 ## Complexity Matrix
@@ -157,6 +175,20 @@ m.plan → 🤝 Review mission.md → m.apply → 🤝 Review code → [Adjustme
 5. **m.complete** archives mission and creates git commit
 
 [See detailed workflow diagram →](docs/workflows/01-mission-lifecycle.md)
+
+## Bugfix Workflow
+
+```
+m.debug → 🤝 Review diagnosis.md → m.plan → m.apply → m.complete
+(Investigation)                    (Fix Planning)
+```
+
+**How it works:**
+1. **m.debug** investigates the bug and creates diagnosis.md with root cause analysis
+2. **🤝 Review diagnosis** to understand the problem (evidence-based findings)
+3. **m.plan** automatically consumes diagnosis.md to create a targeted fix mission
+4. **m.apply** implements the fix with verification
+5. **m.complete** archives both diagnosis and fix mission together
 
 ## Key Principles
 
@@ -284,6 +316,7 @@ The `m` CLI provides several commands for project management:
 - `m version` - Show version information
 - `m analyze <type>` - Analyze intent, scope, complexity, etc.
 - `m mission <action>` - Mission lifecycle management
+- `m diagnosis <action>` - Bug diagnosis management
 - `m backlog <action>` - Backlog management
 - `m checkpoint <action>` - Git checkpoint management
 - `m log` - Execution logging
@@ -350,10 +383,17 @@ m dashboard
 
 # Mission lifecycle
 m mission create --intent "description"
-m mission check --context <plan|apply|complete>
+m mission check --context <plan|apply|complete|debug>
 m mission update --status <active|executed|completed|failed>
 m mission finalize
 m mission archive
+
+# Diagnosis lifecycle
+m diagnosis create --symptom "description"
+m diagnosis check --context debug
+m diagnosis update --section <hypotheses|investigation|root-cause|affected-files|recommended-fix|reproduction>
+m diagnosis update --status <confirmed|inconclusive> --confidence <high|medium|low>
+m diagnosis finalize
 
 # Analysis commands
 m analyze intent "description"

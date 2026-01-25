@@ -10,10 +10,11 @@
 ## Project Architecture
 
 ### Core Components
-- **CLI Commands**: `cmd/` - Root, init, dashboard, version, analyze, mission, backlog, checkpoint, check, log
+- **CLI Commands**: `cmd/` - Root, init, dashboard, version, analyze, mission, diagnosis, backlog, checkpoint, check, log
 - **Templates**: `internal/templates/` - Embedded mission and prompt templates
 - **TUI**: `internal/tui/` - Terminal user interface with dashboard
 - **Mission Logic**: `internal/mission/` - Mission lifecycle management
+- **Diagnosis Logic**: `internal/diagnosis/` - Bug diagnosis lifecycle management
 - **Analysis**: `internal/analyze/` - Intent, scope, complexity analysis
 - **Backlog**: `internal/backlog/` - Backlog management
 - **Git Integration**: `internal/git/` - Git operations and checkpoints
@@ -23,9 +24,10 @@
 ### Key Files
 - `main.go` - CLI entry point
 - `internal/mission/mission.go` - Mission data structures and core logic
+- `internal/diagnosis/diagnosis.go` - Diagnosis data structures and core logic
 - `internal/templates/templates.go` - Template embedding and deployment
 - `internal/version/version.go` - Version management
-- `internal/templates/prompts/` - AI prompt templates (m.plan, m.apply, m.complete)
+- `internal/templates/prompts/` - AI prompt templates (m.plan, m.apply, m.complete, m.debug)
 - `internal/templates/libraries/` - Display templates and references
 
 ## Tech Stack
@@ -62,6 +64,13 @@ m mission create --intent "desc"   # Create new mission
 m mission update --status active   # Update mission status
 m mission archive                  # Archive completed mission
 
+# Diagnosis management
+m diagnosis create --symptom "desc" # Create new diagnosis
+m diagnosis check --context debug  # Check diagnosis state
+m diagnosis update --section hypotheses # Update diagnosis section
+m diagnosis update --status confirmed --confidence high # Update status
+m diagnosis finalize               # Finalize diagnosis
+
 # Analysis tools
 m analyze intent "user input"      # Analyze user intent
 m analyze scope                    # Analyze mission scope
@@ -92,15 +101,16 @@ m version                          # Show version
 ## AI Integration
 
 ### Supported AI Assistants
-- **Amazon Q**: Uses `@m.plan`, `@m.apply`, `@m.complete` commands
-- **Claude**: Uses `/m.plan`, `/m.apply`, `/m.complete` commands  
-- **Kiro**: Uses `@m.plan`, `@m.apply`, `@m.complete` commands
-- **OpenCode**: Uses `/m.plan`, `/m.apply`, `/m.complete` commands
+- **Amazon Q**: Uses `@m.plan`, `@m.apply`, `@m.complete`, `@m.debug` commands
+- **Claude**: Uses `/m.plan`, `/m.apply`, `/m.complete`, `/m.debug` commands  
+- **Kiro**: Uses `@m.plan`, `@m.apply`, `@m.complete`, `@m.debug` commands
+- **OpenCode**: Uses `/m.plan`, `/m.apply`, `/m.complete`, `/m.debug` commands
 
 ### Prompt Templates
 - `m.plan.md` - Planning phase with complexity analysis
 - `m.apply.md` - Execution phase with two-pass implementation
 - `m.complete.md` - Completion phase with commit generation
+- `m.debug.md` - Debug phase with systematic investigation
 
 ### Template Features
 - CLI-exclusive state management
@@ -115,6 +125,12 @@ m version                          # Show version
 1. **Plan**: Use `/m.plan` to analyze intent and create structured mission
 2. **Execute**: Use `/m.apply` for two-pass implementation with verification
 3. **Complete**: Use `/m.complete` to generate commit and archive mission
+
+### Bugfix Workflow
+1. **Investigate**: Use `/m.debug` to diagnose bug and create diagnosis.md
+2. **Plan Fix**: Use `/m.plan` which automatically consumes diagnosis.md
+3. **Execute**: Use `/m.apply` to implement the fix
+4. **Complete**: Use `/m.complete` to archive diagnosis and fix together
 
 ### Key Principles
 - **Atomic Scope**: Only modify files listed in mission SCOPE
