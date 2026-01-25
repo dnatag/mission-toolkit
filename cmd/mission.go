@@ -271,7 +271,7 @@ func init() {
 	missionCmd.AddCommand(missionCheckCmd, missionUpdateCmd, missionIDCmd, missionCreateCmd, missionArchiveCmd, missionFinalizeCmd, missionPauseCmd, missionRestoreCmd, missionMarkCompleteCmd)
 
 	// Add flags
-	missionCheckCmd.Flags().StringP("context", "c", "", "Context for validation (apply or complete)")
+	missionCheckCmd.Flags().StringP("context", "c", "", "Context for validation (plan, apply, complete, or debug)")
 	missionUpdateCmd.Flags().StringP("status", "s", "", "New mission status")
 	missionUpdateCmd.Flags().String("section", "", "Section to update (intent, verification, scope, plan)")
 	missionUpdateCmd.Flags().String("content", "", "Content for text sections")

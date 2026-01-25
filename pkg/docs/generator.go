@@ -107,7 +107,7 @@ func writeCommandMarkdown(sb *strings.Builder, cmd CommandSchema, prefix string)
 		sb.WriteString(fmt.Sprintf("%s\n\n", cmd.Long))
 	}
 
-	sb.WriteString(fmt.Sprintf("**Usage:** `m %s`\n\n", cmd.Use))
+	sb.WriteString(fmt.Sprintf("**Usage:** `m %s`\n\n", fullName))
 
 	if len(cmd.Flags) > 0 {
 		sb.WriteString("**Flags:**\n")

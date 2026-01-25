@@ -142,6 +142,10 @@ func (m *BacklogManager) getSectionType(section string) string {
 		return "refactor"
 	case "## FUTURE ENHANCEMENTS":
 		return "future"
+	case "## FEATURES":
+		return "feature"
+	case "## BUGFIXES":
+		return "bugfix"
 	default:
 		return ""
 	}
@@ -351,14 +355,20 @@ func (m *BacklogManager) ensureBacklogExists() error {
 func (m *BacklogManager) createBacklogFile() error {
 	template := `# Mission Backlog
 
+## FEATURES
+*User-defined feature requests and enhancements.*
+
+## BUGFIXES
+*Bug reports and issues to be fixed.*
+
 ## DECOMPOSED INTENTS
-*This section lists atomic tasks that were broken down from a larger user-defined epic.*
+*Atomic tasks broken down from larger epics.*
 
 ## REFACTORING OPPORTUNITIES
-*This section lists technical debt and refactoring opportunities identified by the AI during planning or execution.*
+*Technical debt and refactoring opportunities identified during development.*
 
 ## FUTURE ENHANCEMENTS
-*This section is for user-defined ideas and future feature requests.*
+*Ideas and future feature requests for later consideration.*
 
 ## COMPLETED
 *History of completed backlog items.*
@@ -394,10 +404,12 @@ func (m *BacklogManager) validateType(itemType string) error {
 		"decomposed": true,
 		"refactor":   true,
 		"future":     true,
+		"feature":    true,
+		"bugfix":     true,
 	}
 
 	if !validTypes[itemType] {
-		return fmt.Errorf("invalid type: %s. Valid types: decomposed, refactor, future", itemType)
+		return fmt.Errorf("invalid type: %s. Valid types: decomposed, refactor, future, feature, bugfix", itemType)
 	}
 	return nil
 }
@@ -411,6 +423,10 @@ func (m *BacklogManager) getSectionHeader(itemType string) string {
 		return "## REFACTORING OPPORTUNITIES"
 	case "future":
 		return "## FUTURE ENHANCEMENTS"
+	case "feature":
+		return "## FEATURES"
+	case "bugfix":
+		return "## BUGFIXES"
 	default:
 		return ""
 	}

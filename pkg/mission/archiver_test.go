@@ -229,3 +229,43 @@ Body`
 		require.Contains(t, err.Error(), "permission denied")
 	}
 }
+
+func TestArchiver_Archive_WithDiagnosis(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	missionDir := ".mission"
+	completedDir := filepath.Join(missionDir, "completed")
+
+	missionID := "test-mission-456"
+	missionContent := `---
+id: ` + missionID + `
+---
+Body`
+	diagnosisContent := `---
+id: DIAG-20260124-120000
+status: confirmed
+---
+## SYMPTOM
+Test symptom`
+
+	err := fs.MkdirAll(missionDir, 0755)
+	require.NoError(t, err)
+	err = afero.WriteFile(fs, filepath.Join(missionDir, "mission.md"), []byte(missionContent), 0644)
+	require.NoError(t, err)
+	err = afero.WriteFile(fs, filepath.Join(missionDir, "diagnosis.md"), []byte(diagnosisContent), 0644)
+	require.NoError(t, err)
+
+	mockGit := &MockGitClient{commitMessage: "fix: test"}
+	archiver := NewArchiver(fs, filepath.Join(missionDir, "mission.md"), mockGit)
+	err = archiver.Archive(false)
+	require.NoError(t, err)
+
+	// Verify diagnosis.md was archived
+	archivedDiagnosisPath := filepath.Join(completedDir, missionID+"-diagnosis.md")
+	exists, err := afero.Exists(fs, archivedDiagnosisPath)
+	require.NoError(t, err)
+	require.True(t, exists, "diagnosis.md should be archived")
+
+	content, err := afero.ReadFile(fs, archivedDiagnosisPath)
+	require.NoError(t, err)
+	require.Contains(t, string(content), "Test symptom")
+}

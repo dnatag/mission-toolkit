@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/dnatag/mission-toolkit/pkg/diagnosis"
 	"github.com/spf13/afero"
 )
 
@@ -86,31 +87,70 @@ func (c *CheckService) handleExistingMission(status *Status) (*Status, error) {
 	status.MissionIntent = mission.GetIntent()
 	status.Ready = false
 
-	// Command-specific validation
-	if c.context == "apply" {
-		// Allow retry functionality for failed missions
-		if mission.Status == "planned" || mission.Status == "active" || mission.Status == "failed" {
-			status.Message = "Mission is ready for execution or re-execution"
-			status.NextStep = "PROCEED with m.apply execution."
-			return status, nil
-		}
-		status.Message = fmt.Sprintf("Mission status '%s' is not valid for m.apply", mission.Status)
-		status.NextStep = "STOP. Mission must be in 'planned', 'active', or 'failed' status for m.apply."
+	// Context-specific validation dispatch
+	switch c.context {
+	case "apply":
+		return c.validateApplyContext(mission, status)
+	case "complete":
+		return c.validateCompleteContext(mission, status)
+	case "debug":
+		return c.validateDebugContext(mission, status)
+	default:
+		return c.routeGenericStatus(mission, status)
+	}
+}
+
+// validateApplyContext validates mission state for m.apply command context.
+// Allows retry functionality for failed missions.
+func (c *CheckService) validateApplyContext(mission *Mission, status *Status) (*Status, error) {
+	if mission.Status == "planned" || mission.Status == "active" || mission.Status == "failed" {
+		status.Message = "Mission is ready for execution or re-execution"
+		status.NextStep = "PROCEED with m.apply execution."
+		return status, nil
+	}
+	status.Message = fmt.Sprintf("Mission status '%s' is not valid for m.apply", mission.Status)
+	status.NextStep = "STOP. Mission must be in 'planned', 'active', or 'failed' status for m.apply."
+	return status, nil
+}
+
+// validateCompleteContext validates mission state for m.complete command context.
+func (c *CheckService) validateCompleteContext(mission *Mission, status *Status) (*Status, error) {
+	if mission.Status == "executed" || mission.Status == "completed" {
+		status.Message = "Mission is ready for completion or re-completion"
+		status.NextStep = "PROCEED with m.complete execution."
+		return status, nil
+	}
+	status.Message = fmt.Sprintf("Mission status '%s' is not valid for m.complete", mission.Status)
+	status.NextStep = "STOP. Mission must be in 'executed' or 'completed' status for m.complete."
+	return status, nil
+}
+
+// validateDebugContext validates mission state for m.debug command context.
+// Checks for existence and validity of diagnosis.md file.
+func (c *CheckService) validateDebugContext(mission *Mission, status *Status) (*Status, error) {
+	diagnosisPath := filepath.Join(c.MissionDir(), "diagnosis.md")
+	exists, _ := afero.Exists(c.FS(), diagnosisPath)
+
+	if !exists {
+		status.Message = "No diagnosis.md found"
+		status.NextStep = "PROCEED with m.plan execution. Create diagnosis.md first with: m diagnosis create --symptom \"...\""
 		return status, nil
 	}
 
-	if c.context == "complete" {
-		if mission.Status == "executed" || mission.Status == "completed" {
-			status.Message = "Mission is ready for completion or re-completion"
-			status.NextStep = "PROCEED with m.complete execution."
-			return status, nil
-		}
-		status.Message = fmt.Sprintf("Mission status '%s' is not valid for m.complete", mission.Status)
-		status.NextStep = "STOP. Mission must be in 'executed' or 'completed' status for m.complete."
+	// Validate diagnosis file structure
+	if _, err := diagnosis.ReadDiagnosis(c.FS(), diagnosisPath); err != nil {
+		status.Message = fmt.Sprintf("Invalid diagnosis.md: %v", err)
+		status.NextStep = "STOP. Fix diagnosis.md structure or recreate with: m diagnosis create --symptom \"...\""
 		return status, nil
 	}
 
-	// Generic status routing (no context specified)
+	status.Message = "Diagnosis file exists and mission is ready for planning"
+	status.NextStep = "PROCEED with m.plan execution. The diagnosis will be consumed automatically."
+	return status, nil
+}
+
+// routeGenericStatus provides generic status routing when no specific context is set.
+func (c *CheckService) routeGenericStatus(mission *Mission, status *Status) (*Status, error) {
 	switch mission.Status {
 	case "planned", "active":
 		status.Message = "Mission is ready for execution or re-execution"

@@ -31,10 +31,21 @@ You are a Senior Software Architect operating under Mission Toolkit principles.
 **Mission Structure**: INTENT, SCOPE, PLAN, VERIFICATION, EXECUTION INSTRUCTIONS required
 
 ## WORKFLOW
+
+**Standard Workflow:**
 **plan** → **apply** → **complete**
 - Use `/m.plan` to create a new mission
 - Use `/m.apply` to execute the current mission
 - Use `/m.complete` to finalize and commit
+
+**Debug Workflow (Bug Fixes):**
+**debug** → **plan** → **apply** → **complete**
+- Use `/m.debug` to investigate and create `.mission/diagnosis.md`
+- Use `/m.plan` to create fix mission (automatically consumes diagnosis.md)
+- Use `/m.apply` to execute the fix
+- Use `/m.complete` to finalize and commit
+
+**Mission Lifecycle:**
 - Status: planned → active → failed/completed
 - Track Reassessment: May change track (including Track 4 decomposition)
 - Error Recovery: `git checkout .` + smaller mission

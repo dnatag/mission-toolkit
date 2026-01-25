@@ -96,3 +96,32 @@ func TestGenerateMarkdown_WithSubcommands(t *testing.T) {
 		t.Error("expected mission check subcommand section")
 	}
 }
+
+// TestGenerateMarkdown_UsageLineUsesFullName verifies that the Usage line
+// uses the full command path (fullName) rather than just the subcommand name (cmd.Use).
+// This is a regression test for the bug where Usage showed "m check" instead of "m mission check".
+func TestGenerateMarkdown_UsageLineUsesFullName(t *testing.T) {
+	rootCmd := &cobra.Command{Use: "m", Short: "Test CLI"}
+	analyzeCmd := &cobra.Command{Use: "analyze", Short: "Analysis tools"}
+	clarityCmd := &cobra.Command{Use: "clarify", Short: "Clarification analysis"} // cmd.Use is just "clarify"
+	analyzeCmd.AddCommand(clarityCmd)
+	rootCmd.AddCommand(analyzeCmd)
+
+	md := GenerateMarkdown(rootCmd)
+
+	// The heading should use fullName: "## `m analyze clarify`"
+	if !strings.Contains(md, "## `m analyze clarify`") {
+		t.Error("expected analyze clarity heading with full path")
+	}
+
+	// The Usage line should also use fullName: "**Usage:** `m analyze clarify`"
+	// NOT cmd.Use which would be "**Usage:** `m clarify`"
+	if !strings.Contains(md, "**Usage:** `m analyze clarify`") {
+		t.Error("expected Usage line to use full command path 'm analyze clarity', not just 'clarify'")
+	}
+
+	// Verify the incorrect format (bug) is NOT present
+	if strings.Contains(md, "**Usage:** `m clarify`") {
+		t.Error("Usage line should NOT contain subcommand-only path 'm clarify'")
+	}
+}

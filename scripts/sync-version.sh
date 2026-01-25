@@ -30,16 +30,16 @@ sed_inplace() {
 }
 
 # Update version.go
-if [ -f "internal/version/version.go" ]; then
-    sed_inplace "s/const Version = \".*\"/const Version = \"$NEW_VERSION\"/" "internal/version/version.go"
-    echo "Updated internal/version/version.go"
+if [ -f "pkg/version/version.go" ]; then
+    sed_inplace "s/const Version = \".*\"/const Version = \"$NEW_VERSION\"/" "pkg/version/version.go"
+    echo "Updated pkg/version/version.go"
 fi
 
 # Update version_test.go
-if [ -f "internal/version/version_test.go" ]; then
-    sed_inplace "s/Version != \"v[0-9]\.[0-9]\.[0-9]\"/Version != \"$NEW_VERSION\"/" "internal/version/version_test.go"
-    sed_inplace "s/Expected version v[0-9]\.[0-9]\.[0-9]/Expected version $NEW_VERSION/" "internal/version/version_test.go"
-    echo "Updated internal/version/version_test.go"
+if [ -f "pkg/version/version_test.go" ]; then
+    sed_inplace "s/Version != \"v[0-9]\.[0-9]\.[0-9]\"/Version != \"$NEW_VERSION\"/" "pkg/version/version_test.go"
+    sed_inplace "s/Expected version v[0-9]\.[0-9]\.[0-9]/Expected version $NEW_VERSION/" "pkg/version/version_test.go"
+    echo "Updated pkg/version/version_test.go"
 fi
 
 # Update README.md

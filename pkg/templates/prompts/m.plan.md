@@ -13,7 +13,17 @@ $ARGUMENTS
 
 **Required:** Run `m check "$ARGUMENTS"`. Parse JSON output and check `next_step` field:
 - If `next_step` says "ASK_USER" → Output the message and STOP
-- If `next_step` says "PROCEED" → Continue with execution
+- If `next_step` says "DIAGNOSIS_DETECTED" → Display diagnosis summary and ask for confirmation:
+  ```
+  📋 Diagnosis detected: .mission/diagnosis.md
+  Root Cause: [diagnosis.root_cause from JSON]
+  Affected Files: [diagnosis.affected_files from JSON]
+  
+  Use diagnosis to create fix mission? (y/n)
+  ```
+  - If user confirms (y) → Set REFINED_INTENT = "Fix: [root_cause]", skip Step 1, proceed to Step 2
+  - If user declines (n) → Continue with normal Step 1 (Intent Analysis)
+- If `next_step` says "PROCEED" → Continue with Step 1
 
 ## Prerequisites
 
