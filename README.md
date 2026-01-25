@@ -4,10 +4,8 @@
 
 AIDD (Atomic Intent-Driven Development) — a workflow that bridges "Vibe Coding" (chaos) and "Spec-Driven Development" (bureaucracy). Forces a 🤝 Handshake before every coding task, keeping changes within human comprehension limits.
 
-```
 ❌ Without AIDD: AI modifies 20 files in one go — you lose track and feel alienated from your own codebase
 ✅ With AIDD: You control atomic missions scoped to 1-5 files — changes you actually understand and own
-```
 
 Works with **Amazon Q CLI**, **Claude Code**, **Kiro CLI**, and **OpenCode**.
 
