@@ -15,23 +15,26 @@ var docsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		format, _ := cmd.Flags().GetString("format")
 
-		if format != "json" {
-			return fmt.Errorf("unsupported format: %s (only 'json' is supported)", format)
+		switch format {
+		case "json":
+			schema := docs.GenerateSchema(rootCmd)
+			output, err := json.MarshalIndent(schema, "", "  ")
+			if err != nil {
+				return fmt.Errorf("marshaling schema: %w", err)
+			}
+			fmt.Println(string(output))
+		case "condensed":
+			output := docs.GenerateCondensedMarkdown(rootCmd)
+			fmt.Println(output)
+		default:
+			return fmt.Errorf("unsupported format: %s (supported: json, condensed)", format)
 		}
 
-		schema := docs.GenerateSchema(rootCmd)
-
-		output, err := json.MarshalIndent(schema, "", "  ")
-		if err != nil {
-			return fmt.Errorf("marshaling schema: %w", err)
-		}
-
-		fmt.Println(string(output))
 		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(docsCmd)
-	docsCmd.Flags().String("format", "json", "Output format (json)")
+	docsCmd.Flags().String("format", "json", "Output format (json, condensed)")
 }

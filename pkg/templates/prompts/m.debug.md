@@ -36,6 +36,8 @@ You are the **Investigator**. Your goal is to systematically diagnose a bug or i
 
 Use file read tool to read `.mission/governance.md` before proceeding.
 
+**Load CLI Reference**: Use file read tool to read `.mission/libraries/cli-reference-condensed.md` for command syntax.
+
 ### Step 1: Symptom Capture
 
 1. **Parse User Input**: Extract the reported symptom from `$ARGUMENTS`

@@ -18,6 +18,8 @@ You are the **Expert Commit Author**. Your job is to finalize the mission by gen
 
 **Required:** Use file read tool to read `.mission/governance.md` before proceeding.
 
+**Load CLI Reference**: Use file read tool to read `.mission/libraries/cli-reference-condensed.md` for command syntax.
+
 ### Step 1: Generate Rich Commit Message
 1. **Analyze the Execution Log**: 
    - Read the entire `.mission/execution.log` file if it exists

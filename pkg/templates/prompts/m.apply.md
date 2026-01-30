@@ -22,6 +22,8 @@ You are the **Executor**. Implement the current mission using a two-pass approac
 
 **CRITICAL:** Use file read tool to read `.mission/governance.md` to prevent data corruption.
 
+**Load CLI Reference**: Use file read tool to read `.mission/libraries/cli-reference-condensed.md` for command syntax.
+
 ### Step 1: Update Status & Create Checkpoint
 1. **Update Status**: Execute `m mission update --status active`
 2. **Create Initial Checkpoint**: Execute `m checkpoint create` to save clean state

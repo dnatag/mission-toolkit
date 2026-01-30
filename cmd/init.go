@@ -64,6 +64,14 @@ If a Git repository is not found, it will be initialized automatically.`,
 			os.Exit(1)
 		}
 
+		// Generate cli-reference-condensed.md from Cobra commands
+		cliRefCondensedPath := filepath.Join(cwd, ".mission", "libraries", "cli-reference-condensed.md")
+		cliRefCondensedContent := docs.GenerateCondensedMarkdown(rootCmd)
+		if err := afero.WriteFile(fs, cliRefCondensedPath, []byte(cliRefCondensedContent), 0644); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing cli-reference-condensed.md: %v\n", err)
+			os.Exit(1)
+		}
+
 		fmt.Printf("Mission Toolkit project initialized successfully for AI type: %s\n", aiType)
 
 		// Add .mission/ to .gitignore
