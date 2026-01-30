@@ -1,8 +1,3 @@
----
-name: "m.complete"
-description: "Finalize the mission by generating a rich commit message and creating a consolidated commit"
----
-
 ## Prerequisites
 
 **Required:** Run `m mission check --context complete` to validate mission state before execution.

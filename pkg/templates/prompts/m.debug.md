@@ -1,8 +1,3 @@
----
-name: "m.debug"
-description: "Investigate a bug or issue and produce a structured diagnosis"
----
-
 ## User Input
 
 ```text

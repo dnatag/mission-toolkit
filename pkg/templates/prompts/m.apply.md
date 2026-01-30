@@ -1,8 +1,3 @@
----
-name: "m.apply"
-description: "Execute current mission with two-pass implementation and polish"
----
-
 ## Prerequisites
 
 **CRITICAL:** Run `m mission check --context apply` to validate mission state before execution.

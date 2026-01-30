@@ -1,8 +1,3 @@
----
-name: "m.plan"
-description: "Create a formal mission.md file from user's intent"
----
-
 ## User Input
 
 ```text
