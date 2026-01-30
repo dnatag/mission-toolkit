@@ -1,8 +1,3 @@
----
-name: "m.complete"
-description: "Finalize the mission by generating a rich commit message and creating a consolidated commit"
----
-
 ## Prerequisites
 
 **Required:** Run `m mission check --context complete` to validate mission state before execution.
@@ -22,6 +17,8 @@ You are the **Expert Commit Author**. Your job is to finalize the mission by gen
 ### Step 0: Load Governance (Required)
 
 **Required:** Use file read tool to read `.mission/governance.md` before proceeding.
+
+**Load CLI Reference**: Use file read tool to read `.mission/libraries/cli-reference-condensed.md` for command syntax.
 
 ### Step 1: Generate Rich Commit Message
 1. **Analyze the Execution Log**: 

@@ -1,8 +1,3 @@
----
-name: "m.debug"
-description: "Investigate a bug or issue and produce a structured diagnosis"
----
-
 ## User Input
 
 ```text
@@ -40,6 +35,8 @@ You are the **Investigator**. Your goal is to systematically diagnose a bug or i
 ### Step 0: Load Governance (Required)
 
 Use file read tool to read `.mission/governance.md` before proceeding.
+
+**Load CLI Reference**: Use file read tool to read `.mission/libraries/cli-reference-condensed.md` for command syntax.
 
 ### Step 1: Symptom Capture
 

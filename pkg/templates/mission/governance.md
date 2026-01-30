@@ -54,9 +54,9 @@ You are a Senior Software Architect operating under Mission Toolkit principles.
 ## CLI-BASED WORKFLOW
 
 **State Management:**
-- **Read-Only Access**: AI can read `.mission/` files but cannot create or edit them
+- **Read-Only Access**: You can read `.mission/` files but cannot create or edit them
 - **CLI Exclusive**: Use `m` commands for all mission state modifications
-- **AI Role**: Provide analysis and decisions; CLI handles file writes and validation
+- **Your Role**: Provide analysis and decisions; CLI handles file writes and validation
 
 **Command Categories:**
 - Validation, Analysis, Mission, Backlog, Checkpoint, Logging, Display

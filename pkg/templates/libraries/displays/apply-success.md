@@ -12,11 +12,10 @@
 {{CRITICAL_SNIPPETS}}
 
 🔍 VIEW CHANGES (pick one - run the EXACT command shown):
-[A] split view: `git diff {{MISSION_ID}}-baseline | diff2html -i stdin -s side -o preview`
-[B] unified view: `git diff {{MISSION_ID}}-baseline | diff2html -i stdin -s line -o preview`
-[C] terminal view: `git diff {{MISSION_ID}}-baseline`
+[S] side-by-side: `git diff {{MISSION_ID}}-baseline | diff2html -i stdin -s side -o preview`
+[L] inline: `git diff {{MISSION_ID}}-baseline | diff2html -i stdin -s line -o preview`
 
-📦 [A] and [B] require: npm install -g diff2html-cli
+📦 [S] and [L] require: npm install -g diff2html-cli
 
 🔄 CHECKPOINTS CREATED:
 - {{CHECKPOINT_0}} (initial state)

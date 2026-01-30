@@ -1,8 +1,3 @@
----
-name: "m.apply"
-description: "Execute current mission with two-pass implementation and polish"
----
-
 ## Prerequisites
 
 **CRITICAL:** Run `m mission check --context apply` to validate mission state before execution.
@@ -26,6 +21,8 @@ You are the **Executor**. Implement the current mission using a two-pass approac
 ### Step 0: Load Governance (Required)
 
 **CRITICAL:** Use file read tool to read `.mission/governance.md` to prevent data corruption.
+
+**Load CLI Reference**: Use file read tool to read `.mission/libraries/cli-reference-condensed.md` for command syntax.
 
 ### Step 1: Update Status & Create Checkpoint
 1. **Update Status**: Execute `m mission update --status active`

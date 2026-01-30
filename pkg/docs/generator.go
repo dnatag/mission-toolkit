@@ -129,3 +129,57 @@ func writeCommandMarkdown(sb *strings.Builder, cmd CommandSchema, prefix string)
 		writeCommandMarkdown(sb, sub, fullName)
 	}
 }
+
+// GenerateCondensedMarkdown generates a condensed CLI reference (50-100 lines)
+func GenerateCondensedMarkdown(rootCmd *cobra.Command) string {
+	var sb strings.Builder
+
+	sb.WriteString("# CLI Reference (Condensed)\n\n")
+
+	// Core commands only
+	coreCommands := []string{"analyze", "mission", "diagnosis", "backlog", "checkpoint", "log", "check"}
+
+	schema := GenerateSchema(rootCmd)
+
+	for _, cmdName := range coreCommands {
+		for _, cmd := range schema.Commands {
+			if cmd.Name == cmdName {
+				writeCondensedCommand(&sb, cmd, "")
+				break
+			}
+		}
+	}
+
+	return sb.String()
+}
+
+func writeCondensedCommand(sb *strings.Builder, cmd CommandSchema, prefix string) {
+	fullName := prefix + cmd.Name
+	if prefix != "" {
+		fullName = prefix + " " + cmd.Name
+	}
+
+	sb.WriteString(fmt.Sprintf("**`m %s`** - %s\n", fullName, cmd.Short))
+
+	// Only show flags for leaf commands (no subcommands)
+	if len(cmd.Subcommands) == 0 && len(cmd.Flags) > 0 {
+		sb.WriteString("  Flags: ")
+		flagNames := []string{}
+		for _, flag := range cmd.Flags {
+			if flag.Shorthand != "" {
+				flagNames = append(flagNames, fmt.Sprintf("`-%s/--%s`", flag.Shorthand, flag.Name))
+			} else {
+				flagNames = append(flagNames, fmt.Sprintf("`--%s`", flag.Name))
+			}
+		}
+		sb.WriteString(strings.Join(flagNames, ", "))
+		sb.WriteString("\n")
+	}
+
+	// Recurse for subcommands
+	for _, sub := range cmd.Subcommands {
+		writeCondensedCommand(sb, sub, fullName)
+	}
+
+	sb.WriteString("\n")
+}
