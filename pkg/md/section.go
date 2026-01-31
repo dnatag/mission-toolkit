@@ -120,3 +120,67 @@ func SkipToNextSection(body string, startIndex int) int {
 	}
 	return -1
 }
+
+// UpdateSectionContent replaces the content of a section with new block string content.
+// Section names are case-insensitive. If section doesn't exist, it's appended.
+// Returns the updated body.
+//
+// Example:
+//
+//	body := "## INTENT\nOld content\n## SCOPE\nFiles"
+//	updated := UpdateSectionContent(body, "intent", "New content")
+//	// Returns: "## INTENT\nNew content\n\n## SCOPE\nFiles"
+func UpdateSectionContent(body, sectionName, content string) string {
+	idx := FindSection(body, sectionName)
+	if idx == -1 {
+		// Section doesn't exist, append it
+		if body != "" && !strings.HasSuffix(body, "\n") {
+			body += "\n"
+		}
+		return body + "\n## " + strings.ToUpper(sectionName) + "\n" + content
+	}
+
+	lines := strings.Split(body, "\n")
+	nextIdx := SkipToNextSection(body, idx)
+
+	// Build result with section header, new content, and remaining sections
+	result := make([]string, 0, len(lines))
+	result = append(result, lines[:idx+1]...)
+	result = append(result, content)
+
+	if nextIdx != -1 {
+		result = append(result, "")
+		result = append(result, lines[nextIdx:]...)
+	}
+
+	return strings.Join(result, "\n")
+}
+
+// UpdateSectionList replaces or appends list items to a section.
+// Section names are case-insensitive. Items are formatted as "- item".
+// If appendMode is true, new items are added to existing items.
+// If appendMode is false, section content is replaced with new items.
+// If section doesn't exist, it's created.
+// Returns the updated body.
+//
+// Example:
+//
+//	body := "## SCOPE\n- file1.go\n## PLAN\nSteps"
+//	updated := UpdateSectionList(body, "scope", []string{"file2.go"}, true)
+//	// Returns: "## SCOPE\n- file1.go\n- file2.go\n\n## PLAN\nSteps"
+func UpdateSectionList(body, sectionName string, items []string, appendMode bool) string {
+	listItems := items
+	if appendMode {
+		existing := ExtractList(body, sectionName)
+		listItems = append(existing, items...)
+	}
+
+	var content strings.Builder
+	for _, item := range listItems {
+		content.WriteString("- ")
+		content.WriteString(item)
+		content.WriteString("\n")
+	}
+
+	return UpdateSectionContent(body, sectionName, strings.TrimSuffix(content.String(), "\n"))
+}

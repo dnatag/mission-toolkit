@@ -296,3 +296,194 @@ Files`,
 		})
 	}
 }
+
+func TestUpdateSectionContent(t *testing.T) {
+	tests := []struct {
+		name        string
+		body        string
+		sectionName string
+		content     string
+		want        string
+	}{
+		{
+			name: "replace existing section",
+			body: `## INTENT
+Old content
+
+## SCOPE
+Files`,
+			sectionName: "INTENT",
+			content:     "New content",
+			want: `## INTENT
+New content
+
+## SCOPE
+Files`,
+		},
+		{
+			name: "replace middle section",
+			body: `## INTENT
+Content
+
+## SCOPE
+Old files
+
+## PLAN
+Steps`,
+			sectionName: "SCOPE",
+			content:     "New files",
+			want: `## INTENT
+Content
+
+## SCOPE
+New files
+
+## PLAN
+Steps`,
+		},
+		{
+			name: "replace last section",
+			body: `## INTENT
+Content
+
+## SCOPE
+Old files`,
+			sectionName: "SCOPE",
+			content:     "New files",
+			want: `## INTENT
+Content
+
+## SCOPE
+New files`,
+		},
+		{
+			name:        "add new section to empty body",
+			body:        "",
+			sectionName: "INTENT",
+			content:     "New content",
+			want: `
+## INTENT
+New content`,
+		},
+		{
+			name: "add new section to existing body",
+			body: `## INTENT
+Content`,
+			sectionName: "SCOPE",
+			content:     "Files",
+			want: `## INTENT
+Content
+
+## SCOPE
+Files`,
+		},
+		{
+			name: "case insensitive section name",
+			body: `## INTENT
+Old content`,
+			sectionName: "intent",
+			content:     "New content",
+			want: `## INTENT
+New content`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := UpdateSectionContent(tt.body, tt.sectionName, tt.content)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestUpdateSectionList(t *testing.T) {
+	tests := []struct {
+		name        string
+		body        string
+		sectionName string
+		items       []string
+		appendMode  bool
+		want        string
+	}{
+		{
+			name: "replace list items",
+			body: `## SCOPE
+- file1.go
+- file2.go
+
+## PLAN
+Steps`,
+			sectionName: "SCOPE",
+			items:       []string{"file3.go", "file4.go"},
+			appendMode:  false,
+			want: `## SCOPE
+- file3.go
+- file4.go
+
+## PLAN
+Steps`,
+		},
+		{
+			name: "append list items",
+			body: `## SCOPE
+- file1.go
+- file2.go
+
+## PLAN
+Steps`,
+			sectionName: "SCOPE",
+			items:       []string{"file3.go"},
+			appendMode:  true,
+			want: `## SCOPE
+- file1.go
+- file2.go
+- file3.go
+
+## PLAN
+Steps`,
+		},
+		{
+			name:        "create new list section",
+			body:        "## INTENT\nContent",
+			sectionName: "SCOPE",
+			items:       []string{"file1.go", "file2.go"},
+			appendMode:  false,
+			want: `## INTENT
+Content
+
+## SCOPE
+- file1.go
+- file2.go`,
+		},
+		{
+			name:        "empty items list",
+			body:        "## SCOPE\n- file1.go",
+			sectionName: "SCOPE",
+			items:       []string{},
+			appendMode:  false,
+			want:        "## SCOPE\n",
+		},
+		{
+			name: "append to empty section",
+			body: `## SCOPE
+
+## PLAN
+Steps`,
+			sectionName: "SCOPE",
+			items:       []string{"file1.go"},
+			appendMode:  true,
+			want: `## SCOPE
+- file1.go
+
+## PLAN
+Steps`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := UpdateSectionList(tt.body, tt.sectionName, tt.items, tt.appendMode)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
