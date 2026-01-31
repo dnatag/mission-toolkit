@@ -58,12 +58,28 @@ var diagnosisUpdateCmd = &cobra.Command{
 			return nil
 		}
 
-		// Handle section update
+		// Require section for content/item updates
 		if section == "" {
 			return fmt.Errorf("--section is required (or use --status/--confidence for frontmatter)")
 		}
+
+		// Handle list section update with --item
+		if cmd.Flags().Changed("item") {
+			items, _ := cmd.Flags().GetStringArray("item")
+			if len(items) == 0 {
+				return fmt.Errorf("--item requires at least one value")
+			}
+			appendMode, _ := cmd.Flags().GetBool("append")
+			if err := diagnosis.UpdateList(diagnosisFs, diagnosisPath, section, items, appendMode); err != nil {
+				return fmt.Errorf("updating list: %w", err)
+			}
+			fmt.Printf("Diagnosis section '%s' updated with %d items\n", section, len(items))
+			return nil
+		}
+
+		// Handle text section update with --content
 		if content == "" {
-			return fmt.Errorf("--content is required")
+			return fmt.Errorf("--content or --item is required for section updates")
 		}
 
 		if err := diagnosis.UpdateSection(diagnosisFs, diagnosisPath, section, content); err != nil {
@@ -99,6 +115,8 @@ func init() {
 
 	diagnosisUpdateCmd.Flags().String("section", "", "Section to update (e.g., 'ROOT CAUSE', 'INVESTIGATION')")
 	diagnosisUpdateCmd.Flags().String("content", "", "New content for the section")
+	diagnosisUpdateCmd.Flags().StringArray("item", []string{}, "Items to add to list section (can be used multiple times)")
+	diagnosisUpdateCmd.Flags().Bool("append", false, "Append items to existing list instead of replacing")
 	diagnosisUpdateCmd.Flags().String("status", "", "Update diagnosis status (investigating, confirmed, inconclusive)")
 	diagnosisUpdateCmd.Flags().String("confidence", "", "Update confidence level (low, medium, high)")
 }

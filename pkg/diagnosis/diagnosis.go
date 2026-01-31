@@ -199,6 +199,114 @@ func DiagnosisExists(fs afero.Fs, diagnosisPath string) (bool, error) {
 	return true, nil
 }
 
+// UpdateList updates a list section (investigation, hypotheses, affected files) with optional append mode.
+// Section names are case-insensitive and hyphens are normalized to spaces (e.g., "affected-files" matches "AFFECTED FILES").
+// In replace mode (default), existing content is removed and replaced with new items.
+// In append mode, new items are added after existing items.
+func UpdateList(fs afero.Fs, diagnosisPath string, section string, items []string, appendMode bool) error {
+	if section == "" {
+		return fmt.Errorf("section cannot be empty")
+	}
+	if len(items) == 0 {
+		return fmt.Errorf("items cannot be empty")
+	}
+
+	diag, err := ReadDiagnosis(fs, diagnosisPath)
+	if err != nil {
+		return fmt.Errorf("reading diagnosis: %w", err)
+	}
+
+	lines := strings.Split(diag.Body, "\n")
+	var result []string
+	// Normalize section name: replace hyphens with spaces for matching
+	normalizedSection := strings.ReplaceAll(strings.ToUpper(section), "-", " ")
+	sectionHeader := "## " + normalizedSection
+	foundSection := false
+	lineIndex := 0
+
+	for lineIndex < len(lines) {
+		currentLine := lines[lineIndex]
+
+		if strings.TrimSpace(currentLine) == sectionHeader {
+			result = append(result, currentLine)
+
+			if appendMode {
+				existingItems := extractExistingItems(lines, lineIndex+1)
+				result = append(result, existingItems...)
+			}
+
+			addFormattedItems(&result, normalizedSection, items)
+
+			foundSection = true
+			nextSectionIndex := skipSectionContent(lines, lineIndex+1)
+			if nextSectionIndex < len(lines) {
+				result = append(result, "")
+			}
+			lineIndex = nextSectionIndex
+			continue
+		}
+
+		result = append(result, currentLine)
+		lineIndex++
+	}
+
+	if !foundSection {
+		result = append(result, "", sectionHeader)
+		addFormattedItems(&result, normalizedSection, items)
+	}
+
+	diag.Body = strings.Join(result, "\n")
+	return WriteDiagnosis(fs, diagnosisPath, diag)
+}
+
+// extractExistingItems collects existing items from a section.
+func extractExistingItems(lines []string, startIndex int) []string {
+	var existingItems []string
+	for j := startIndex; j < len(lines); j++ {
+		if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
+			break
+		}
+		line := strings.TrimSpace(lines[j])
+		// Skip placeholder lines
+		if line != "" && line != "- [ ] Initial investigation pending" &&
+			line != "1. **[UNKNOWN]** Investigation not yet started" &&
+			line != "- TBD" {
+			existingItems = append(existingItems, lines[j])
+		}
+	}
+	return existingItems
+}
+
+// skipSectionContent skips content until the next section and returns the index.
+func skipSectionContent(lines []string, startIndex int) int {
+	for j := startIndex; j < len(lines); j++ {
+		if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
+			return j
+		}
+	}
+	return len(lines)
+}
+
+// addFormattedItems adds items with proper formatting based on section type.
+func addFormattedItems(result *[]string, section string, items []string) {
+	// Normalize section name for comparison
+	normalizedSection := strings.ReplaceAll(strings.ToUpper(section), "-", " ")
+
+	if normalizedSection == "INVESTIGATION" {
+		for _, item := range items {
+			*result = append(*result, "- [ ] "+item)
+		}
+	} else if normalizedSection == "HYPOTHESES" {
+		for i, item := range items {
+			*result = append(*result, fmt.Sprintf("%d. %s", i+1, item))
+		}
+	} else {
+		for _, item := range items {
+			*result = append(*result, "- "+item)
+		}
+	}
+}
+
 // UpdateFrontmatter updates status and/or confidence fields in diagnosis frontmatter.
 // Either status or confidence can be empty to skip updating that field.
 // Valid status values: investigating, confirmed, inconclusive

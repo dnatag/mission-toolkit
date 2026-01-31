@@ -68,6 +68,78 @@ func TestCreateDiagnosis(t *testing.T) {
 	}
 }
 
+func TestUpdateList(t *testing.T) {
+	tests := []struct {
+		name       string
+		section    string
+		items      []string
+		appendMode bool
+		wantErr    bool
+		validate   func(t *testing.T, content string)
+	}{
+		{
+			name:       "replace affected files",
+			section:    "affected-files",
+			items:      []string{"file1.go", "file2.go"},
+			appendMode: false,
+			wantErr:    false,
+			validate: func(t *testing.T, content string) {
+				require.Contains(t, content, "- file1.go")
+				require.Contains(t, content, "- file2.go")
+				require.NotContains(t, content, "- TBD")
+			},
+		},
+		{
+			name:       "append to investigation",
+			section:    "investigation",
+			items:      []string{"Checked logs", "Reviewed code"},
+			appendMode: true,
+			wantErr:    false,
+			validate: func(t *testing.T, content string) {
+				require.Contains(t, content, "- [ ] Checked logs")
+				require.Contains(t, content, "- [ ] Reviewed code")
+			},
+		},
+		{
+			name:       "replace hypotheses",
+			section:    "hypotheses",
+			items:      []string{"**[HIGH]** Database connection issue", "**[LOW]** Network timeout"},
+			appendMode: false,
+			wantErr:    false,
+			validate: func(t *testing.T, content string) {
+				require.Contains(t, content, "1. **[HIGH]** Database connection issue")
+				require.Contains(t, content, "2. **[LOW]** Network timeout")
+				require.NotContains(t, content, "**[UNKNOWN]**")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+			path := ".mission/diagnosis.md"
+
+			// Create initial diagnosis
+			err := CreateDiagnosis(fs, path, "Test symptom")
+			require.NoError(t, err)
+
+			// Update list
+			err = UpdateList(fs, path, tt.section, tt.items, tt.appendMode)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			// Validate content
+			content, err := afero.ReadFile(fs, path)
+			require.NoError(t, err)
+			tt.validate(t, string(content))
+		})
+	}
+}
+
 func TestDiagnosisExists(t *testing.T) {
 	tests := []struct {
 		name       string
