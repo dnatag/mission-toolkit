@@ -11,9 +11,17 @@
 🧩 CRITICAL LOGIC:
 {{CRITICAL_SNIPPETS}}
 
-🔍 VIEW CHANGES (pick one - run the ENTIRE command shown for the view):
-[S] side-by-side: `git diff {{MISSION_ID}}-baseline | diff2html -i stdin -s side -o preview`
-[L] inline: `git diff {{MISSION_ID}}-baseline | diff2html -i stdin -s line -o preview`
+🔍 VIEW CHANGES (pick one - execute the FULL command block):
+
+[S] side-by-side:
+```bash
+git diff {{MISSION_ID}}-baseline | diff2html -i stdin -s side -o preview
+```
+
+[L] inline:
+```bash
+git diff {{MISSION_ID}}-baseline | diff2html -i stdin -s line -o preview
+```
 
 📦 [S] and [L] require: npm install -g diff2html-cli
 
