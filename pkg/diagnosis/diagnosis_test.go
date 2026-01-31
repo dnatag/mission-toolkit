@@ -383,6 +383,30 @@ Old cause
 			wantContains: "New cause",
 			wantErr:      false,
 		},
+		{
+			name: "normalizes hyphenated section names",
+			initialContent: `---
+id: DIAG-123
+status: investigating
+confidence: low
+created: 2026-01-24T10:00:00Z
+symptom: test
+---
+
+## SYMPTOM
+test
+
+## ROOT CAUSE
+To be determined
+
+## RECOMMENDED FIX
+To be determined after investigation
+`,
+			section:      "root-cause",
+			newContent:   "Fixed normalization issue",
+			wantContains: "Fixed normalization issue",
+			wantErr:      false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -422,6 +446,13 @@ Old cause
 			// For replace tests, verify old content is gone
 			if tt.name == "replaces non-list section" {
 				require.NotContains(t, string(content), "Old cause")
+			}
+
+			// For hyphenated section test, verify no duplicate sections created
+			if tt.name == "normalizes hyphenated section names" {
+				contentStr := string(content)
+				require.Equal(t, 1, strings.Count(contentStr, "## ROOT CAUSE"), "Should have exactly one ROOT CAUSE section, not duplicated")
+				require.NotContains(t, contentStr, "## ROOT-CAUSE", "Should not create hyphenated section header")
 			}
 		})
 	}

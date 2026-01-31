@@ -78,9 +78,11 @@ func UpdateSection(fs afero.Fs, diagnosisPath string, section string, content st
 
 	lines := strings.Split(diag.Body, "\n")
 	var result []string
-	sectionHeader := "## " + strings.ToUpper(section)
+	// Normalize section name: replace hyphens with spaces for matching
+	normalizedSection := strings.ReplaceAll(strings.ToUpper(section), "-", " ")
+	sectionHeader := "## " + normalizedSection
 	foundSection := false
-	upperSection := strings.ToUpper(section)
+	upperSection := normalizedSection
 	isListSection := upperSection == "INVESTIGATION" || upperSection == "HYPOTHESES" || upperSection == "AFFECTED FILES"
 
 	for i, line := range lines {
