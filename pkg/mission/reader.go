@@ -170,7 +170,9 @@ func (r *Reader) ReadIntent() (string, error) {
 	return intent, nil
 }
 
-// ReadScope extracts the SCOPE section from a mission file
+// ReadScope extracts the SCOPE section from a mission file.
+// Returns an empty string (not an error) if the scope section is empty or missing,
+// allowing analyze commands to handle empty scope gracefully during planning workflow.
 func (r *Reader) ReadScope() (string, error) {
 	mission, err := r.Read()
 	if err != nil {
@@ -178,7 +180,7 @@ func (r *Reader) ReadScope() (string, error) {
 	}
 	scope := mission.GetScope()
 	if len(scope) == 0 {
-		return "", fmt.Errorf("no scope found in mission")
+		return "", nil
 	}
 	return strings.Join(scope, "\n"), nil
 }

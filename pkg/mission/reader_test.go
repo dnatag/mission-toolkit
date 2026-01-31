@@ -559,6 +559,31 @@ middleware.go`
 	}
 }
 
+func TestReader_ReadScope_EmptyScope(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "mission.md"
+	reader := NewReader(fs, path)
+
+	content := `---
+id: test-123
+status: planned
+---
+
+## INTENT
+Test empty scope handling
+
+## SCOPE
+
+## PLAN
+- Step 1`
+
+	afero.WriteFile(fs, path, []byte(content), 0644)
+
+	scope, err := reader.ReadScope()
+	require.NoError(t, err, "ReadScope should not error on empty scope")
+	require.Equal(t, "", scope, "Empty scope should return empty string")
+}
+
 func TestReader_ReadIntent_MissingSection(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "mission.md"

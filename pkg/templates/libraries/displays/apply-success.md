@@ -11,7 +11,7 @@
 🧩 CRITICAL LOGIC:
 {{CRITICAL_SNIPPETS}}
 
-🔍 VIEW CHANGES (pick one - run the EXACT command shown):
+🔍 VIEW CHANGES (pick one - run the ENTIRE command shown for the view):
 [S] side-by-side: `git diff {{MISSION_ID}}-baseline | diff2html -i stdin -s side -o preview`
 [L] inline: `git diff {{MISSION_ID}}-baseline | diff2html -i stdin -s line -o preview`
 
