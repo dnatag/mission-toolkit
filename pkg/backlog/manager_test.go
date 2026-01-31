@@ -1026,3 +1026,144 @@ func TestBacklogManager_ListExcludeFeatureAndBugfix(t *testing.T) {
 		t.Errorf("Expected 1 item after excluding feature and bugfix, got %d", len(items))
 	}
 }
+
+func TestBacklogManager_FrontmatterSupport(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Add an item (should create frontmatter)
+	err := manager.Add("Test frontmatter item", "feature")
+	if err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+
+	// Read the backlog file and verify frontmatter exists
+	content, err := os.ReadFile(manager.backlogPath)
+	if err != nil {
+		t.Fatalf("Failed to read backlog: %v", err)
+	}
+
+	contentStr := string(content)
+	if !strings.HasPrefix(contentStr, "---\n") {
+		t.Error("Backlog should start with frontmatter delimiter")
+	}
+
+	if !strings.Contains(contentStr, "last_updated:") {
+		t.Error("Frontmatter should contain last_updated field")
+	}
+
+	if !strings.Contains(contentStr, "last_action:") {
+		t.Error("Frontmatter should contain last_action field")
+	}
+
+	if !strings.Contains(contentStr, "Added feature item") {
+		t.Error("Last action should describe the add operation")
+	}
+}
+
+func TestBacklogManager_FrontmatterMetadataTracking(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Test Add operation
+	err := manager.Add("Item 1", "feature")
+	if err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+
+	content, metadata, err := manager.readBacklogWithMetadata()
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if metadata.LastAction != "Added feature item: Item 1" {
+		t.Errorf("Expected last_action to be 'Added feature item: Item 1', got '%s'", metadata.LastAction)
+	}
+
+	if metadata.LastUpdated.IsZero() {
+		t.Error("LastUpdated should not be zero")
+	}
+
+	// Test Complete operation
+	err = manager.Complete("Item 1")
+	if err != nil {
+		t.Fatalf("Complete failed: %v", err)
+	}
+
+	_, metadata, err = manager.readBacklogWithMetadata()
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if !strings.Contains(metadata.LastAction, "Completed item") {
+		t.Errorf("Expected last_action to contain 'Completed item', got '%s'", metadata.LastAction)
+	}
+
+	// Verify body content is preserved
+	if !strings.Contains(content, "## FEATURES") {
+		t.Error("Body should contain section headers")
+	}
+}
+
+func TestBacklogManager_BackwardCompatibility(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Create a backlog file without frontmatter (legacy format)
+	legacyContent := `# Mission Backlog
+
+## FEATURES
+*User-defined feature requests and enhancements.*
+- [ ] Legacy item
+
+## BUGFIXES
+*Bug reports and issues to be fixed.*
+
+## DECOMPOSED INTENTS
+*Atomic tasks broken down from larger epics.*
+
+## REFACTORING OPPORTUNITIES
+*Technical debt and refactoring opportunities identified during development.*
+
+## FUTURE ENHANCEMENTS
+*Ideas and future feature requests for later consideration.*
+
+## COMPLETED
+*History of completed backlog items.*
+`
+	err := os.WriteFile(manager.backlogPath, []byte(legacyContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write legacy backlog: %v", err)
+	}
+
+	// Read should work with legacy format
+	items, err := manager.List(nil, nil)
+	if err != nil {
+		t.Fatalf("List failed on legacy format: %v", err)
+	}
+
+	if len(items) != 1 {
+		t.Errorf("Expected 1 item from legacy format, got %d", len(items))
+	}
+
+	// Add operation should add frontmatter
+	err = manager.Add("New item", "feature")
+	if err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+
+	// Verify frontmatter was added
+	content, err := os.ReadFile(manager.backlogPath)
+	if err != nil {
+		t.Fatalf("Failed to read backlog: %v", err)
+	}
+
+	if !strings.HasPrefix(string(content), "---\n") {
+		t.Error("Backlog should now have frontmatter after modification")
+	}
+
+	// Verify legacy item is still present
+	if !strings.Contains(string(content), "Legacy item") {
+		t.Error("Legacy item should be preserved")
+	}
+}
