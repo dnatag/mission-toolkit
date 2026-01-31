@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dnatag/mission-toolkit/pkg/md"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v3"
 )
@@ -21,7 +22,7 @@ type Diagnosis struct {
 	Body       string    `yaml:"-"`
 }
 
-// ReadDiagnosis reads and parses a diagnosis.md file.
+// ReadDiagnosis reads and parses a diagnosis.md file using pkg/md abstraction.
 // Returns an error if the file doesn't exist or has invalid format.
 func ReadDiagnosis(fs afero.Fs, diagnosisPath string) (*Diagnosis, error) {
 	content, err := afero.ReadFile(fs, diagnosisPath)
@@ -29,30 +30,54 @@ func ReadDiagnosis(fs afero.Fs, diagnosisPath string) (*Diagnosis, error) {
 		return nil, fmt.Errorf("reading diagnosis file: %w", err)
 	}
 
-	parts := strings.SplitN(string(content), "---\n", 3)
-	if len(parts) < 3 {
-		return nil, fmt.Errorf("invalid diagnosis format: missing frontmatter")
+	doc, err := md.Parse(content)
+	if err != nil {
+		return nil, fmt.Errorf("parsing diagnosis: %w", err)
+	}
+
+	// Convert frontmatter map to Diagnosis struct via YAML marshaling
+	// This ensures type conversions (especially time.Time) are handled correctly
+	yamlData, err := yaml.Marshal(doc.Frontmatter)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling frontmatter: %w", err)
 	}
 
 	var diag Diagnosis
-	if err := yaml.Unmarshal([]byte(parts[1]), &diag); err != nil {
-		return nil, fmt.Errorf("parsing frontmatter: %w", err)
+	if err := yaml.Unmarshal(yamlData, &diag); err != nil {
+		return nil, fmt.Errorf("unmarshaling frontmatter: %w", err)
 	}
 
-	diag.Body = parts[2]
+	diag.Body = doc.Body
 	return &diag, nil
 }
 
-// WriteDiagnosis writes a diagnosis struct to file.
+// WriteDiagnosis writes a diagnosis struct to file using pkg/md abstraction.
 // Creates the .mission directory if it doesn't exist.
 func WriteDiagnosis(fs afero.Fs, diagnosisPath string, diag *Diagnosis) error {
-	frontmatter, err := yaml.Marshal(diag)
+	// Marshal diagnosis struct to YAML to get frontmatter fields
+	yamlData, err := yaml.Marshal(diag)
 	if err != nil {
-		return fmt.Errorf("marshaling frontmatter: %w", err)
+		return fmt.Errorf("marshaling diagnosis: %w", err)
 	}
 
-	content := fmt.Sprintf("---\n%s---\n%s", string(frontmatter), diag.Body)
-	if err := afero.WriteFile(fs, diagnosisPath, []byte(content), 0644); err != nil {
+	// Unmarshal into map for md.Document
+	var frontmatter map[string]interface{}
+	if err := yaml.Unmarshal(yamlData, &frontmatter); err != nil {
+		return fmt.Errorf("unmarshaling to map: %w", err)
+	}
+
+	// Use pkg/md to write document with frontmatter
+	doc := &md.Document{
+		Frontmatter: frontmatter,
+		Body:        diag.Body,
+	}
+
+	content, err := doc.Write()
+	if err != nil {
+		return fmt.Errorf("writing document: %w", err)
+	}
+
+	if err := afero.WriteFile(fs, diagnosisPath, content, 0644); err != nil {
 		return fmt.Errorf("writing diagnosis file: %w", err)
 	}
 

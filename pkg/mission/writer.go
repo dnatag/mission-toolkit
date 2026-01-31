@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/dnatag/mission-toolkit/pkg/logger"
+	"github.com/dnatag/mission-toolkit/pkg/md"
 	"github.com/spf13/afero"
-	"gopkg.in/yaml.v2"
 )
 
 // Writer handles writing mission files and updating status.
@@ -269,7 +269,9 @@ func (w *Writer) UpdateFrontmatter(pairs []string) error {
 }
 
 // format converts a Mission struct to markdown with YAML frontmatter.
+// format formats a Mission struct into markdown with YAML frontmatter using pkg/md abstraction.
 func (w *Writer) format(mission *Mission) (string, error) {
+	// Build frontmatter map with required fields
 	frontmatter := map[string]interface{}{
 		"id":        mission.ID,
 		"type":      mission.Type,
@@ -278,6 +280,7 @@ func (w *Writer) format(mission *Mission) (string, error) {
 		"status":    mission.Status,
 	}
 
+	// Add optional fields if present
 	if mission.ParentMission != "" {
 		frontmatter["parent_mission"] = mission.ParentMission
 	}
@@ -286,16 +289,16 @@ func (w *Writer) format(mission *Mission) (string, error) {
 		frontmatter["domains"] = mission.Domains
 	}
 
-	yamlData, err := yaml.Marshal(frontmatter)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal frontmatter: %w", err)
+	// Use pkg/md to write document with frontmatter
+	doc := &md.Document{
+		Frontmatter: frontmatter,
+		Body:        mission.Body,
 	}
 
-	var sb strings.Builder
-	sb.WriteString("---\n")
-	sb.Write(yamlData)
-	sb.WriteString("---\n\n")
-	sb.WriteString(mission.Body)
+	data, err := doc.Write()
+	if err != nil {
+		return "", fmt.Errorf("writing document: %w", err)
+	}
 
-	return sb.String(), nil
+	return string(data), nil
 }

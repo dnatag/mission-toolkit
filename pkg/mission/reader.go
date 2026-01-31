@@ -3,11 +3,11 @@ package mission
 import (
 	"bytes"
 	"fmt"
-	"regexp"
 	"strings"
 
+	"github.com/dnatag/mission-toolkit/pkg/md"
 	"github.com/spf13/afero"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // Reader handles reading and parsing mission.md files
@@ -32,7 +32,8 @@ func (r *Reader) Read() (*Mission, error) {
 	return r.parse(data)
 }
 
-// parse parses mission data with frontmatter and body
+// parse parses mission data with frontmatter and body using pkg/md abstraction.
+// Supports both modern YAML frontmatter format and legacy # MISSION format.
 func (r *Reader) parse(data []byte) (*Mission, error) {
 	// Handle empty files
 	if len(data) == 0 {
@@ -41,32 +42,21 @@ func (r *Reader) parse(data []byte) (*Mission, error) {
 
 	// Check for YAML frontmatter format (starts with ---)
 	if bytes.HasPrefix(data, []byte("---\n")) {
-		// Find the closing --- on its own line (may be followed by empty lines)
-		// This handles cases where --- appears in the middle of YAML
-		re := regexp.MustCompile(`(?m)^\s*---\s*$`)
-		matches := re.FindAllIndex(data, -1)
-
-		if len(matches) < 2 {
-			return nil, fmt.Errorf("invalid frontmatter format: expected opening and closing ---")
+		doc, err := md.Parse(data)
+		if err != nil {
+			return nil, fmt.Errorf("parsing frontmatter: %w", err)
 		}
 
-		// Second match is the closing ---
-		closingDash := matches[1]
-
-		// Frontmatter is everything between the opening --- and the closing ---
-		frontmatter := data[4:closingDash[0]]
-
-		// Body starts after the closing ---
-		bodyStart := closingDash[1]
-		// Skip any leading whitespace/newlines after the closing ---
-		for bodyStart < len(data) && (data[bodyStart] == '\n' || data[bodyStart] == ' ') {
-			bodyStart++
+		// Convert frontmatter map to Mission struct via YAML marshaling
+		// This ensures type conversions are handled correctly
+		yamlData, err := yaml.Marshal(doc.Frontmatter)
+		if err != nil {
+			return nil, fmt.Errorf("marshaling frontmatter: %w", err)
 		}
-		body := data[bodyStart:]
 
-		mission := &Mission{Body: string(body)}
-		if err := yaml.Unmarshal(frontmatter, mission); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal frontmatter: %w", err)
+		mission := &Mission{Body: doc.Body}
+		if err := yaml.Unmarshal(yamlData, mission); err != nil {
+			return nil, fmt.Errorf("unmarshaling frontmatter: %w", err)
 		}
 
 		return mission, nil

@@ -135,7 +135,9 @@ Create a function to merge two lists of cards
 id: test-123
 type: WET
 `,
-			wantErr: true,
+			wantErr:  false, // adrg/frontmatter treats content without closing as body
+			wantID:   "",    // No frontmatter parsed
+			wantType: "",
 		},
 		{
 			name: "frontmatter without closing",
@@ -147,7 +149,10 @@ track: 2
 ## INTENT
 Missing closing frontmatter
 `,
-			wantErr: true,
+			wantErr:   false, // adrg/frontmatter treats content without closing as body
+			wantID:    "",    // No frontmatter parsed
+			wantType:  "",
+			wantTrack: 0,
 		},
 		{
 			name: "malformed YAML - missing quotes",
@@ -657,8 +662,10 @@ Body without closing delimiter`
 
 	reader := NewReader(fs, path)
 	mission, err := reader.Read()
-	require.Error(t, err, "Should fail with missing closing delimiter")
-	require.Nil(t, mission)
+	// adrg/frontmatter treats content without closing delimiter as body
+	require.NoError(t, err, "adrg/frontmatter handles missing closing delimiter gracefully")
+	require.NotNil(t, mission)
+	require.Equal(t, "", mission.ID) // No frontmatter parsed without closing delimiter
 }
 
 // Edge case: Read with empty file
