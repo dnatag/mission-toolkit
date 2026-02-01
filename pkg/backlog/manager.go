@@ -5,41 +5,31 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
 
 // BacklogManager handles backlog file operations
 type BacklogManager struct {
-	missionDir  string
-	backlogPath string
+	missionDir   string
+	backlogPath  string
+	patternRegex *regexp.Regexp
 }
 
 // NewManager creates a new BacklogManager
 func NewManager(missionDir string) *BacklogManager {
 	return &BacklogManager{
-		missionDir:  missionDir,
-		backlogPath: filepath.Join(missionDir, "backlog.md"),
+		missionDir:   missionDir,
+		backlogPath:  filepath.Join(missionDir, "backlog.md"),
+		patternRegex: regexp.MustCompile(`\[PATTERN:([^\]]+)\]\[COUNT:(\d+)\]`),
 	}
 }
 
 // List returns backlog items, optionally including completed items and filtering by type
 func (m *BacklogManager) List(include []string, exclude []string) ([]string, error) {
-	// Validate include types
-	for _, t := range include {
-		if t != "completed" {
-			if err := m.validateType(t); err != nil {
-				return nil, err
-			}
-		}
-	}
-	// Validate exclude types
-	for _, t := range exclude {
-		if t != "completed" {
-			if err := m.validateType(t); err != nil {
-				return nil, err
-			}
-		}
+	if err := m.validateFilters(include, exclude); err != nil {
+		return nil, err
 	}
 
 	if err := m.ensureBacklogExists(); err != nil {
@@ -52,6 +42,30 @@ func (m *BacklogManager) List(include []string, exclude []string) ([]string, err
 	}
 	defer file.Close()
 
+	return m.scanBacklogItems(file, include, exclude)
+}
+
+// validateFilters validates include and exclude type filters
+func (m *BacklogManager) validateFilters(include, exclude []string) error {
+	for _, t := range include {
+		if t != "completed" {
+			if err := m.validateType(t); err != nil {
+				return err
+			}
+		}
+	}
+	for _, t := range exclude {
+		if t != "completed" {
+			if err := m.validateType(t); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// scanBacklogItems scans the backlog file and returns filtered items
+func (m *BacklogManager) scanBacklogItems(file *os.File, include, exclude []string) ([]string, error) {
 	var items []string
 	scanner := bufio.NewScanner(file)
 	inCompletedSection := false
@@ -73,49 +87,46 @@ func (m *BacklogManager) List(include []string, exclude []string) ([]string, err
 		}
 
 		if strings.HasPrefix(line, "- [ ]") || strings.HasPrefix(line, "- [x]") {
-			// Determine if this item should be included
-			shouldInclude := false
-
-			if inCompletedSection {
-				// In completed section
-				if len(exclude) > 0 && contains(exclude, "completed") {
-					// Explicitly excluded
-					continue
-				}
-				if len(include) > 0 {
-					// Include filter specified - only include if "completed" is in the list
-					shouldInclude = contains(include, "completed")
-				} else {
-					// No include filter - exclude completed by default
-					shouldInclude = false
-				}
-			} else {
-				// Not in completed section - check type filters
-				itemType := m.getSectionType(currentSection)
-
-				// Check exclude filter
-				if contains(exclude, itemType) {
-					continue
-				}
-
-				// Check include filter
-				if len(include) > 0 {
-					// Include filter specified
-					// Check if this type is in the include list OR if "completed" is in include (which means include all types)
-					shouldInclude = contains(include, itemType) || contains(include, "completed")
-				} else {
-					// No include filter - include all non-completed by default
-					shouldInclude = true
-				}
-			}
-
-			if shouldInclude {
+			if m.shouldIncludeItem(line, inCompletedSection, currentSection, include, exclude) {
 				items = append(items, line)
 			}
 		}
 	}
 
 	return items, scanner.Err()
+}
+
+// shouldIncludeItem determines if an item should be included based on filters
+func (m *BacklogManager) shouldIncludeItem(line string, inCompletedSection bool, currentSection string, include, exclude []string) bool {
+	if inCompletedSection {
+		return m.shouldIncludeCompleted(include, exclude)
+	}
+	return m.shouldIncludeTyped(currentSection, include, exclude)
+}
+
+// shouldIncludeCompleted checks if completed items should be included
+func (m *BacklogManager) shouldIncludeCompleted(include, exclude []string) bool {
+	if len(exclude) > 0 && contains(exclude, "completed") {
+		return false
+	}
+	if len(include) > 0 {
+		return contains(include, "completed")
+	}
+	return false
+}
+
+// shouldIncludeTyped checks if typed items should be included
+func (m *BacklogManager) shouldIncludeTyped(currentSection string, include, exclude []string) bool {
+	itemType := m.getSectionType(currentSection)
+
+	if contains(exclude, itemType) {
+		return false
+	}
+
+	if len(include) > 0 {
+		return contains(include, itemType) || contains(include, "completed")
+	}
+	return true
 }
 
 // contains checks if a string slice contains a value
