@@ -3,6 +3,7 @@ package mission
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/dnatag/mission-toolkit/pkg/logger"
@@ -58,6 +59,49 @@ func (w *Writer) CreateWithIntent(missionID string, intent string) error {
 	return w.Write(mission)
 }
 
+// normalizePlanContent converts all list formats to checkbox format.
+func normalizePlanContent(content string) string {
+	lines := strings.Split(content, "\n")
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		indent := line[:len(line)-len(trimmed)]
+		var normalized string
+
+		// Already checkbox format
+		if strings.HasPrefix(trimmed, "- [ ] ") || strings.HasPrefix(trimmed, "- [x] ") {
+			continue
+		}
+		// Dash with number: "- 1. item" → "- [ ] item"
+		if matched, _ := regexp.MatchString(`^-\s+\d+\.\s`, trimmed); matched {
+			parts := strings.SplitN(trimmed, ". ", 2)
+			if len(parts) == 2 {
+				normalized = indent + "- [ ] " + parts[1]
+			}
+		} else if matched, _ := regexp.MatchString(`^\d+\.\s`, trimmed); matched {
+			// Pure numbered: "1. item" → "- [ ] item"
+			parts := strings.SplitN(trimmed, ". ", 2)
+			if len(parts) == 2 {
+				normalized = indent + "- [ ] " + parts[1]
+			}
+		} else if strings.HasPrefix(trimmed, "- ") {
+			// Plain dash: "- item" → "- [ ] item"
+			normalized = indent + "- [ ] " + strings.TrimPrefix(trimmed, "- ")
+		} else if strings.HasPrefix(trimmed, "* ") {
+			// Asterisk: "* item" → "- [ ] item"
+			normalized = indent + "- [ ] " + strings.TrimPrefix(trimmed, "* ")
+		}
+
+		if normalized != "" {
+			lines[i] = normalized
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
 // UpdateSection updates a text section (intent, verification).
 func (w *Writer) UpdateSection(section string, content string) error {
 	// Allow empty section name for backward compatibility (creates "## " section)
@@ -68,6 +112,11 @@ func (w *Writer) UpdateSection(section string, content string) error {
 		}
 		mission.Body = mission.Body + "\n## \n" + content + "\n"
 		return w.Write(mission)
+	}
+
+	// Normalize PLAN section to checkbox format
+	if strings.ToLower(section) == "plan" {
+		content = normalizePlanContent(content)
 	}
 
 	doc, err := w.parseDocument()
@@ -191,13 +240,14 @@ func (w *Writer) logPlanStep(missionID string, step int, status, message string)
 }
 
 // markStepComplete marks a specific step as complete in the plan content.
+// Expects plan content to be in checkbox format (normalized by UpdateSection/UpdateList).
 func (w *Writer) markStepComplete(planContent string, step int) (string, error) {
 	lines := strings.Split(planContent, "\n")
 	planStepCount := 0
 
 	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "- [") {
+		if strings.HasPrefix(trimmed, "- [ ] ") || strings.HasPrefix(trimmed, "- [x] ") {
 			planStepCount++
 			if planStepCount == step {
 				lines[i] = strings.Replace(line, "- [ ]", "- [x]", 1)

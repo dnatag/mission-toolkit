@@ -978,3 +978,172 @@ func TestWriter_UpdateStatus_ConcurrentWrites(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, updated.Status, "Status should be set to one of the values")
 }
+
+func TestWriter_MarkPlanStepComplete_NumberedList(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "mission.md"
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
+
+	// Create mission with numbered list format
+	mission := &Mission{
+		ID:     "test-numbered",
+		Status: "active",
+		Body:   "## PLAN\n- 1. First step\n- 2. Second step\n- 3. Third step",
+	}
+
+	if err := writer.Write(mission); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	// Normalize the plan section (simulating what UpdateSection would do)
+	if err := writer.UpdateSection("plan", "- 1. First step\n- 2. Second step\n- 3. Third step"); err != nil {
+		t.Fatalf("UpdateSection failed: %v", err)
+	}
+
+	// Mark step 2 complete
+	if err := writer.MarkPlanStepComplete(2, "", ""); err != nil {
+		t.Fatalf("MarkPlanStepComplete failed: %v", err)
+	}
+
+	updated, err := NewReader(fs, path).Read()
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if !strings.Contains(updated.Body, "- [x] Second step") {
+		t.Errorf("Step 2 was not marked as complete. Body: %s", updated.Body)
+	}
+	if !strings.Contains(updated.Body, "- [ ] First step") {
+		t.Error("Step 1 should be normalized to checkbox format")
+	}
+	if !strings.Contains(updated.Body, "- [ ] Third step") {
+		t.Error("Step 3 should be normalized to checkbox format")
+	}
+}
+
+func TestWriter_MarkPlanStepComplete_MixedFormats(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "mission.md"
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
+
+	// Create mission with mixed formats
+	mission := &Mission{
+		ID:     "test-mixed",
+		Status: "active",
+		Body:   "## PLAN\n- 1. Numbered step\n- Dash step\n- [ ] Checkbox step\n* Asterisk step",
+	}
+
+	if err := writer.Write(mission); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	// Normalize via UpdateSection
+	if err := writer.UpdateSection("plan", "- 1. Numbered step\n- Dash step\n- [ ] Checkbox step\n* Asterisk step"); err != nil {
+		t.Fatalf("UpdateSection failed: %v", err)
+	}
+
+	// All steps should now be normalized to checkbox format
+	updated, err := NewReader(fs, path).Read()
+	if err != nil {
+		t.Fatalf("Read after normalization failed: %v", err)
+	}
+
+	// Verify normalization happened
+	if !strings.Contains(updated.Body, "- [ ] Numbered step") {
+		t.Errorf("Step 1 should be normalized. Body: %s", updated.Body)
+	}
+	if !strings.Contains(updated.Body, "- [ ] Dash step") {
+		t.Errorf("Step 2 should be normalized. Body: %s", updated.Body)
+	}
+	if !strings.Contains(updated.Body, "- [ ] Checkbox step") {
+		t.Errorf("Step 3 should remain checkbox. Body: %s", updated.Body)
+	}
+	if !strings.Contains(updated.Body, "- [ ] Asterisk step") {
+		t.Errorf("Step 4 should be normalized. Body: %s", updated.Body)
+	}
+
+	// Now mark steps complete
+	if err := writer.MarkPlanStepComplete(3, "", ""); err != nil {
+		t.Fatalf("MarkPlanStepComplete(3) failed: %v", err)
+	}
+
+	updated, err = NewReader(fs, path).Read()
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if !strings.Contains(updated.Body, "- [x] Checkbox step") {
+		t.Errorf("Step 3 was not marked as complete. Body: %s", updated.Body)
+	}
+
+	if err := writer.MarkPlanStepComplete(1, "", ""); err != nil {
+		t.Fatalf("MarkPlanStepComplete(1) failed: %v", err)
+	}
+
+	updated, err = NewReader(fs, path).Read()
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if !strings.Contains(updated.Body, "- [x] Numbered step") {
+		t.Errorf("Step 1 was not marked as complete. Body: %s", updated.Body)
+	}
+}
+
+func TestNormalizePlanContent(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "numbered list",
+			input:    "1. First\n2. Second\n3. Third",
+			expected: "- [ ] First\n- [ ] Second\n- [ ] Third",
+		},
+		{
+			name:     "dash with numbers",
+			input:    "- 1. First\n- 2. Second",
+			expected: "- [ ] First\n- [ ] Second",
+		},
+		{
+			name:     "plain dash",
+			input:    "- First\n- Second",
+			expected: "- [ ] First\n- [ ] Second",
+		},
+		{
+			name:     "asterisk",
+			input:    "* First\n* Second",
+			expected: "- [ ] First\n- [ ] Second",
+		},
+		{
+			name:     "already checkbox",
+			input:    "- [ ] First\n- [x] Second",
+			expected: "- [ ] First\n- [x] Second",
+		},
+		{
+			name:     "mixed formats",
+			input:    "1. Numbered\n- Dash\n* Asterisk\n- [ ] Checkbox",
+			expected: "- [ ] Numbered\n- [ ] Dash\n- [ ] Asterisk\n- [ ] Checkbox",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := normalizePlanContent(tt.input)
+			if result != tt.expected {
+				t.Errorf("normalizePlanContent() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
