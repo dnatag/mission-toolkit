@@ -13,17 +13,17 @@
 
 🔍 VIEW CHANGES (pick one - execute the FULL command block):
 
-[T] terminal:
+[T] terminal view:
 ```bash
 git diff {{MISSION_ID}}-baseline
 ```
 
-[S] side-by-side:
+[S] side-by-side view in browser:
 ```bash
 git diff {{MISSION_ID}}-baseline | diff2html -i stdin -s side -o preview
 ```
 
-[L] inline:
+[L] inline view in browser:
 ```bash
 git diff {{MISSION_ID}}-baseline | diff2html -i stdin -s line -o preview
 ```

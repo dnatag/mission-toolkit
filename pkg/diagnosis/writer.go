@@ -3,7 +3,6 @@ package diagnosis
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -12,47 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Diagnosis represents a debug investigation with structured findings
-type Diagnosis struct {
-	ID         string    `yaml:"id"`
-	Status     string    `yaml:"status"`
-	Confidence string    `yaml:"confidence"`
-	Created    time.Time `yaml:"created"`
-	Symptom    string    `yaml:"-"`
-	Body       string    `yaml:"-"`
-}
-
-// ReadDiagnosis reads and parses a diagnosis.md file using pkg/md abstraction.
-// Returns an error if the file doesn't exist or has invalid format.
-func ReadDiagnosis(fs afero.Fs, diagnosisPath string) (*Diagnosis, error) {
-	content, err := afero.ReadFile(fs, diagnosisPath)
-	if err != nil {
-		return nil, fmt.Errorf("reading diagnosis file: %w", err)
-	}
-
-	doc, err := md.Parse(content)
-	if err != nil {
-		return nil, fmt.Errorf("parsing diagnosis: %w", err)
-	}
-
-	// Convert frontmatter map to Diagnosis struct via YAML marshaling
-	// This ensures type conversions (especially time.Time) are handled correctly
-	yamlData, err := yaml.Marshal(doc.Frontmatter)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling frontmatter: %w", err)
-	}
-
-	var diag Diagnosis
-	if err := yaml.Unmarshal(yamlData, &diag); err != nil {
-		return nil, fmt.Errorf("unmarshaling frontmatter: %w", err)
-	}
-
-	diag.Body = doc.Body
-	return &diag, nil
-}
-
-// WriteDiagnosis writes a diagnosis struct to file using pkg/md abstraction.
-// Creates the .mission directory if it doesn't exist.
+// WriteDiagnosis writes a Diagnosis struct to a diagnosis.md file using pkg/md abstraction.
 func WriteDiagnosis(fs afero.Fs, diagnosisPath string, diag *Diagnosis) error {
 	// Marshal diagnosis struct to YAML to get frontmatter fields
 	yamlData, err := yaml.Marshal(diag)
@@ -78,6 +37,61 @@ func WriteDiagnosis(fs afero.Fs, diagnosisPath string, diag *Diagnosis) error {
 	}
 
 	if err := afero.WriteFile(fs, diagnosisPath, content, 0644); err != nil {
+		return fmt.Errorf("writing diagnosis file: %w", err)
+	}
+
+	return nil
+}
+
+// CreateDiagnosis creates a new diagnosis.md file with initial structure.
+func CreateDiagnosis(fs afero.Fs, diagnosisPath string, symptom string) error {
+	if symptom == "" {
+		return fmt.Errorf("symptom cannot be empty")
+	}
+
+	diag := Diagnosis{
+		ID:         fmt.Sprintf("DIAG-%s", time.Now().Format("20060102-150405")),
+		Status:     "investigating",
+		Confidence: "low",
+		Created:    time.Now(),
+		Symptom:    symptom,
+	}
+
+	frontmatter, err := yaml.Marshal(diag)
+	if err != nil {
+		return fmt.Errorf("marshaling frontmatter: %w", err)
+	}
+
+	content := fmt.Sprintf(`---
+%s---
+
+## SYMPTOM
+%s
+
+## INVESTIGATION
+- [ ] Initial investigation pending
+
+## HYPOTHESES
+1. **[UNKNOWN]** Investigation not yet started
+
+## ROOT CAUSE
+To be determined
+
+## AFFECTED FILES
+- TBD
+
+## RECOMMENDED FIX
+To be determined after investigation
+
+## REPRODUCTION
+TBD
+`, string(frontmatter), symptom)
+
+	if err := fs.MkdirAll(".mission", 0755); err != nil {
+		return fmt.Errorf("creating .mission directory: %w", err)
+	}
+
+	if err := afero.WriteFile(fs, diagnosisPath, []byte(content), 0644); err != nil {
 		return fmt.Errorf("writing diagnosis file: %w", err)
 	}
 
@@ -156,74 +170,6 @@ func UpdateSection(fs afero.Fs, diagnosisPath string, section string, content st
 
 	diag.Body = strings.Join(result, "\n")
 	return WriteDiagnosis(fs, diagnosisPath, diag)
-}
-
-// CreateDiagnosis generates a new diagnosis.md file with the given symptom.
-// It creates a structured investigation template following the debug workflow design.
-func CreateDiagnosis(fs afero.Fs, diagnosisPath string, symptom string) error {
-	if symptom == "" {
-		return fmt.Errorf("symptom cannot be empty")
-	}
-
-	diag := Diagnosis{
-		ID:         fmt.Sprintf("DIAG-%s", time.Now().Format("20060102-150405")),
-		Status:     "investigating",
-		Confidence: "low",
-		Created:    time.Now(),
-		Symptom:    symptom,
-	}
-
-	frontmatter, err := yaml.Marshal(diag)
-	if err != nil {
-		return fmt.Errorf("marshaling frontmatter: %w", err)
-	}
-
-	content := fmt.Sprintf(`---
-%s---
-
-## SYMPTOM
-%s
-
-## INVESTIGATION
-- [ ] Initial investigation pending
-
-## HYPOTHESES
-1. **[UNKNOWN]** Investigation not yet started
-
-## ROOT CAUSE
-To be determined
-
-## AFFECTED FILES
-- TBD
-
-## RECOMMENDED FIX
-To be determined after investigation
-
-## REPRODUCTION
-TBD
-`, string(frontmatter), symptom)
-
-	if err := fs.MkdirAll(".mission", 0755); err != nil {
-		return fmt.Errorf("creating .mission directory: %w", err)
-	}
-
-	if err := afero.WriteFile(fs, diagnosisPath, []byte(content), 0644); err != nil {
-		return fmt.Errorf("writing diagnosis file: %w", err)
-	}
-
-	return nil
-}
-
-// DiagnosisExists checks if a diagnosis.md file exists
-func DiagnosisExists(fs afero.Fs, diagnosisPath string) (bool, error) {
-	_, err := fs.Stat(diagnosisPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
 }
 
 // UpdateList updates a list section (investigation, hypotheses, affected files) with optional append mode.
