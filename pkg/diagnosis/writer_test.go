@@ -59,9 +59,12 @@ func TestCreateDiagnosis(t *testing.T) {
 			require.Contains(t, contentStr, "## SYMPTOM")
 			require.Contains(t, contentStr, tt.symptom)
 			require.Contains(t, contentStr, "## INVESTIGATION")
+			require.Contains(t, contentStr, "- [ ] Initial investigation pending")
 			require.Contains(t, contentStr, "## HYPOTHESES")
+			require.Contains(t, contentStr, "- 1. **[UNKNOWN]** Investigation not yet started")
 			require.Contains(t, contentStr, "## ROOT CAUSE")
 			require.Contains(t, contentStr, "## AFFECTED FILES")
+			require.Contains(t, contentStr, "- TBD")
 			require.Contains(t, contentStr, "## RECOMMENDED FIX")
 			require.Contains(t, contentStr, "## REPRODUCTION")
 		})
@@ -86,7 +89,8 @@ func TestUpdateList(t *testing.T) {
 			validate: func(t *testing.T, content string) {
 				require.Contains(t, content, "- file1.go")
 				require.Contains(t, content, "- file2.go")
-				require.NotContains(t, content, "- TBD")
+				// Check that AFFECTED FILES section doesn't contain TBD
+				require.Contains(t, content, "## AFFECTED FILES\n- file1.go\n- file2.go")
 			},
 		},
 		{

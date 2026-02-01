@@ -56,7 +56,7 @@ func CreateDiagnosis(fs afero.Fs, diagnosisPath string, symptom string) error {
 - [ ] Initial investigation pending
 
 ## HYPOTHESES
-1. **[UNKNOWN]** Investigation not yet started
+- 1. **[UNKNOWN]** Investigation not yet started
 
 ## ROOT CAUSE
 To be determined
@@ -65,7 +65,7 @@ To be determined
 - TBD
 
 ## RECOMMENDED FIX
-To be determined after investigation
+- TBD
 
 ## REPRODUCTION
 TBD
