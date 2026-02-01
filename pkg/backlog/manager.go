@@ -5,20 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
-
-	"github.com/dnatag/mission-toolkit/pkg/md"
-	"gopkg.in/yaml.v3"
 )
-
-// BacklogMetadata represents the frontmatter metadata for backlog.md
-type BacklogMetadata struct {
-	LastUpdated time.Time `yaml:"last_updated"`
-	LastAction  string    `yaml:"last_action"`
-}
 
 // BacklogManager handles backlog file operations
 type BacklogManager struct {
@@ -33,9 +22,6 @@ func NewManager(missionDir string) *BacklogManager {
 		backlogPath: filepath.Join(missionDir, "backlog.md"),
 	}
 }
-
-// patternRegex matches [PATTERN:id][COUNT:n] format
-var patternRegex = regexp.MustCompile(`\[PATTERN:([^\]]+)\]\[COUNT:(\d+)\]`)
 
 // List returns backlog items, optionally including completed items and filtering by type
 func (m *BacklogManager) List(include []string, exclude []string) ([]string, error) {
@@ -142,55 +128,20 @@ func contains(slice []string, val string) bool {
 	return false
 }
 
-// getSectionType extracts the type from a section header
-func (m *BacklogManager) getSectionType(section string) string {
-	switch section {
-	case "## DECOMPOSED INTENTS":
-		return "decomposed"
-	case "## REFACTORING OPPORTUNITIES":
-		return "refactor"
-	case "## FUTURE ENHANCEMENTS":
-		return "future"
-	case "## FEATURES":
-		return "feature"
-	case "## BUGFIXES":
-		return "bugfix"
-	default:
-		return ""
-	}
-}
-
-// isInSection checks if the current section matches the item type
-func (m *BacklogManager) isInSection(sectionHeader, itemType string) bool {
-	expectedHeader := m.getSectionHeader(itemType)
-	return sectionHeader == expectedHeader
-}
-
-// findAndModifySection finds a section by header and applies a modifier function to insert items.
-// Returns the modified lines or an error if the section is not found.
-func (m *BacklogManager) findAndModifySection(lines []string, sectionHeader string, modifier func() []string) ([]string, error) {
-	result := make([]string, 0, len(lines)+10)
-
-	for i, line := range lines {
-		result = append(result, line)
-
-		if strings.TrimSpace(line) == sectionHeader {
-			// Find the end of this section
-			j := i + 1
-			for j < len(lines) && !strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") && strings.TrimSpace(lines[j]) != "" {
-				result = append(result, lines[j])
-				j++
-			}
-			// Apply modifier to get items to insert
-			newItems := modifier()
-			result = append(result, newItems...)
-			// Add remaining lines
-			result = append(result, lines[j:]...)
-			return result, nil
-		}
+// validateType validates the item type
+func (m *BacklogManager) validateType(itemType string) error {
+	validTypes := map[string]bool{
+		"decomposed": true,
+		"refactor":   true,
+		"future":     true,
+		"feature":    true,
+		"bugfix":     true,
 	}
 
-	return nil, fmt.Errorf("section %s not found in backlog", sectionHeader)
+	if !validTypes[itemType] {
+		return fmt.Errorf("invalid type: %s. Valid types: decomposed, refactor, future, feature, bugfix", itemType)
+	}
+	return nil
 }
 
 // Add adds a new item to the specified section.
@@ -399,147 +350,9 @@ func (m *BacklogManager) readBacklogContent() (string, error) {
 	return string(content), nil
 }
 
-// readBacklogWithMetadata reads backlog content and parses frontmatter metadata.
-// Returns the body content and metadata. If no frontmatter exists (legacy format),
-// returns empty metadata with zero values.
-func (m *BacklogManager) readBacklogWithMetadata() (string, *BacklogMetadata, error) {
-	content, err := os.ReadFile(m.backlogPath)
-	if err != nil {
-		return "", nil, fmt.Errorf("reading backlog file: %w", err)
-	}
-
-	// Parse document with frontmatter using pkg/md abstraction
-	doc, err := md.Parse(content)
-	if err != nil {
-		return "", nil, fmt.Errorf("parsing backlog: %w", err)
-	}
-
-	// Extract metadata if present (backward compatible with legacy format)
-	var metadata BacklogMetadata
-	if len(doc.Frontmatter) > 0 {
-		yamlData, err := yaml.Marshal(doc.Frontmatter)
-		if err != nil {
-			return "", nil, fmt.Errorf("marshaling frontmatter: %w", err)
-		}
-		if err := yaml.Unmarshal(yamlData, &metadata); err != nil {
-			return "", nil, fmt.Errorf("unmarshaling frontmatter: %w", err)
-		}
-	}
-
-	return doc.Body, &metadata, nil
-}
-
 // writeBacklogContent writes content to the backlog file
 func (m *BacklogManager) writeBacklogContent(content string) error {
 	return m.writeBacklogWithMetadata(content, "")
-}
-
-// writeBacklogWithMetadata writes content to the backlog file with frontmatter metadata.
-// The action parameter describes what operation was performed (e.g., "Added feature item").
-// Automatically sets last_updated to current time.
-func (m *BacklogManager) writeBacklogWithMetadata(content string, action string) error {
-	if err := os.MkdirAll(m.missionDir, 0755); err != nil {
-		return fmt.Errorf("creating mission directory: %w", err)
-	}
-
-	// Create frontmatter with metadata tracking
-	frontmatter := map[string]interface{}{
-		"last_updated": time.Now(),
-		"last_action":  action,
-	}
-
-	// Use pkg/md abstraction to write document with frontmatter
-	doc := &md.Document{
-		Frontmatter: frontmatter,
-		Body:        content,
-	}
-
-	data, err := doc.Write()
-	if err != nil {
-		return fmt.Errorf("writing document: %w", err)
-	}
-
-	if err := os.WriteFile(m.backlogPath, data, 0644); err != nil {
-		return fmt.Errorf("writing backlog file: %w", err)
-	}
-	return nil
-}
-
-// validateType validates the item type
-func (m *BacklogManager) validateType(itemType string) error {
-	validTypes := map[string]bool{
-		"decomposed": true,
-		"refactor":   true,
-		"future":     true,
-		"feature":    true,
-		"bugfix":     true,
-	}
-
-	if !validTypes[itemType] {
-		return fmt.Errorf("invalid type: %s. Valid types: decomposed, refactor, future, feature, bugfix", itemType)
-	}
-	return nil
-}
-
-// getSectionHeader returns the markdown header for the given type
-func (m *BacklogManager) getSectionHeader(itemType string) string {
-	switch itemType {
-	case "decomposed":
-		return "## DECOMPOSED INTENTS"
-	case "refactor":
-		return "## REFACTORING OPPORTUNITIES"
-	case "future":
-		return "## FUTURE ENHANCEMENTS"
-	case "feature":
-		return "## FEATURES"
-	case "bugfix":
-		return "## BUGFIXES"
-	default:
-		return ""
-	}
-}
-
-// GetPatternCount returns the occurrence count for a pattern ID.
-// Returns 0 if pattern not found.
-func (m *BacklogManager) GetPatternCount(patternID string) (int, error) {
-	if err := m.ensureBacklogExists(); err != nil {
-		return 0, err
-	}
-
-	body, _, err := m.readBacklogWithMetadata()
-	if err != nil {
-		return 0, err
-	}
-
-	for _, line := range strings.Split(body, "\n") {
-		matches := patternRegex.FindStringSubmatch(line)
-		if len(matches) == 3 && matches[1] == patternID {
-			count, _ := strconv.Atoi(matches[2])
-			return count, nil
-		}
-	}
-	return 0, nil
-}
-
-// incrementPatternCount increments the count for an existing pattern ID.
-func (m *BacklogManager) incrementPatternCount(patternID string) error {
-	body, _, err := m.readBacklogWithMetadata()
-	if err != nil {
-		return err
-	}
-
-	lines := strings.Split(body, "\n")
-	for i, line := range lines {
-		matches := patternRegex.FindStringSubmatch(line)
-		if len(matches) == 3 && matches[1] == patternID {
-			count, _ := strconv.Atoi(matches[2])
-			newCount := count + 1
-			lines[i] = patternRegex.ReplaceAllString(line, fmt.Sprintf("[PATTERN:%s][COUNT:%d]", patternID, newCount))
-			action := fmt.Sprintf("Incremented pattern %s count to %d", patternID, newCount)
-			return m.writeBacklogWithMetadata(strings.Join(lines, "\n"), action)
-		}
-	}
-	return fmt.Errorf("pattern not found: %s", patternID)
 }
 
 // Cleanup removes completed items from the COMPLETED section of the backlog.
@@ -616,25 +429,4 @@ func (m *BacklogManager) Cleanup(itemType string) (int, error) {
 	}
 
 	return removedCount, nil
-}
-
-// matchesItemType checks if a completed item matches the specified type.
-// Decomposed items contain "(from Epic:" marker.
-// This is a heuristic based on how items are typically added to the backlog.
-func (m *BacklogManager) matchesItemType(item, itemType string) bool {
-	switch itemType {
-	case "decomposed":
-		// Decomposed items typically have "(from Epic:" marker
-		return strings.Contains(item, "(from Epic:")
-	case "refactor":
-		// Refactor items typically have "Refactor" or "Extract" in the description
-		lowerItem := strings.ToLower(item)
-		return strings.Contains(lowerItem, "refactor") || strings.Contains(lowerItem, "extract")
-	case "future":
-		// Future items don't have specific markers, so we can't reliably identify them
-		// This will effectively not match any items unless explicitly marked
-		return false
-	default:
-		return false
-	}
 }
