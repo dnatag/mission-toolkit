@@ -77,12 +77,23 @@ var checkpointRestoreCmd = &cobra.Command{
 			}
 
 			// Restore all changes and clear checkpoints
-			count, err := svc.RestoreAll(missionID)
+			count, untrackedFiles, err := svc.RestoreAll(missionID)
 			if err != nil {
 				return fmt.Errorf("reverting all changes: %w", err)
 			}
 
 			fmt.Printf("Restored all changes, cleared %d checkpoint(s)\n", count)
+
+			// Warn about untracked files if any exist
+			if len(untrackedFiles) > 0 {
+				fmt.Println("\n⚠️  Warning: Untracked files detected (created during mission):")
+				for _, file := range untrackedFiles {
+					fmt.Printf("  - %s\n", file)
+				}
+				fmt.Println("\nTo remove these files, run:")
+				fmt.Println("  git clean -fd")
+			}
+
 			return nil
 		}
 

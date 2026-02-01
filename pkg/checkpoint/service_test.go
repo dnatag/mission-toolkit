@@ -784,9 +784,10 @@ func TestService_RestoreAll(t *testing.T) {
 	require.Equal(t, "modified", string(content))
 
 	// RestoreAll should revert to baseline
-	count, err := svc.RestoreAll(missionID)
+	count, untrackedFiles, err := svc.RestoreAll(missionID)
 	require.NoError(t, err)
 	require.Equal(t, 3, count) // 2 checkpoints + 1 baseline tag
+	require.Empty(t, untrackedFiles)
 
 	// Verify file reverted to initial state
 	content, err = afero.ReadFile(fs, scopeFile)
@@ -796,6 +797,46 @@ func TestService_RestoreAll(t *testing.T) {
 	// Verify all tags deleted
 	tags, _ := gitClient.ListTags(missionID)
 	require.Empty(t, tags)
+}
+
+func TestService_RestoreAll_WithUntrackedFiles(t *testing.T) {
+	fs, repo := setupTestRepo(t)
+
+	missionID := "test-restore-untracked"
+	scopeFile := "tracked.txt"
+	untrackedFile := "untracked.txt"
+	createMissionFile(t, fs, missionID, []string{scopeFile})
+
+	err := afero.WriteFile(fs, scopeFile, []byte("initial"), 0644)
+	require.NoError(t, err)
+
+	gitClient := internalgit.NewMemGitClient(repo, fs)
+	svc := NewServiceWithGit(fs, ".mission", gitClient)
+
+	// Create baseline checkpoint
+	_, err = svc.Create(missionID)
+	require.NoError(t, err)
+
+	// Create untracked file in git worktree (not in git)
+	wt, err := repo.Worktree()
+	require.NoError(t, err)
+	f, err := wt.Filesystem.Create(untrackedFile)
+	require.NoError(t, err)
+	_, err = f.Write([]byte("untracked content"))
+	require.NoError(t, err)
+	err = f.Close()
+	require.NoError(t, err)
+
+	// RestoreAll should succeed and report untracked file
+	count, untrackedFiles, err := svc.RestoreAll(missionID)
+	require.NoError(t, err)
+	require.Equal(t, 2, count) // 1 checkpoint + 1 baseline tag
+	require.Len(t, untrackedFiles, 1)
+	require.Contains(t, untrackedFiles, untrackedFile)
+
+	// Verify untracked file still exists in worktree
+	_, err = wt.Filesystem.Stat(untrackedFile)
+	require.NoError(t, err)
 }
 
 func TestService_RestoreAll_NoBaseline(t *testing.T) {
@@ -809,7 +850,7 @@ func TestService_RestoreAll_NoBaseline(t *testing.T) {
 	svc := NewServiceWithGit(fs, ".mission", gitClient)
 
 	// Try to restore without creating any checkpoints
-	_, err := svc.RestoreAll(missionID)
+	_, _, err := svc.RestoreAll(missionID)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "getting baseline commit")
 }

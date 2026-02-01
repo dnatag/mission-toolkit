@@ -280,3 +280,23 @@ func (c *MemGitClient) GetUnstagedFiles() ([]string, error) {
 	}
 	return files, nil
 }
+
+// GetUntrackedFiles returns files that exist in the working directory but are not tracked by git.
+func (c *MemGitClient) GetUntrackedFiles() ([]string, error) {
+	wt, err := c.repo.Worktree()
+	if err != nil {
+		return nil, err
+	}
+	status, err := wt.Status()
+	if err != nil {
+		return nil, err
+	}
+	var files []string
+	for path, s := range status {
+		// Only untracked files
+		if s.Worktree == git.Untracked {
+			files = append(files, path)
+		}
+	}
+	return files, nil
+}

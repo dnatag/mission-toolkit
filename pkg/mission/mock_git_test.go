@@ -52,3 +52,7 @@ func (m *MockGitClient) GetCommitParent(commitHash string) (string, error) {
 func (m *MockGitClient) GetUnstagedFiles() ([]string, error) {
 	return []string{}, nil
 }
+
+func (m *MockGitClient) GetUntrackedFiles() ([]string, error) {
+	return []string{}, nil
+}

@@ -116,34 +116,41 @@ func (s *Service) Clear(missionID string) (int, error) {
 }
 
 // RestoreAll reverts the working directory to the baseline commit (before any checkpoints)
-// and deletes all checkpoint tags. This is used by the --all flag to completely undo all
-// mission changes and clean up checkpoint history.
-func (s *Service) RestoreAll(missionID string) (int, error) {
+// and deletes all checkpoint tags. Returns the number of checkpoints cleared and a list of
+// untracked files that need manual cleanup. This is used by the --all flag to completely
+// undo all mission changes and clean up checkpoint history.
+func (s *Service) RestoreAll(missionID string) (int, []string, error) {
 	baselineTag := fmt.Sprintf("%s-baseline", missionID)
 	baselineHash, err := s.git.GetTagCommit(baselineTag)
 	if err != nil {
-		return 0, fmt.Errorf("getting baseline commit: %w", err)
+		return 0, nil, fmt.Errorf("getting baseline commit: %w", err)
 	}
 
 	scope, err := s.getScope()
 	if err != nil {
-		return 0, fmt.Errorf("reading mission scope: %w", err)
+		return 0, nil, fmt.Errorf("reading mission scope: %w", err)
 	}
 
 	if err := s.git.Restore(baselineTag, scope); err != nil {
-		return 0, fmt.Errorf("restoring files to baseline: %w", err)
+		return 0, nil, fmt.Errorf("restoring files to baseline: %w", err)
 	}
 
 	if err := s.git.SoftReset(baselineHash); err != nil {
-		return 0, fmt.Errorf("resetting HEAD to baseline: %w", err)
+		return 0, nil, fmt.Errorf("resetting HEAD to baseline: %w", err)
 	}
 
 	count, err := s.Clear(missionID)
 	if err != nil {
-		return 0, fmt.Errorf("clearing checkpoint tags: %w", err)
+		return 0, nil, fmt.Errorf("clearing checkpoint tags: %w", err)
 	}
 
-	return count, nil
+	// Check for untracked files after restore
+	untrackedFiles, err := s.git.GetUntrackedFiles()
+	if err != nil {
+		return count, nil, fmt.Errorf("checking for untracked files: %w", err)
+	}
+
+	return count, untrackedFiles, nil
 }
 
 // ConsolidateResult contains the result of a consolidate operation
