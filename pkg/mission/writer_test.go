@@ -406,7 +406,7 @@ func TestWriter_UpdateList_PlanEntries(t *testing.T) {
 		t.Fatalf("Write failed: %v", err)
 	}
 
-	// Update plan with new items
+	// Update plan with new items (with number prefixes)
 	newItems := []string{"3. Third step", "4. Fourth step"}
 	if err := writer.UpdateList("plan", newItems, false); err != nil {
 		t.Fatalf("UpdateList plan failed: %v", err)
@@ -417,12 +417,12 @@ func TestWriter_UpdateList_PlanEntries(t *testing.T) {
 		t.Fatalf("Read failed: %v", err)
 	}
 
-	// Should contain properly formatted plan entries
+	// Should preserve number prefixes and add checkbox
 	if !strings.Contains(updated.Body, "- [ ] 3. Third step") {
-		t.Error("Body missing properly formatted third step")
+		t.Errorf("Body missing properly formatted third step, got: %s", updated.Body)
 	}
 	if !strings.Contains(updated.Body, "- [ ] 4. Fourth step") {
-		t.Error("Body missing properly formatted fourth step")
+		t.Errorf("Body missing properly formatted fourth step, got: %s", updated.Body)
 	}
 
 	// Should preserve VERIFICATION section
@@ -843,6 +843,44 @@ func TestWriter_UpdateList_EmptyItems(t *testing.T) {
 	updated, err := NewReader(fs, path).Read()
 	require.NoError(t, err)
 	require.Contains(t, updated.Body, "## SCOPE")
+}
+
+func TestWriter_UpdateList_PlanWithNumberPrefixes(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "/test/mission.md"
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
+
+	mission := &Mission{
+		ID:        "test-123",
+		Status:    "planned",
+		Iteration: 1,
+		Body:      "## PLAN\n",
+	}
+
+	err := writer.Write(mission)
+	require.NoError(t, err)
+
+	// Bug reproduction: items with number prefixes should preserve numbers and add checkboxes
+	items := []string{"1. First step", "2. Second step", "3. Third step"}
+	err = writer.UpdateList("plan", items, false)
+	require.NoError(t, err)
+
+	updated, err := NewReader(fs, path).Read()
+	require.NoError(t, err)
+
+	// Verify numbers are preserved and checkboxes added
+	require.Contains(t, updated.Body, "- [ ] 1. First step")
+	require.Contains(t, updated.Body, "- [ ] 2. Second step")
+	require.Contains(t, updated.Body, "- [ ] 3. Third step")
+
+	// Verify incorrect formats are NOT present
+	require.NotContains(t, updated.Body, "- 1. First step")
+	require.NotContains(t, updated.Body, "- [ ] First step\n")
 }
 
 // Edge case: MarkPlanStepComplete with out-of-range step
