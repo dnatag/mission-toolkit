@@ -76,8 +76,8 @@ var checkpointRestoreCmd = &cobra.Command{
 				return fmt.Errorf("initializing checkpoint service: %w", err)
 			}
 
-			// Clear all checkpoints (which reverts all changes)
-			count, err := svc.Clear(missionID)
+			// Restore all changes and clear checkpoints
+			count, err := svc.RestoreAll(missionID)
 			if err != nil {
 				return fmt.Errorf("reverting all changes: %w", err)
 			}

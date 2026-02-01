@@ -115,6 +115,37 @@ func (s *Service) Clear(missionID string) (int, error) {
 	return len(tags), nil
 }
 
+// RestoreAll reverts the working directory to the baseline commit (before any checkpoints)
+// and deletes all checkpoint tags. This is used by the --all flag to completely undo all
+// mission changes and clean up checkpoint history.
+func (s *Service) RestoreAll(missionID string) (int, error) {
+	baselineTag := fmt.Sprintf("%s-baseline", missionID)
+	baselineHash, err := s.git.GetTagCommit(baselineTag)
+	if err != nil {
+		return 0, fmt.Errorf("getting baseline commit: %w", err)
+	}
+
+	scope, err := s.getScope()
+	if err != nil {
+		return 0, fmt.Errorf("reading mission scope: %w", err)
+	}
+
+	if err := s.git.Restore(baselineTag, scope); err != nil {
+		return 0, fmt.Errorf("restoring files to baseline: %w", err)
+	}
+
+	if err := s.git.SoftReset(baselineHash); err != nil {
+		return 0, fmt.Errorf("resetting HEAD to baseline: %w", err)
+	}
+
+	count, err := s.Clear(missionID)
+	if err != nil {
+		return 0, fmt.Errorf("clearing checkpoint tags: %w", err)
+	}
+
+	return count, nil
+}
+
 // ConsolidateResult contains the result of a consolidate operation
 type ConsolidateResult struct {
 	CommitHash    string
