@@ -332,7 +332,7 @@ func TestWriter_UpdateList(t *testing.T) {
 	}
 
 	// Verify exactly one empty line between sections
-	expected := "## INTENT\nTest\n\n## SCOPE\nfile1.go\nfile2.go\n\n## PLAN\n- [ ] Step 1\n"
+	expected := "## INTENT\nTest\n\n## SCOPE\n- file1.go\n- file2.go\n\n## PLAN\n- [ ] Step 1\n"
 	if updated.Body != expected {
 		t.Errorf("Incorrect spacing. Expected:\n%q\nGot:\n%q", expected, updated.Body)
 	}
@@ -352,7 +352,7 @@ func TestWriter_UpdateListAppend(t *testing.T) {
 		ID:        "test-123",
 		Status:    "planning",
 		Iteration: 1,
-		Body:      "## INTENT\nTest\n\n## SCOPE\nexisting1.go\nexisting2.go\n",
+		Body:      "## INTENT\nTest\n\n## SCOPE\n- existing1.go\n- existing2.go\n",
 	}
 
 	if err := writer.Write(mission); err != nil {
