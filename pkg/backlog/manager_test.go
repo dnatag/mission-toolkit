@@ -1105,6 +1105,8 @@ func TestBacklogManager_FrontmatterMetadataTracking(t *testing.T) {
 	}
 }
 
+// TestBacklogManager_BackwardCompatibility verifies that backlog files without
+// frontmatter continue to work correctly (backward compatibility).
 func TestBacklogManager_BackwardCompatibility(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
@@ -1165,5 +1167,74 @@ func TestBacklogManager_BackwardCompatibility(t *testing.T) {
 	// Verify legacy item is still present
 	if !strings.Contains(string(content), "Legacy item") {
 		t.Error("Legacy item should be preserved")
+	}
+}
+
+// TestBacklogManager_NoFrontmatterDuplication verifies that frontmatter is not
+// duplicated after multiple update operations (bug fix test).
+func TestBacklogManager_NoFrontmatterDuplication(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Create initial backlog
+	if err := manager.ensureBacklogExists(); err != nil {
+		t.Fatalf("Failed to create backlog: %v", err)
+	}
+
+	// Perform multiple operations that trigger frontmatter writes
+	if err := manager.Add("Feature 1", "feature"); err != nil {
+		t.Fatalf("Failed to add feature 1: %v", err)
+	}
+
+	if err := manager.Add("Feature 2", "feature"); err != nil {
+		t.Fatalf("Failed to add feature 2: %v", err)
+	}
+
+	if err := manager.Add("Bugfix 1", "bugfix"); err != nil {
+		t.Fatalf("Failed to add bugfix: %v", err)
+	}
+
+	if err := manager.Complete("Feature 1"); err != nil {
+		t.Fatalf("Failed to complete feature: %v", err)
+	}
+
+	// Read the backlog file
+	content, err := os.ReadFile(manager.backlogPath)
+	if err != nil {
+		t.Fatalf("Failed to read backlog: %v", err)
+	}
+
+	// Count frontmatter delimiters (should be exactly 2: opening and closing)
+	// Bug: Before fix, multiple frontmatter blocks would accumulate (6+ delimiters)
+	// Fix: After fix, only one frontmatter block exists (2 delimiters)
+	lines := strings.Split(string(content), "\n")
+	delimiterCount := 0
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "---" {
+			delimiterCount++
+		}
+	}
+
+	if delimiterCount != 2 {
+		t.Errorf("Expected 2 frontmatter delimiters (opening and closing), got %d", delimiterCount)
+		t.Logf("Backlog content:\n%s", string(content))
+	}
+
+	// Verify frontmatter is at the beginning
+	if !strings.HasPrefix(string(content), "---\n") {
+		t.Error("Backlog should start with frontmatter delimiter")
+	}
+
+	// Verify only one frontmatter block exists
+	firstDelimiter := strings.Index(string(content), "---")
+	secondDelimiter := strings.Index(string(content)[firstDelimiter+3:], "---")
+	if secondDelimiter == -1 {
+		t.Error("Missing closing frontmatter delimiter")
+	} else {
+		// Check if there's a third delimiter (which would indicate duplication)
+		thirdDelimiter := strings.Index(string(content)[firstDelimiter+secondDelimiter+6:], "---")
+		if thirdDelimiter != -1 {
+			t.Error("Found duplicate frontmatter block (third delimiter detected)")
+		}
 	}
 }

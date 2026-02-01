@@ -227,13 +227,13 @@ func (m *BacklogManager) AddWithPattern(description, itemType, patternID string)
 		}
 	}
 
-	content, err := m.readBacklogContent()
+	body, _, err := m.readBacklogWithMetadata()
 	if err != nil {
 		return err
 	}
 
 	sectionHeader := m.getSectionHeader(itemType)
-	lines := strings.Split(content, "\n")
+	lines := strings.Split(body, "\n")
 
 	result, err := m.findAndModifySection(lines, sectionHeader, func() []string {
 		if patternID != "" {
@@ -261,13 +261,13 @@ func (m *BacklogManager) AddMultiple(descriptions []string, itemType string) err
 		return err
 	}
 
-	content, err := m.readBacklogContent()
+	body, _, err := m.readBacklogWithMetadata()
 	if err != nil {
 		return err
 	}
 
 	sectionHeader := m.getSectionHeader(itemType)
-	lines := strings.Split(content, "\n")
+	lines := strings.Split(body, "\n")
 
 	result, err := m.findAndModifySection(lines, sectionHeader, func() []string {
 		items := make([]string, len(descriptions))
@@ -290,12 +290,12 @@ func (m *BacklogManager) Complete(itemText string) error {
 		return err
 	}
 
-	content, err := m.readBacklogContent()
+	body, _, err := m.readBacklogWithMetadata()
 	if err != nil {
 		return err
 	}
 
-	lines := strings.Split(content, "\n")
+	lines := strings.Split(body, "\n")
 	result := make([]string, 0, len(lines))
 	var completedItem string
 	itemFound := false
@@ -506,12 +506,12 @@ func (m *BacklogManager) GetPatternCount(patternID string) (int, error) {
 		return 0, err
 	}
 
-	content, err := m.readBacklogContent()
+	body, _, err := m.readBacklogWithMetadata()
 	if err != nil {
 		return 0, err
 	}
 
-	for _, line := range strings.Split(content, "\n") {
+	for _, line := range strings.Split(body, "\n") {
 		matches := patternRegex.FindStringSubmatch(line)
 		if len(matches) == 3 && matches[1] == patternID {
 			count, _ := strconv.Atoi(matches[2])
@@ -523,12 +523,12 @@ func (m *BacklogManager) GetPatternCount(patternID string) (int, error) {
 
 // incrementPatternCount increments the count for an existing pattern ID.
 func (m *BacklogManager) incrementPatternCount(patternID string) error {
-	content, err := m.readBacklogContent()
+	body, _, err := m.readBacklogWithMetadata()
 	if err != nil {
 		return err
 	}
 
-	lines := strings.Split(content, "\n")
+	lines := strings.Split(body, "\n")
 	for i, line := range lines {
 		matches := patternRegex.FindStringSubmatch(line)
 		if len(matches) == 3 && matches[1] == patternID {
@@ -562,12 +562,12 @@ func (m *BacklogManager) Cleanup(itemType string) (int, error) {
 		return 0, err
 	}
 
-	content, err := m.readBacklogContent()
+	body, _, err := m.readBacklogWithMetadata()
 	if err != nil {
 		return 0, err
 	}
 
-	lines := strings.Split(content, "\n")
+	lines := strings.Split(body, "\n")
 	result := make([]string, 0, len(lines))
 	inCompletedSection := false
 	removedCount := 0
