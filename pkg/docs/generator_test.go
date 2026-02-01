@@ -125,3 +125,106 @@ func TestGenerateMarkdown_UsageLineUsesFullName(t *testing.T) {
 		t.Error("Usage line should NOT contain subcommand-only path 'm clarify'")
 	}
 }
+
+func TestGenerateSchema(t *testing.T) {
+	rootCmd := &cobra.Command{Use: "m", Short: "Test CLI"}
+	initCmd := &cobra.Command{Use: "init", Short: "Initialize"}
+	rootCmd.AddCommand(initCmd)
+
+	schema := GenerateSchema(rootCmd)
+
+	if len(schema.Commands) != 1 {
+		t.Errorf("expected 1 command, got %d", len(schema.Commands))
+	}
+	if schema.Commands[0].Name != "init" {
+		t.Errorf("expected command 'init', got '%s'", schema.Commands[0].Name)
+	}
+	if schema.Commands[0].Short != "Initialize" {
+		t.Errorf("expected short 'Initialize', got '%s'", schema.Commands[0].Short)
+	}
+}
+
+func TestGenerateCondensedMarkdown(t *testing.T) {
+	rootCmd := &cobra.Command{Use: "m", Short: "Test CLI"}
+	analyzeCmd := &cobra.Command{Use: "analyze", Short: "Analysis tools"}
+	intentCmd := &cobra.Command{Use: "intent", Short: "Analyze intent"}
+	intentCmd.Flags().String("input", "", "User input")
+	analyzeCmd.AddCommand(intentCmd)
+	rootCmd.AddCommand(analyzeCmd)
+
+	md := GenerateCondensedMarkdown(rootCmd)
+
+	if !strings.Contains(md, "# CLI Reference (Condensed)") {
+		t.Error("expected condensed header")
+	}
+	if !strings.Contains(md, "**`m analyze`**") {
+		t.Error("expected analyze command")
+	}
+	if !strings.Contains(md, "`--input`") {
+		t.Error("expected --input flag")
+	}
+}
+
+func TestTraverseCommand_FlagHandling(t *testing.T) {
+	cmd := &cobra.Command{Use: "test", Short: "Test"}
+	cmd.Flags().StringP("output", "o", "default.txt", "Output file")
+	cmd.Flags().Bool("verbose", false, "Verbose mode")
+
+	schema := TraverseCommand(cmd)
+
+	if len(schema.Flags) != 2 {
+		t.Fatalf("expected 2 flags, got %d", len(schema.Flags))
+	}
+
+	// Verify flag with shorthand and default value
+	outputFlag := schema.Flags[0]
+	if outputFlag.Name != "output" {
+		t.Errorf("expected flag name 'output', got '%s'", outputFlag.Name)
+	}
+	if outputFlag.Shorthand != "o" {
+		t.Errorf("expected shorthand 'o', got '%s'", outputFlag.Shorthand)
+	}
+	if outputFlag.Default != "default.txt" {
+		t.Errorf("expected default 'default.txt', got '%s'", outputFlag.Default)
+	}
+	if outputFlag.Usage != "Output file" {
+		t.Errorf("expected usage 'Output file', got '%s'", outputFlag.Usage)
+	}
+
+	// Verify flag without shorthand
+	verboseFlag := schema.Flags[1]
+	if verboseFlag.Name != "verbose" {
+		t.Errorf("expected flag name 'verbose', got '%s'", verboseFlag.Name)
+	}
+	if verboseFlag.Shorthand != "" {
+		t.Errorf("expected empty shorthand, got '%s'", verboseFlag.Shorthand)
+	}
+	if verboseFlag.Default != "false" {
+		t.Errorf("expected default 'false', got '%s'", verboseFlag.Default)
+	}
+}
+
+func TestGenerateCondensedMarkdown_FlagFormatting(t *testing.T) {
+	rootCmd := &cobra.Command{Use: "m", Short: "Test CLI"}
+	checkCmd := &cobra.Command{Use: "check", Short: "Check input"}
+	checkCmd.Flags().StringP("input", "i", "", "Input text")
+	checkCmd.Flags().Bool("strict", false, "Strict mode")
+	rootCmd.AddCommand(checkCmd)
+
+	md := GenerateCondensedMarkdown(rootCmd)
+
+	if !strings.Contains(md, "`-i/--input`") {
+		t.Error("expected shorthand flag format '-i/--input'")
+	}
+	if !strings.Contains(md, "`--strict`") {
+		t.Error("expected long-only flag format '--strict'")
+	}
+}
+
+func TestTraverseCommands_EmptyList(t *testing.T) {
+	schemas := TraverseCommands([]*cobra.Command{})
+
+	if len(schemas) != 0 {
+		t.Errorf("expected 0 commands, got %d", len(schemas))
+	}
+}
