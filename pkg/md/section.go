@@ -5,6 +5,12 @@ package md
 import (
 	"regexp"
 	"strings"
+	"sync"
+)
+
+var (
+	// regexCache caches compiled regex patterns for section extraction
+	regexCache sync.Map
 )
 
 // findSection locates a section header in markdown body and returns its line index.
@@ -26,8 +32,18 @@ func findSection(body, sectionName string) int {
 // Section names are case-insensitive. Content is trimmed of leading/trailing whitespace.
 // Returns empty string if section not found or section is empty.
 func extractSection(body, sectionName string) string {
-	pattern := "(?s)## " + regexp.QuoteMeta(strings.ToUpper(sectionName)) + "\\s*\\n(.*?)(?:(?:\\n##)|$)"
-	re := regexp.MustCompile(pattern)
+	upperName := strings.ToUpper(sectionName)
+	pattern := "(?s)## " + regexp.QuoteMeta(upperName) + "\\s*\\n(.*?)(?:(?:\\n##)|$)"
+
+	// Check cache first
+	var re *regexp.Regexp
+	if cached, ok := regexCache.Load(pattern); ok {
+		re = cached.(*regexp.Regexp)
+	} else {
+		re = regexp.MustCompile(pattern)
+		regexCache.Store(pattern, re)
+	}
+
 	matches := re.FindStringSubmatch(body)
 
 	if len(matches) > 1 {
@@ -106,26 +122,47 @@ func updateSectionContent(body, sectionName, content string) string {
 	idx := findSection(body, sectionName)
 	if idx == -1 {
 		// Section doesn't exist, append it
+		var builder strings.Builder
+		builder.Grow(len(body) + len(sectionName) + len(content) + 10)
+		builder.WriteString(body)
 		if body != "" && !strings.HasSuffix(body, "\n") {
-			body += "\n"
+			builder.WriteString("\n")
 		}
-		return body + "\n## " + strings.ToUpper(sectionName) + "\n" + content
+		builder.WriteString("\n## ")
+		builder.WriteString(strings.ToUpper(sectionName))
+		builder.WriteString("\n")
+		builder.WriteString(content)
+		return builder.String()
 	}
 
 	lines := strings.Split(body, "\n")
 	nextIdx := skipToNextSection(body, idx)
 
 	// Build result with section header, new content, and remaining sections
-	result := make([]string, 0, len(lines))
-	result = append(result, lines[:idx+1]...)
-	result = append(result, content)
+	var builder strings.Builder
+	builder.Grow(len(body) + len(content))
+
+	// Write lines before and including section header
+	for i := 0; i <= idx; i++ {
+		if i > 0 {
+			builder.WriteString("\n")
+		}
+		builder.WriteString(lines[i])
+	}
+	builder.WriteString("\n")
+	builder.WriteString(content)
 
 	if nextIdx != -1 {
-		result = append(result, "")
-		result = append(result, lines[nextIdx:]...)
+		builder.WriteString("\n\n")
+		for i := nextIdx; i < len(lines); i++ {
+			if i > nextIdx {
+				builder.WriteString("\n")
+			}
+			builder.WriteString(lines[i])
+		}
 	}
 
-	return strings.Join(result, "\n")
+	return builder.String()
 }
 
 // updateSectionList replaces or appends list items to a section.

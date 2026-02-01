@@ -393,7 +393,6 @@ func TestDocument_UpdateSectionList(t *testing.T) {
 		body        string
 		sectionName string
 		items       []string
-		appendMode  bool
 		want        string
 	}{
 		{
@@ -406,29 +405,9 @@ func TestDocument_UpdateSectionList(t *testing.T) {
 Steps`,
 			sectionName: "SCOPE",
 			items:       []string{"file3.go", "file4.go"},
-			appendMode:  false,
 			want: `## SCOPE
 - file3.go
 - file4.go
-
-## PLAN
-Steps`,
-		},
-		{
-			name: "append list items",
-			body: `## SCOPE
-- file1.go
-- file2.go
-
-## PLAN
-Steps`,
-			sectionName: "SCOPE",
-			items:       []string{"file3.go"},
-			appendMode:  true,
-			want: `## SCOPE
-- file1.go
-- file2.go
-- file3.go
 
 ## PLAN
 Steps`,
@@ -438,7 +417,6 @@ Steps`,
 			body:        "## INTENT\nContent",
 			sectionName: "SCOPE",
 			items:       []string{"file1.go", "file2.go"},
-			appendMode:  false,
 			want: `## INTENT
 Content
 
@@ -451,8 +429,45 @@ Content
 			body:        "## SCOPE\n- file1.go",
 			sectionName: "SCOPE",
 			items:       []string{},
-			appendMode:  false,
 			want:        "## SCOPE\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doc := &Document{Body: tt.body}
+			err := doc.UpdateSectionList(tt.sectionName, tt.items)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, doc.Body)
+		})
+	}
+}
+
+func TestDocument_AppendSectionList(t *testing.T) {
+	tests := []struct {
+		name        string
+		body        string
+		sectionName string
+		items       []string
+		want        string
+	}{
+		{
+			name: "append list items",
+			body: `## SCOPE
+- file1.go
+- file2.go
+
+## PLAN
+Steps`,
+			sectionName: "SCOPE",
+			items:       []string{"file3.go"},
+			want: `## SCOPE
+- file1.go
+- file2.go
+- file3.go
+
+## PLAN
+Steps`,
 		},
 		{
 			name: "append to empty section",
@@ -462,19 +477,30 @@ Content
 Steps`,
 			sectionName: "SCOPE",
 			items:       []string{"file1.go"},
-			appendMode:  true,
 			want: `## SCOPE
 - file1.go
 
 ## PLAN
 Steps`,
 		},
+		{
+			name:        "append to new section",
+			body:        "## INTENT\nContent",
+			sectionName: "SCOPE",
+			items:       []string{"file1.go", "file2.go"},
+			want: `## INTENT
+Content
+
+## SCOPE
+- file1.go
+- file2.go`,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			doc := &Document{Body: tt.body}
-			err := doc.UpdateSectionList(tt.sectionName, tt.items, tt.appendMode)
+			err := doc.AppendSectionList(tt.sectionName, tt.items)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, doc.Body)
 		})

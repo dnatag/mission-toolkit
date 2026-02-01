@@ -119,16 +119,25 @@ func (d *Document) UpdateSectionContent(name, content string) error {
 	return nil
 }
 
-// UpdateSectionList replaces or appends list items to a section.
+// UpdateSectionList replaces list items in a section.
 // Section names are case-insensitive. Items are formatted as "- item".
-// If appendMode is true, new items are added to existing items.
-// If appendMode is false, section content is replaced with new items.
 // If section doesn't exist, it will be created.
-func (d *Document) UpdateSectionList(name string, items []string, appendMode bool) error {
+func (d *Document) UpdateSectionList(name string, items []string) error {
 	if err := validateSectionName(name); err != nil {
 		return err
 	}
-	d.Body = updateSectionList(d.Body, name, items, appendMode)
+	d.Body = updateSectionList(d.Body, name, items, false)
+	return nil
+}
+
+// AppendSectionList appends list items to a section.
+// Section names are case-insensitive. Items are formatted as "- item".
+// If section doesn't exist, it will be created with the items.
+func (d *Document) AppendSectionList(name string, items []string) error {
+	if err := validateSectionName(name); err != nil {
+		return err
+	}
+	d.Body = updateSectionList(d.Body, name, items, true)
 	return nil
 }
 
