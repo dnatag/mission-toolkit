@@ -1,3 +1,5 @@
+// Package diagnosis provides functions for managing diagnosis.md files with YAML frontmatter.
+// It uses the md.Document abstraction for consistent markdown handling.
 package diagnosis
 
 import (
@@ -8,28 +10,11 @@ import (
 
 	"github.com/dnatag/mission-toolkit/pkg/md"
 	"github.com/spf13/afero"
-	"gopkg.in/yaml.v3"
 )
 
 // WriteDiagnosis writes a Diagnosis struct to a diagnosis.md file using pkg/md abstraction.
 func WriteDiagnosis(fs afero.Fs, diagnosisPath string, diag *Diagnosis) error {
-	// Marshal diagnosis struct to YAML to get frontmatter fields
-	yamlData, err := yaml.Marshal(diag)
-	if err != nil {
-		return fmt.Errorf("marshaling diagnosis: %w", err)
-	}
-
-	// Unmarshal into map for md.Document
-	var frontmatter map[string]interface{}
-	if err := yaml.Unmarshal(yamlData, &frontmatter); err != nil {
-		return fmt.Errorf("unmarshaling to map: %w", err)
-	}
-
-	// Use pkg/md to write document with frontmatter
-	doc := &md.Document{
-		Frontmatter: frontmatter,
-		Body:        diag.Body,
-	}
+	doc := diagnosisToDocument(diag)
 
 	content, err := doc.Write()
 	if err != nil {
@@ -57,15 +42,14 @@ func CreateDiagnosis(fs afero.Fs, diagnosisPath string, symptom string) error {
 		Symptom:    symptom,
 	}
 
-	frontmatter, err := yaml.Marshal(diag)
-	if err != nil {
-		return fmt.Errorf("marshaling frontmatter: %w", err)
-	}
-
-	content := fmt.Sprintf(`---
-%s---
-
-## SYMPTOM
+	doc := &md.Document{
+		Frontmatter: map[string]interface{}{
+			"id":         diag.ID,
+			"status":     diag.Status,
+			"confidence": diag.Confidence,
+			"created":    diag.Created,
+		},
+		Body: fmt.Sprintf(`## SYMPTOM
 %s
 
 ## INVESTIGATION
@@ -85,13 +69,19 @@ To be determined after investigation
 
 ## REPRODUCTION
 TBD
-`, string(frontmatter), symptom)
+`, symptom),
+	}
+
+	content, err := doc.Write()
+	if err != nil {
+		return fmt.Errorf("writing document: %w", err)
+	}
 
 	if err := fs.MkdirAll(".mission", 0755); err != nil {
 		return fmt.Errorf("creating .mission directory: %w", err)
 	}
 
-	if err := afero.WriteFile(fs, diagnosisPath, []byte(content), 0644); err != nil {
+	if err := afero.WriteFile(fs, diagnosisPath, content, 0644); err != nil {
 		return fmt.Errorf("writing diagnosis file: %w", err)
 	}
 
@@ -110,66 +100,20 @@ func UpdateSection(fs afero.Fs, diagnosisPath string, section string, content st
 		return fmt.Errorf("content cannot be empty")
 	}
 
-	diag, err := ReadDiagnosis(fs, diagnosisPath)
-	if err != nil {
-		return fmt.Errorf("reading diagnosis: %w", err)
-	}
+	return modifyDiagnosis(fs, diagnosisPath, func(doc *md.Document) error {
+		normalizedSection := normalizeSection(section)
 
-	lines := strings.Split(diag.Body, "\n")
-	var result []string
-	// Normalize section name: replace hyphens with spaces for matching
-	normalizedSection := strings.ReplaceAll(strings.ToUpper(section), "-", " ")
-	sectionHeader := "## " + normalizedSection
-	foundSection := false
-	upperSection := normalizedSection
-	isListSection := upperSection == "INVESTIGATION" || upperSection == "HYPOTHESES" || upperSection == "AFFECTED FILES"
-
-	for i, line := range lines {
-		if strings.TrimSpace(line) == sectionHeader {
-			foundSection = true
-			result = append(result, line)
-
-			if isListSection {
-				// For list sections, append to existing content (skip placeholders)
-				j := i + 1
-				for ; j < len(lines); j++ {
-					if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
-						break
-					}
-					line := strings.TrimSpace(lines[j])
-					// Skip placeholder lines
-					if line != "- [ ] Initial investigation pending" &&
-						line != "1. **[UNKNOWN]** Investigation not yet started" &&
-						line != "- TBD" {
-						result = append(result, lines[j])
-					}
-				}
-				result = append(result, content, "")
-				if j < len(lines) {
-					result = append(result, lines[j:]...)
-				}
-			} else {
-				// For text sections, replace content
-				result = append(result, content, "")
-				for j := i + 1; j < len(lines); j++ {
-					if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
-						result = append(result, lines[j:]...)
-						break
-					}
-				}
+		if isListSection(normalizedSection) {
+			if err := doc.AppendSectionList(normalizedSection, []string{strings.TrimPrefix(content, "- ")}); err != nil {
+				return fmt.Errorf("appending to section: %w", err)
 			}
-			break
+		} else {
+			if err := doc.UpdateSectionContent(normalizedSection, content); err != nil {
+				return fmt.Errorf("updating section: %w", err)
+			}
 		}
-		result = append(result, line)
-	}
-
-	if !foundSection {
-		// Add new section at end
-		result = append(result, "", sectionHeader, content)
-	}
-
-	diag.Body = strings.Join(result, "\n")
-	return WriteDiagnosis(fs, diagnosisPath, diag)
+		return nil
+	})
 }
 
 // UpdateList updates a list section (investigation, hypotheses, affected files) with optional append mode.
@@ -184,100 +128,82 @@ func UpdateList(fs afero.Fs, diagnosisPath string, section string, items []strin
 		return fmt.Errorf("items cannot be empty")
 	}
 
+	return modifyDiagnosis(fs, diagnosisPath, func(doc *md.Document) error {
+		normalizedSection := normalizeSection(section)
+		formattedItems := formatItems(normalizedSection, items)
+
+		if appendMode {
+			if err := doc.AppendSectionList(normalizedSection, formattedItems); err != nil {
+				return fmt.Errorf("appending to section: %w", err)
+			}
+		} else {
+			if err := doc.UpdateSectionList(normalizedSection, formattedItems); err != nil {
+				return fmt.Errorf("updating section: %w", err)
+			}
+		}
+		return nil
+	})
+}
+
+// diagnosisToDocument converts a Diagnosis to an md.Document.
+func diagnosisToDocument(diag *Diagnosis) *md.Document {
+	return &md.Document{
+		Frontmatter: map[string]interface{}{
+			"id":         diag.ID,
+			"status":     diag.Status,
+			"confidence": diag.Confidence,
+			"created":    diag.Created,
+		},
+		Body: diag.Body,
+	}
+}
+
+// modifyDiagnosis reads a diagnosis, applies a modification function to its document, and writes it back.
+func modifyDiagnosis(fs afero.Fs, diagnosisPath string, modifyFn func(*md.Document) error) error {
 	diag, err := ReadDiagnosis(fs, diagnosisPath)
 	if err != nil {
 		return fmt.Errorf("reading diagnosis: %w", err)
 	}
 
-	lines := strings.Split(diag.Body, "\n")
-	var result []string
-	// Normalize section name: replace hyphens with spaces for matching
-	normalizedSection := strings.ReplaceAll(strings.ToUpper(section), "-", " ")
-	sectionHeader := "## " + normalizedSection
-	foundSection := false
-	lineIndex := 0
-
-	for lineIndex < len(lines) {
-		currentLine := lines[lineIndex]
-
-		if strings.TrimSpace(currentLine) == sectionHeader {
-			result = append(result, currentLine)
-
-			if appendMode {
-				existingItems := extractExistingItems(lines, lineIndex+1)
-				result = append(result, existingItems...)
-			}
-
-			addFormattedItems(&result, normalizedSection, items)
-
-			foundSection = true
-			nextSectionIndex := skipSectionContent(lines, lineIndex+1)
-			if nextSectionIndex < len(lines) {
-				result = append(result, "")
-			}
-			lineIndex = nextSectionIndex
-			continue
-		}
-
-		result = append(result, currentLine)
-		lineIndex++
+	doc := diagnosisToDocument(diag)
+	if err := modifyFn(doc); err != nil {
+		return err
 	}
 
-	if !foundSection {
-		result = append(result, "", sectionHeader)
-		addFormattedItems(&result, normalizedSection, items)
-	}
-
-	diag.Body = strings.Join(result, "\n")
+	diag.Body = doc.Body
 	return WriteDiagnosis(fs, diagnosisPath, diag)
 }
 
-// extractExistingItems collects existing items from a section.
-func extractExistingItems(lines []string, startIndex int) []string {
-	var existingItems []string
-	for j := startIndex; j < len(lines); j++ {
-		if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
-			break
-		}
-		line := strings.TrimSpace(lines[j])
-		// Skip placeholder lines
-		if line != "" && line != "- [ ] Initial investigation pending" &&
-			line != "1. **[UNKNOWN]** Investigation not yet started" &&
-			line != "- TBD" {
-			existingItems = append(existingItems, lines[j])
-		}
-	}
-	return existingItems
+// normalizeSection normalizes section names to uppercase with spaces instead of hyphens.
+func normalizeSection(section string) string {
+	return strings.ReplaceAll(strings.ToUpper(section), "-", " ")
 }
 
-// skipSectionContent skips content until the next section and returns the index.
-func skipSectionContent(lines []string, startIndex int) int {
-	for j := startIndex; j < len(lines); j++ {
-		if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
-			return j
-		}
-	}
-	return len(lines)
+// isListSection checks if a section is a list section.
+func isListSection(normalizedSection string) bool {
+	return normalizedSection == "INVESTIGATION" ||
+		normalizedSection == "HYPOTHESES" ||
+		normalizedSection == "AFFECTED FILES"
 }
 
-// addFormattedItems adds items with proper formatting based on section type.
-func addFormattedItems(result *[]string, section string, items []string) {
-	// Normalize section name for comparison
-	normalizedSection := strings.ReplaceAll(strings.ToUpper(section), "-", " ")
+// formatItems formats items based on section type.
+func formatItems(section string, items []string) []string {
+	formatted := make([]string, len(items))
 
-	if normalizedSection == "INVESTIGATION" {
-		for _, item := range items {
-			*result = append(*result, "- [ ] "+item)
-		}
-	} else if normalizedSection == "HYPOTHESES" {
+	switch normalizeSection(section) {
+	case "INVESTIGATION":
 		for i, item := range items {
-			*result = append(*result, fmt.Sprintf("%d. %s", i+1, item))
+			formatted[i] = "[ ] " + item
 		}
-	} else {
-		for _, item := range items {
-			*result = append(*result, "- "+item)
+	case "HYPOTHESES":
+		for i, item := range items {
+			formatted[i] = fmt.Sprintf("%d. %s", i+1, item)
 		}
+	default:
+		copy(formatted, items)
 	}
+
+	return formatted
 }
 
 // UpdateFrontmatter updates status and/or confidence fields in diagnosis frontmatter.
