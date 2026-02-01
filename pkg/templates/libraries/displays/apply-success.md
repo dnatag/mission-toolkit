@@ -13,6 +13,11 @@
 
 🔍 VIEW CHANGES (pick one - execute the FULL command block):
 
+[T] terminal:
+```bash
+git diff {{MISSION_ID}}-baseline
+```
+
 [S] side-by-side:
 ```bash
 git diff {{MISSION_ID}}-baseline | diff2html -i stdin -s side -o preview
