@@ -6,6 +6,7 @@ package md
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/adrg/frontmatter"
 	"gopkg.in/yaml.v3"
@@ -85,4 +86,90 @@ func (d *Document) Write() ([]byte, error) {
 	buf.WriteString(d.Body)
 
 	return buf.Bytes(), nil
+}
+
+// GetSection retrieves the content of a section by name.
+// Section names are case-insensitive.
+// Returns empty string and nil error if section doesn't exist.
+func (d *Document) GetSection(name string) (string, error) {
+	if err := validateSectionName(name); err != nil {
+		return "", err
+	}
+	return extractSection(d.Body, name), nil
+}
+
+// GetList retrieves list items from a section by name.
+// Section names are case-insensitive.
+// Returns empty slice and nil error if section doesn't exist or contains no lists.
+func (d *Document) GetList(name string) ([]string, error) {
+	if err := validateSectionName(name); err != nil {
+		return nil, err
+	}
+	return extractList(d.Body, name), nil
+}
+
+// UpdateSectionContent replaces the content of a section.
+// Section names are case-insensitive.
+// If section doesn't exist, it will be created.
+func (d *Document) UpdateSectionContent(name, content string) error {
+	if err := validateSectionName(name); err != nil {
+		return err
+	}
+	d.Body = updateSectionContent(d.Body, name, content)
+	return nil
+}
+
+// UpdateSectionList replaces or appends list items to a section.
+// Section names are case-insensitive. Items are formatted as "- item".
+// If appendMode is true, new items are added to existing items.
+// If appendMode is false, section content is replaced with new items.
+// If section doesn't exist, it will be created.
+func (d *Document) UpdateSectionList(name string, items []string, appendMode bool) error {
+	if err := validateSectionName(name); err != nil {
+		return err
+	}
+	d.Body = updateSectionList(d.Body, name, items, appendMode)
+	return nil
+}
+
+// HasSection checks if a section exists in the document.
+// Section names are case-insensitive.
+func (d *Document) HasSection(name string) bool {
+	return findSection(d.Body, name) != -1
+}
+
+// ListSections returns all section names found in the document.
+// Section names are returned in the order they appear.
+func (d *Document) ListSections() []string {
+	sections := []string{}
+	lines := strings.Split(d.Body, "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "## ") {
+			section := strings.TrimPrefix(trimmed, "## ")
+			sections = append(sections, section)
+		}
+	}
+	return sections
+}
+
+// validateSectionName checks if a section name is valid.
+// Returns error if name is empty, contains invalid characters,
+// or could cause issues in markdown parsing.
+func validateSectionName(name string) error {
+	if name == "" {
+		return fmt.Errorf("section name cannot be empty")
+	}
+
+	// Check for characters that could break markdown or cause issues
+	if strings.ContainsAny(name, "\n\r\t") {
+		return fmt.Errorf("section name contains invalid characters")
+	}
+
+	// Limit length to prevent abuse
+	if len(name) > 100 {
+		return fmt.Errorf("section name too long (max 100 characters)")
+	}
+
+	return nil
 }

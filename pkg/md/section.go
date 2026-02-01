@@ -7,15 +7,10 @@ import (
 	"strings"
 )
 
-// FindSection locates a section header in markdown body and returns its line index.
+// findSection locates a section header in markdown body and returns its line index.
 // Section names are case-insensitive and matched against "## SECTIONNAME" format.
 // Returns -1 if section not found.
-//
-// Example:
-//
-//	body := "## INTENT\nContent\n## SCOPE\nFiles"
-//	idx := FindSection(body, "scope") // returns 2
-func FindSection(body, sectionName string) int {
+func findSection(body, sectionName string) int {
 	lines := strings.Split(body, "\n")
 	header := "## " + strings.ToUpper(sectionName)
 
@@ -27,15 +22,10 @@ func FindSection(body, sectionName string) int {
 	return -1
 }
 
-// ExtractSection extracts string content from a section until the next section or end.
+// extractSection extracts string content from a section until the next section or end.
 // Section names are case-insensitive. Content is trimmed of leading/trailing whitespace.
 // Returns empty string if section not found or section is empty.
-//
-// Example:
-//
-//	body := "## INTENT\nAdd feature\n## SCOPE\nFiles"
-//	content := ExtractSection(body, "intent") // returns "Add feature"
-func ExtractSection(body, sectionName string) string {
+func extractSection(body, sectionName string) string {
 	pattern := "(?s)## " + regexp.QuoteMeta(strings.ToUpper(sectionName)) + "\\s*\\n(.*?)(?:(?:\\n##)|$)"
 	re := regexp.MustCompile(pattern)
 	matches := re.FindStringSubmatch(body)
@@ -51,7 +41,7 @@ func ExtractSection(body, sectionName string) string {
 	return ""
 }
 
-// ExtractList parses list items from a section, supporting multiple markdown formats:
+// extractList parses list items from a section, supporting multiple markdown formats:
 //   - Dash lists: "- item"
 //   - Asterisk lists: "* item"
 //   - Numbered lists: "1. item"
@@ -59,13 +49,8 @@ func ExtractSection(body, sectionName string) string {
 //
 // Returns empty slice if section not found or contains no list items.
 // Empty lines within lists are ignored.
-//
-// Example:
-//
-//	body := "## SCOPE\n- file1.go\n- file2.go"
-//	items := ExtractList(body, "scope") // returns ["file1.go", "file2.go"]
-func ExtractList(body, sectionName string) []string {
-	content := ExtractSection(body, sectionName)
+func extractList(body, sectionName string) []string {
+	content := extractSection(body, sectionName)
 	items := []string{}
 
 	if content == "" {
@@ -101,16 +86,9 @@ func ExtractList(body, sectionName string) []string {
 	return items
 }
 
-// SkipToNextSection returns the line index of the next section header after startIndex.
-// Useful for iterating through sections or skipping section content.
+// skipToNextSection returns the line index of the next section header after startIndex.
 // Returns -1 if no next section found.
-//
-// Example:
-//
-//	body := "## INTENT\nContent\n## SCOPE\nFiles"
-//	idx := FindSection(body, "intent")        // returns 0
-//	next := SkipToNextSection(body, idx)      // returns 2
-func SkipToNextSection(body string, startIndex int) int {
+func skipToNextSection(body string, startIndex int) int {
 	lines := strings.Split(body, "\n")
 
 	for i := startIndex + 1; i < len(lines); i++ {
@@ -121,17 +99,11 @@ func SkipToNextSection(body string, startIndex int) int {
 	return -1
 }
 
-// UpdateSectionContent replaces the content of a section with new block string content.
+// updateSectionContent replaces the content of a section with new block string content.
 // Section names are case-insensitive. If section doesn't exist, it's appended.
 // Returns the updated body.
-//
-// Example:
-//
-//	body := "## INTENT\nOld content\n## SCOPE\nFiles"
-//	updated := UpdateSectionContent(body, "intent", "New content")
-//	// Returns: "## INTENT\nNew content\n\n## SCOPE\nFiles"
-func UpdateSectionContent(body, sectionName, content string) string {
-	idx := FindSection(body, sectionName)
+func updateSectionContent(body, sectionName, content string) string {
+	idx := findSection(body, sectionName)
 	if idx == -1 {
 		// Section doesn't exist, append it
 		if body != "" && !strings.HasSuffix(body, "\n") {
@@ -141,7 +113,7 @@ func UpdateSectionContent(body, sectionName, content string) string {
 	}
 
 	lines := strings.Split(body, "\n")
-	nextIdx := SkipToNextSection(body, idx)
+	nextIdx := skipToNextSection(body, idx)
 
 	// Build result with section header, new content, and remaining sections
 	result := make([]string, 0, len(lines))
@@ -156,22 +128,16 @@ func UpdateSectionContent(body, sectionName, content string) string {
 	return strings.Join(result, "\n")
 }
 
-// UpdateSectionList replaces or appends list items to a section.
+// updateSectionList replaces or appends list items to a section.
 // Section names are case-insensitive. Items are formatted as "- item".
 // If appendMode is true, new items are added to existing items.
 // If appendMode is false, section content is replaced with new items.
 // If section doesn't exist, it's created.
 // Returns the updated body.
-//
-// Example:
-//
-//	body := "## SCOPE\n- file1.go\n## PLAN\nSteps"
-//	updated := UpdateSectionList(body, "scope", []string{"file2.go"}, true)
-//	// Returns: "## SCOPE\n- file1.go\n- file2.go\n\n## PLAN\nSteps"
-func UpdateSectionList(body, sectionName string, items []string, appendMode bool) string {
+func updateSectionList(body, sectionName string, items []string, appendMode bool) string {
 	listItems := items
 	if appendMode {
-		existing := ExtractList(body, sectionName)
+		existing := extractList(body, sectionName)
 		listItems = append(existing, items...)
 	}
 
@@ -182,5 +148,5 @@ func UpdateSectionList(body, sectionName string, items []string, appendMode bool
 		content.WriteString("\n")
 	}
 
-	return UpdateSectionContent(body, sectionName, strings.TrimSuffix(content.String(), "\n"))
+	return updateSectionContent(body, sectionName, strings.TrimSuffix(content.String(), "\n"))
 }

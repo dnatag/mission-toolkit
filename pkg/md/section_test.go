@@ -1,17 +1,19 @@
 package md
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestFindSection(t *testing.T) {
+func TestDocument_HasSection(t *testing.T) {
 	tests := []struct {
 		name        string
 		body        string
 		sectionName string
-		want        int
+		want        bool
 	}{
 		{
 			name: "section exists",
@@ -21,7 +23,7 @@ Content here
 ## SCOPE
 More content`,
 			sectionName: "INTENT",
-			want:        0,
+			want:        true,
 		},
 		{
 			name: "section in middle",
@@ -34,39 +36,40 @@ Files here
 ## PLAN
 Steps`,
 			sectionName: "SCOPE",
-			want:        3,
+			want:        true,
 		},
 		{
 			name: "section not found",
 			body: `## INTENT
 Content`,
 			sectionName: "MISSING",
-			want:        -1,
+			want:        false,
 		},
 		{
 			name: "case insensitive match",
 			body: `## INTENT
 Content`,
 			sectionName: "intent",
-			want:        0,
+			want:        true,
 		},
 		{
 			name:        "empty body",
 			body:        "",
 			sectionName: "INTENT",
-			want:        -1,
+			want:        false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := FindSection(tt.body, tt.sectionName)
+			doc := &Document{Body: tt.body}
+			got := doc.HasSection(tt.sectionName)
 			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func TestExtractSection(t *testing.T) {
+func TestDocument_GetSection(t *testing.T) {
 	tests := []struct {
 		name        string
 		body        string
@@ -131,13 +134,15 @@ Files`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ExtractSection(tt.body, tt.sectionName)
+			doc := &Document{Body: tt.body}
+			got, err := doc.GetSection(tt.sectionName)
+			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func TestExtractList(t *testing.T) {
+func TestDocument_GetList(t *testing.T) {
 	tests := []struct {
 		name        string
 		body        string
@@ -227,29 +232,20 @@ No list markers`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ExtractList(tt.body, tt.sectionName)
+			doc := &Document{Body: tt.body}
+			got, err := doc.GetList(tt.sectionName)
+			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func TestSkipToNextSection(t *testing.T) {
+func TestDocument_ListSections(t *testing.T) {
 	tests := []struct {
-		name       string
-		body       string
-		startIndex int
-		want       int
+		name string
+		body string
+		want []string
 	}{
-		{
-			name: "next section exists",
-			body: `## INTENT
-Content
-
-## SCOPE
-Files`,
-			startIndex: 0,
-			want:       3,
-		},
 		{
 			name: "multiple sections",
 			body: `## INTENT
@@ -260,44 +256,37 @@ Files
 
 ## PLAN
 Steps`,
-			startIndex: 3,
-			want:       6,
+			want: []string{"INTENT", "SCOPE", "PLAN"},
 		},
 		{
-			name: "no next section",
+			name: "single section",
 			body: `## INTENT
-Content
-More content`,
-			startIndex: 0,
-			want:       -1,
+Content`,
+			want: []string{"INTENT"},
 		},
 		{
-			name: "start at last section",
-			body: `## INTENT
-Content
-
-## SCOPE
-Files`,
-			startIndex: 3,
-			want:       -1,
+			name: "no sections",
+			body: `Just plain text
+No sections here`,
+			want: []string{},
 		},
 		{
-			name:       "empty body",
-			body:       "",
-			startIndex: 0,
-			want:       -1,
+			name: "empty body",
+			body: "",
+			want: []string{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := SkipToNextSection(tt.body, tt.startIndex)
+			doc := &Document{Body: tt.body}
+			got := doc.ListSections()
 			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func TestUpdateSectionContent(t *testing.T) {
+func TestDocument_UpdateSectionContent(t *testing.T) {
 	tests := []struct {
 		name        string
 		body        string
@@ -390,13 +379,15 @@ New content`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := UpdateSectionContent(tt.body, tt.sectionName, tt.content)
-			assert.Equal(t, tt.want, got)
+			doc := &Document{Body: tt.body}
+			err := doc.UpdateSectionContent(tt.sectionName, tt.content)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, doc.Body)
 		})
 	}
 }
 
-func TestUpdateSectionList(t *testing.T) {
+func TestDocument_UpdateSectionList(t *testing.T) {
 	tests := []struct {
 		name        string
 		body        string
@@ -482,8 +473,61 @@ Steps`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := UpdateSectionList(tt.body, tt.sectionName, tt.items, tt.appendMode)
-			assert.Equal(t, tt.want, got)
+			doc := &Document{Body: tt.body}
+			err := doc.UpdateSectionList(tt.sectionName, tt.items, tt.appendMode)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, doc.Body)
+		})
+	}
+}
+
+func TestDocument_ValidateSectionName(t *testing.T) {
+	tests := []struct {
+		name        string
+		sectionName string
+		wantErr     bool
+	}{
+		{
+			name:        "valid name",
+			sectionName: "INTENT",
+			wantErr:     false,
+		},
+		{
+			name:        "valid with spaces",
+			sectionName: "MY SECTION",
+			wantErr:     false,
+		},
+		{
+			name:        "empty name",
+			sectionName: "",
+			wantErr:     true,
+		},
+		{
+			name:        "contains newline",
+			sectionName: "INTENT\nSCOPE",
+			wantErr:     true,
+		},
+		{
+			name:        "contains tab",
+			sectionName: "INTENT\tSCOPE",
+			wantErr:     true,
+		},
+		{
+			name:        "too long",
+			sectionName: strings.Repeat("A", 101),
+			wantErr:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doc := &Document{Body: "## TEST\nContent"}
+			_, err := doc.GetSection(tt.sectionName)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
