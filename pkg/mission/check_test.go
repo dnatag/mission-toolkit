@@ -612,7 +612,11 @@ Test mission intent
 ## SCOPE
 file1.go`
 
-	invalidDiagnosisContent := `invalid yaml content`
+	// adrg/frontmatter is lenient, so use content that will actually fail parsing
+	invalidDiagnosisContent := `---
+id: test
+created: invalid-date-format
+---`
 
 	afero.WriteFile(fs, filepath.Join(missionDir, "mission.md"), []byte(missionContent), 0644)
 	afero.WriteFile(fs, filepath.Join(missionDir, "diagnosis.md"), []byte(invalidDiagnosisContent), 0644)
@@ -623,6 +627,7 @@ file1.go`
 	status, err := service.CheckMissionState()
 	require.NoError(t, err)
 	require.True(t, status.HasActiveMission)
+	// Invalid date format causes parsing error
 	require.Contains(t, status.Message, "Invalid diagnosis.md")
 	require.Contains(t, status.NextStep, "STOP")
 }

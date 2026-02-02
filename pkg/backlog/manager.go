@@ -6,45 +6,30 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 )
 
 // BacklogManager handles backlog file operations
 type BacklogManager struct {
-	missionDir  string
-	backlogPath string
+	missionDir   string
+	backlogPath  string
+	patternRegex *regexp.Regexp
 }
 
 // NewManager creates a new BacklogManager
 func NewManager(missionDir string) *BacklogManager {
 	return &BacklogManager{
-		missionDir:  missionDir,
-		backlogPath: filepath.Join(missionDir, "backlog.md"),
+		missionDir:   missionDir,
+		backlogPath:  filepath.Join(missionDir, "backlog.md"),
+		patternRegex: regexp.MustCompile(`\[PATTERN:([^\]]+)\]\[COUNT:(\d+)\]`),
 	}
 }
 
-// patternRegex matches [PATTERN:id][COUNT:n] format
-var patternRegex = regexp.MustCompile(`\[PATTERN:([^\]]+)\]\[COUNT:(\d+)\]`)
-
 // List returns backlog items, optionally including completed items and filtering by type
 func (m *BacklogManager) List(include []string, exclude []string) ([]string, error) {
-	// Validate include types
-	for _, t := range include {
-		if t != "completed" {
-			if err := m.validateType(t); err != nil {
-				return nil, err
-			}
-		}
-	}
-	// Validate exclude types
-	for _, t := range exclude {
-		if t != "completed" {
-			if err := m.validateType(t); err != nil {
-				return nil, err
-			}
-		}
+	if err := m.validateFilters(include, exclude); err != nil {
+		return nil, err
 	}
 
 	if err := m.ensureBacklogExists(); err != nil {
@@ -57,6 +42,30 @@ func (m *BacklogManager) List(include []string, exclude []string) ([]string, err
 	}
 	defer file.Close()
 
+	return m.scanBacklogItems(file, include, exclude)
+}
+
+// validateFilters validates include and exclude type filters
+func (m *BacklogManager) validateFilters(include, exclude []string) error {
+	for _, t := range include {
+		if t != "completed" {
+			if err := m.validateType(t); err != nil {
+				return err
+			}
+		}
+	}
+	for _, t := range exclude {
+		if t != "completed" {
+			if err := m.validateType(t); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// scanBacklogItems scans the backlog file and returns filtered items
+func (m *BacklogManager) scanBacklogItems(file *os.File, include, exclude []string) ([]string, error) {
 	var items []string
 	scanner := bufio.NewScanner(file)
 	inCompletedSection := false
@@ -78,49 +87,46 @@ func (m *BacklogManager) List(include []string, exclude []string) ([]string, err
 		}
 
 		if strings.HasPrefix(line, "- [ ]") || strings.HasPrefix(line, "- [x]") {
-			// Determine if this item should be included
-			shouldInclude := false
-
-			if inCompletedSection {
-				// In completed section
-				if len(exclude) > 0 && contains(exclude, "completed") {
-					// Explicitly excluded
-					continue
-				}
-				if len(include) > 0 {
-					// Include filter specified - only include if "completed" is in the list
-					shouldInclude = contains(include, "completed")
-				} else {
-					// No include filter - exclude completed by default
-					shouldInclude = false
-				}
-			} else {
-				// Not in completed section - check type filters
-				itemType := m.getSectionType(currentSection)
-
-				// Check exclude filter
-				if contains(exclude, itemType) {
-					continue
-				}
-
-				// Check include filter
-				if len(include) > 0 {
-					// Include filter specified
-					// Check if this type is in the include list OR if "completed" is in include (which means include all types)
-					shouldInclude = contains(include, itemType) || contains(include, "completed")
-				} else {
-					// No include filter - include all non-completed by default
-					shouldInclude = true
-				}
-			}
-
-			if shouldInclude {
+			if m.shouldIncludeItem(line, inCompletedSection, currentSection, include, exclude) {
 				items = append(items, line)
 			}
 		}
 	}
 
 	return items, scanner.Err()
+}
+
+// shouldIncludeItem determines if an item should be included based on filters
+func (m *BacklogManager) shouldIncludeItem(line string, inCompletedSection bool, currentSection string, include, exclude []string) bool {
+	if inCompletedSection {
+		return m.shouldIncludeCompleted(include, exclude)
+	}
+	return m.shouldIncludeTyped(currentSection, include, exclude)
+}
+
+// shouldIncludeCompleted checks if completed items should be included
+func (m *BacklogManager) shouldIncludeCompleted(include, exclude []string) bool {
+	if len(exclude) > 0 && contains(exclude, "completed") {
+		return false
+	}
+	if len(include) > 0 {
+		return contains(include, "completed")
+	}
+	return false
+}
+
+// shouldIncludeTyped checks if typed items should be included
+func (m *BacklogManager) shouldIncludeTyped(currentSection string, include, exclude []string) bool {
+	itemType := m.getSectionType(currentSection)
+
+	if contains(exclude, itemType) {
+		return false
+	}
+
+	if len(include) > 0 {
+		return contains(include, itemType) || contains(include, "completed")
+	}
+	return true
 }
 
 // contains checks if a string slice contains a value
@@ -133,55 +139,20 @@ func contains(slice []string, val string) bool {
 	return false
 }
 
-// getSectionType extracts the type from a section header
-func (m *BacklogManager) getSectionType(section string) string {
-	switch section {
-	case "## DECOMPOSED INTENTS":
-		return "decomposed"
-	case "## REFACTORING OPPORTUNITIES":
-		return "refactor"
-	case "## FUTURE ENHANCEMENTS":
-		return "future"
-	case "## FEATURES":
-		return "feature"
-	case "## BUGFIXES":
-		return "bugfix"
-	default:
-		return ""
-	}
-}
-
-// isInSection checks if the current section matches the item type
-func (m *BacklogManager) isInSection(sectionHeader, itemType string) bool {
-	expectedHeader := m.getSectionHeader(itemType)
-	return sectionHeader == expectedHeader
-}
-
-// findAndModifySection finds a section by header and applies a modifier function to insert items.
-// Returns the modified lines or an error if the section is not found.
-func (m *BacklogManager) findAndModifySection(lines []string, sectionHeader string, modifier func() []string) ([]string, error) {
-	result := make([]string, 0, len(lines)+10)
-
-	for i, line := range lines {
-		result = append(result, line)
-
-		if strings.TrimSpace(line) == sectionHeader {
-			// Find the end of this section
-			j := i + 1
-			for j < len(lines) && !strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") && strings.TrimSpace(lines[j]) != "" {
-				result = append(result, lines[j])
-				j++
-			}
-			// Apply modifier to get items to insert
-			newItems := modifier()
-			result = append(result, newItems...)
-			// Add remaining lines
-			result = append(result, lines[j:]...)
-			return result, nil
-		}
+// validateType validates the item type
+func (m *BacklogManager) validateType(itemType string) error {
+	validTypes := map[string]bool{
+		"decomposed": true,
+		"refactor":   true,
+		"future":     true,
+		"feature":    true,
+		"bugfix":     true,
 	}
 
-	return nil, fmt.Errorf("section %s not found in backlog", sectionHeader)
+	if !validTypes[itemType] {
+		return fmt.Errorf("invalid type: %s. Valid types: decomposed, refactor, future, feature, bugfix", itemType)
+	}
+	return nil
 }
 
 // Add adds a new item to the specified section.
@@ -218,13 +189,13 @@ func (m *BacklogManager) AddWithPattern(description, itemType, patternID string)
 		}
 	}
 
-	content, err := m.readBacklogContent()
+	body, _, err := m.readBacklogWithMetadata()
 	if err != nil {
 		return err
 	}
 
 	sectionHeader := m.getSectionHeader(itemType)
-	lines := strings.Split(content, "\n")
+	lines := strings.Split(body, "\n")
 
 	result, err := m.findAndModifySection(lines, sectionHeader, func() []string {
 		if patternID != "" {
@@ -237,7 +208,8 @@ func (m *BacklogManager) AddWithPattern(description, itemType, patternID string)
 		return err
 	}
 
-	return m.writeBacklogContent(strings.Join(result, "\n"))
+	action := fmt.Sprintf("Added %s item: %s", itemType, description)
+	return m.writeBacklogWithMetadata(strings.Join(result, "\n"), action)
 }
 
 // AddMultiple adds multiple items to the specified section in a single operation.
@@ -251,13 +223,13 @@ func (m *BacklogManager) AddMultiple(descriptions []string, itemType string) err
 		return err
 	}
 
-	content, err := m.readBacklogContent()
+	body, _, err := m.readBacklogWithMetadata()
 	if err != nil {
 		return err
 	}
 
 	sectionHeader := m.getSectionHeader(itemType)
-	lines := strings.Split(content, "\n")
+	lines := strings.Split(body, "\n")
 
 	result, err := m.findAndModifySection(lines, sectionHeader, func() []string {
 		items := make([]string, len(descriptions))
@@ -270,7 +242,8 @@ func (m *BacklogManager) AddMultiple(descriptions []string, itemType string) err
 		return err
 	}
 
-	return m.writeBacklogContent(strings.Join(result, "\n"))
+	action := fmt.Sprintf("Added %d %s items", len(descriptions), itemType)
+	return m.writeBacklogWithMetadata(strings.Join(result, "\n"), action)
 }
 
 // Complete marks an item as completed and moves it to the COMPLETED section
@@ -279,12 +252,12 @@ func (m *BacklogManager) Complete(itemText string) error {
 		return err
 	}
 
-	content, err := m.readBacklogContent()
+	body, _, err := m.readBacklogWithMetadata()
 	if err != nil {
 		return err
 	}
 
-	lines := strings.Split(content, "\n")
+	lines := strings.Split(body, "\n")
 	result := make([]string, 0, len(lines))
 	var completedItem string
 	itemFound := false
@@ -308,11 +281,11 @@ func (m *BacklogManager) Complete(itemText string) error {
 	}
 
 	// Add to COMPLETED section
-	return m.addToCompletedSection(result, completedItem)
+	return m.addToCompletedSection(result, completedItem, itemText)
 }
 
 // addToCompletedSection adds a completed item to the COMPLETED section
-func (m *BacklogManager) addToCompletedSection(lines []string, completedItem string) error {
+func (m *BacklogManager) addToCompletedSection(lines []string, completedItem string, itemText string) error {
 	result := make([]string, 0, len(lines)+1)
 	completedSectionFound := false
 
@@ -330,14 +303,16 @@ func (m *BacklogManager) addToCompletedSection(lines []string, completedItem str
 			result = append(result, completedItem)
 			// Add remaining lines
 			result = append(result, lines[j:]...)
-			return m.writeBacklogContent(strings.Join(result, "\n"))
+			action := fmt.Sprintf("Completed item: %s", itemText)
+			return m.writeBacklogWithMetadata(strings.Join(result, "\n"), action)
 		}
 	}
 
 	// If COMPLETED section not found, create it at the end
 	if !completedSectionFound {
 		result = append(result, "", "## COMPLETED", "(History of completed backlog items)", completedItem)
-		return m.writeBacklogContent(strings.Join(result, "\n"))
+		action := fmt.Sprintf("Completed item: %s", itemText)
+		return m.writeBacklogWithMetadata(strings.Join(result, "\n"), action)
 	}
 
 	return fmt.Errorf("COMPLETED section not found in backlog")
@@ -388,90 +363,7 @@ func (m *BacklogManager) readBacklogContent() (string, error) {
 
 // writeBacklogContent writes content to the backlog file
 func (m *BacklogManager) writeBacklogContent(content string) error {
-	if err := os.MkdirAll(m.missionDir, 0755); err != nil {
-		return fmt.Errorf("creating mission directory: %w", err)
-	}
-
-	if err := os.WriteFile(m.backlogPath, []byte(content), 0644); err != nil {
-		return fmt.Errorf("writing backlog file: %w", err)
-	}
-	return nil
-}
-
-// validateType validates the item type
-func (m *BacklogManager) validateType(itemType string) error {
-	validTypes := map[string]bool{
-		"decomposed": true,
-		"refactor":   true,
-		"future":     true,
-		"feature":    true,
-		"bugfix":     true,
-	}
-
-	if !validTypes[itemType] {
-		return fmt.Errorf("invalid type: %s. Valid types: decomposed, refactor, future, feature, bugfix", itemType)
-	}
-	return nil
-}
-
-// getSectionHeader returns the markdown header for the given type
-func (m *BacklogManager) getSectionHeader(itemType string) string {
-	switch itemType {
-	case "decomposed":
-		return "## DECOMPOSED INTENTS"
-	case "refactor":
-		return "## REFACTORING OPPORTUNITIES"
-	case "future":
-		return "## FUTURE ENHANCEMENTS"
-	case "feature":
-		return "## FEATURES"
-	case "bugfix":
-		return "## BUGFIXES"
-	default:
-		return ""
-	}
-}
-
-// GetPatternCount returns the occurrence count for a pattern ID.
-// Returns 0 if pattern not found.
-func (m *BacklogManager) GetPatternCount(patternID string) (int, error) {
-	if err := m.ensureBacklogExists(); err != nil {
-		return 0, err
-	}
-
-	content, err := m.readBacklogContent()
-	if err != nil {
-		return 0, err
-	}
-
-	for _, line := range strings.Split(content, "\n") {
-		matches := patternRegex.FindStringSubmatch(line)
-		if len(matches) == 3 && matches[1] == patternID {
-			count, _ := strconv.Atoi(matches[2])
-			return count, nil
-		}
-	}
-	return 0, nil
-}
-
-// incrementPatternCount increments the count for an existing pattern ID.
-func (m *BacklogManager) incrementPatternCount(patternID string) error {
-	content, err := m.readBacklogContent()
-	if err != nil {
-		return err
-	}
-
-	lines := strings.Split(content, "\n")
-	for i, line := range lines {
-		matches := patternRegex.FindStringSubmatch(line)
-		if len(matches) == 3 && matches[1] == patternID {
-			count, _ := strconv.Atoi(matches[2])
-			newCount := count + 1
-			lines[i] = patternRegex.ReplaceAllString(line, fmt.Sprintf("[PATTERN:%s][COUNT:%d]", patternID, newCount))
-			return m.writeBacklogContent(strings.Join(lines, "\n"))
-		}
-	}
-	return fmt.Errorf("pattern not found: %s", patternID)
+	return m.writeBacklogWithMetadata(content, "")
 }
 
 // Cleanup removes completed items from the COMPLETED section of the backlog.
@@ -494,12 +386,12 @@ func (m *BacklogManager) Cleanup(itemType string) (int, error) {
 		return 0, err
 	}
 
-	content, err := m.readBacklogContent()
+	body, _, err := m.readBacklogWithMetadata()
 	if err != nil {
 		return 0, err
 	}
 
-	lines := strings.Split(content, "\n")
+	lines := strings.Split(body, "\n")
 	result := make([]string, 0, len(lines))
 	inCompletedSection := false
 	removedCount := 0
@@ -538,31 +430,14 @@ func (m *BacklogManager) Cleanup(itemType string) (int, error) {
 	}
 
 	if removedCount > 0 {
-		if err := m.writeBacklogContent(strings.Join(result, "\n")); err != nil {
+		action := fmt.Sprintf("Cleaned up %d completed items", removedCount)
+		if itemType != "" {
+			action = fmt.Sprintf("Cleaned up %d completed %s items", removedCount, itemType)
+		}
+		if err := m.writeBacklogWithMetadata(strings.Join(result, "\n"), action); err != nil {
 			return 0, err
 		}
 	}
 
 	return removedCount, nil
-}
-
-// matchesItemType checks if a completed item matches the specified type.
-// Decomposed items contain "(from Epic:" marker.
-// This is a heuristic based on how items are typically added to the backlog.
-func (m *BacklogManager) matchesItemType(item, itemType string) bool {
-	switch itemType {
-	case "decomposed":
-		// Decomposed items typically have "(from Epic:" marker
-		return strings.Contains(item, "(from Epic:")
-	case "refactor":
-		// Refactor items typically have "Refactor" or "Extract" in the description
-		lowerItem := strings.ToLower(item)
-		return strings.Contains(lowerItem, "refactor") || strings.Contains(lowerItem, "extract")
-	case "future":
-		// Future items don't have specific markers, so we can't reliably identify them
-		// This will effectively not match any items unless explicitly marked
-		return false
-	default:
-		return false
-	}
 }

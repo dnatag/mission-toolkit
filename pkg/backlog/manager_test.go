@@ -1026,3 +1026,215 @@ func TestBacklogManager_ListExcludeFeatureAndBugfix(t *testing.T) {
 		t.Errorf("Expected 1 item after excluding feature and bugfix, got %d", len(items))
 	}
 }
+
+func TestBacklogManager_FrontmatterSupport(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Add an item (should create frontmatter)
+	err := manager.Add("Test frontmatter item", "feature")
+	if err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+
+	// Read the backlog file and verify frontmatter exists
+	content, err := os.ReadFile(manager.backlogPath)
+	if err != nil {
+		t.Fatalf("Failed to read backlog: %v", err)
+	}
+
+	contentStr := string(content)
+	if !strings.HasPrefix(contentStr, "---\n") {
+		t.Error("Backlog should start with frontmatter delimiter")
+	}
+
+	if !strings.Contains(contentStr, "last_updated:") {
+		t.Error("Frontmatter should contain last_updated field")
+	}
+
+	if !strings.Contains(contentStr, "last_action:") {
+		t.Error("Frontmatter should contain last_action field")
+	}
+
+	if !strings.Contains(contentStr, "Added feature item") {
+		t.Error("Last action should describe the add operation")
+	}
+}
+
+func TestBacklogManager_FrontmatterMetadataTracking(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Test Add operation
+	err := manager.Add("Item 1", "feature")
+	if err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+
+	content, metadata, err := manager.readBacklogWithMetadata()
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if metadata.LastAction != "Added feature item: Item 1" {
+		t.Errorf("Expected last_action to be 'Added feature item: Item 1', got '%s'", metadata.LastAction)
+	}
+
+	if metadata.LastUpdated.IsZero() {
+		t.Error("LastUpdated should not be zero")
+	}
+
+	// Test Complete operation
+	err = manager.Complete("Item 1")
+	if err != nil {
+		t.Fatalf("Complete failed: %v", err)
+	}
+
+	_, metadata, err = manager.readBacklogWithMetadata()
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if !strings.Contains(metadata.LastAction, "Completed item") {
+		t.Errorf("Expected last_action to contain 'Completed item', got '%s'", metadata.LastAction)
+	}
+
+	// Verify body content is preserved
+	if !strings.Contains(content, "## FEATURES") {
+		t.Error("Body should contain section headers")
+	}
+}
+
+// TestBacklogManager_BackwardCompatibility verifies that backlog files without
+// frontmatter continue to work correctly (backward compatibility).
+func TestBacklogManager_BackwardCompatibility(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Create a backlog file without frontmatter (legacy format)
+	legacyContent := `# Mission Backlog
+
+## FEATURES
+*User-defined feature requests and enhancements.*
+- [ ] Legacy item
+
+## BUGFIXES
+*Bug reports and issues to be fixed.*
+
+## DECOMPOSED INTENTS
+*Atomic tasks broken down from larger epics.*
+
+## REFACTORING OPPORTUNITIES
+*Technical debt and refactoring opportunities identified during development.*
+
+## FUTURE ENHANCEMENTS
+*Ideas and future feature requests for later consideration.*
+
+## COMPLETED
+*History of completed backlog items.*
+`
+	err := os.WriteFile(manager.backlogPath, []byte(legacyContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write legacy backlog: %v", err)
+	}
+
+	// Read should work with legacy format
+	items, err := manager.List(nil, nil)
+	if err != nil {
+		t.Fatalf("List failed on legacy format: %v", err)
+	}
+
+	if len(items) != 1 {
+		t.Errorf("Expected 1 item from legacy format, got %d", len(items))
+	}
+
+	// Add operation should add frontmatter
+	err = manager.Add("New item", "feature")
+	if err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+
+	// Verify frontmatter was added
+	content, err := os.ReadFile(manager.backlogPath)
+	if err != nil {
+		t.Fatalf("Failed to read backlog: %v", err)
+	}
+
+	if !strings.HasPrefix(string(content), "---\n") {
+		t.Error("Backlog should now have frontmatter after modification")
+	}
+
+	// Verify legacy item is still present
+	if !strings.Contains(string(content), "Legacy item") {
+		t.Error("Legacy item should be preserved")
+	}
+}
+
+// TestBacklogManager_NoFrontmatterDuplication verifies that frontmatter is not
+// duplicated after multiple update operations (bug fix test).
+func TestBacklogManager_NoFrontmatterDuplication(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewManager(tempDir)
+
+	// Create initial backlog
+	if err := manager.ensureBacklogExists(); err != nil {
+		t.Fatalf("Failed to create backlog: %v", err)
+	}
+
+	// Perform multiple operations that trigger frontmatter writes
+	if err := manager.Add("Feature 1", "feature"); err != nil {
+		t.Fatalf("Failed to add feature 1: %v", err)
+	}
+
+	if err := manager.Add("Feature 2", "feature"); err != nil {
+		t.Fatalf("Failed to add feature 2: %v", err)
+	}
+
+	if err := manager.Add("Bugfix 1", "bugfix"); err != nil {
+		t.Fatalf("Failed to add bugfix: %v", err)
+	}
+
+	if err := manager.Complete("Feature 1"); err != nil {
+		t.Fatalf("Failed to complete feature: %v", err)
+	}
+
+	// Read the backlog file
+	content, err := os.ReadFile(manager.backlogPath)
+	if err != nil {
+		t.Fatalf("Failed to read backlog: %v", err)
+	}
+
+	// Count frontmatter delimiters (should be exactly 2: opening and closing)
+	// Bug: Before fix, multiple frontmatter blocks would accumulate (6+ delimiters)
+	// Fix: After fix, only one frontmatter block exists (2 delimiters)
+	lines := strings.Split(string(content), "\n")
+	delimiterCount := 0
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "---" {
+			delimiterCount++
+		}
+	}
+
+	if delimiterCount != 2 {
+		t.Errorf("Expected 2 frontmatter delimiters (opening and closing), got %d", delimiterCount)
+		t.Logf("Backlog content:\n%s", string(content))
+	}
+
+	// Verify frontmatter is at the beginning
+	if !strings.HasPrefix(string(content), "---\n") {
+		t.Error("Backlog should start with frontmatter delimiter")
+	}
+
+	// Verify only one frontmatter block exists
+	firstDelimiter := strings.Index(string(content), "---")
+	secondDelimiter := strings.Index(string(content)[firstDelimiter+3:], "---")
+	if secondDelimiter == -1 {
+		t.Error("Missing closing frontmatter delimiter")
+	} else {
+		// Check if there's a third delimiter (which would indicate duplication)
+		thirdDelimiter := strings.Index(string(content)[firstDelimiter+secondDelimiter+6:], "---")
+		if thirdDelimiter != -1 {
+			t.Error("Found duplicate frontmatter block (third delimiter detected)")
+		}
+	}
+}

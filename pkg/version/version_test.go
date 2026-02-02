@@ -32,7 +32,7 @@ func TestVersion(t *testing.T) {
 
 func TestVersionConstant(t *testing.T) {
 	// Test that version constant is accessible and has expected value
-	if Version != "v2.1.1" {
-		t.Errorf("Expected version v2.1.1, got: %s", Version)
+	if Version != "v2.2.0" {
+		t.Errorf("Expected version v2.2.0, got: %s", Version)
 	}
 }

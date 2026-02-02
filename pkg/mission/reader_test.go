@@ -135,7 +135,9 @@ Create a function to merge two lists of cards
 id: test-123
 type: WET
 `,
-			wantErr: true,
+			wantErr:  false, // adrg/frontmatter treats content without closing as body
+			wantID:   "",    // No frontmatter parsed
+			wantType: "",
 		},
 		{
 			name: "frontmatter without closing",
@@ -147,7 +149,10 @@ track: 2
 ## INTENT
 Missing closing frontmatter
 `,
-			wantErr: true,
+			wantErr:   false, // adrg/frontmatter treats content without closing as body
+			wantID:    "",    // No frontmatter parsed
+			wantType:  "",
+			wantTrack: 0,
 		},
 		{
 			name: "malformed YAML - missing quotes",
@@ -559,6 +564,31 @@ middleware.go`
 	}
 }
 
+func TestReader_ReadScope_EmptyScope(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "mission.md"
+	reader := NewReader(fs, path)
+
+	content := `---
+id: test-123
+status: planned
+---
+
+## INTENT
+Test empty scope handling
+
+## SCOPE
+
+## PLAN
+- Step 1`
+
+	afero.WriteFile(fs, path, []byte(content), 0644)
+
+	scope, err := reader.ReadScope()
+	require.NoError(t, err, "ReadScope should not error on empty scope")
+	require.Equal(t, "", scope, "Empty scope should return empty string")
+}
+
 func TestReader_ReadIntent_MissingSection(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	path := "mission.md"
@@ -632,8 +662,10 @@ Body without closing delimiter`
 
 	reader := NewReader(fs, path)
 	mission, err := reader.Read()
-	require.Error(t, err, "Should fail with missing closing delimiter")
-	require.Nil(t, mission)
+	// adrg/frontmatter treats content without closing delimiter as body
+	require.NoError(t, err, "adrg/frontmatter handles missing closing delimiter gracefully")
+	require.NotNil(t, mission)
+	require.Equal(t, "", mission.ID) // No frontmatter parsed without closing delimiter
 }
 
 // Edge case: Read with empty file

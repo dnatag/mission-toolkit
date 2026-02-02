@@ -18,4 +18,7 @@ type GitClient interface {
 	IsTracked(path string) (bool, error)
 	GetCommitParent(commitHash string) (string, error)
 	GetUnstagedFiles() ([]string, error)
+	// GetUntrackedFiles returns a list of files that exist in the working directory
+	// but are not tracked by git (status "??"). These files need manual cleanup.
+	GetUntrackedFiles() ([]string, error)
 }

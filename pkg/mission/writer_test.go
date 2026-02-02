@@ -332,7 +332,7 @@ func TestWriter_UpdateList(t *testing.T) {
 	}
 
 	// Verify exactly one empty line between sections
-	expected := "## INTENT\nTest\n\n## SCOPE\nfile1.go\nfile2.go\n\n## PLAN\n- [ ] Step 1\n"
+	expected := "## INTENT\nTest\n\n## SCOPE\n- file1.go\n- file2.go\n\n## PLAN\n- [ ] Step 1\n"
 	if updated.Body != expected {
 		t.Errorf("Incorrect spacing. Expected:\n%q\nGot:\n%q", expected, updated.Body)
 	}
@@ -352,7 +352,7 @@ func TestWriter_UpdateListAppend(t *testing.T) {
 		ID:        "test-123",
 		Status:    "planning",
 		Iteration: 1,
-		Body:      "## INTENT\nTest\n\n## SCOPE\nexisting1.go\nexisting2.go\n",
+		Body:      "## INTENT\nTest\n\n## SCOPE\n- existing1.go\n- existing2.go\n",
 	}
 
 	if err := writer.Write(mission); err != nil {
@@ -406,7 +406,7 @@ func TestWriter_UpdateList_PlanEntries(t *testing.T) {
 		t.Fatalf("Write failed: %v", err)
 	}
 
-	// Update plan with new items
+	// Update plan with new items (with number prefixes)
 	newItems := []string{"3. Third step", "4. Fourth step"}
 	if err := writer.UpdateList("plan", newItems, false); err != nil {
 		t.Fatalf("UpdateList plan failed: %v", err)
@@ -417,12 +417,12 @@ func TestWriter_UpdateList_PlanEntries(t *testing.T) {
 		t.Fatalf("Read failed: %v", err)
 	}
 
-	// Should contain properly formatted plan entries
+	// Should preserve number prefixes and add checkbox
 	if !strings.Contains(updated.Body, "- [ ] 3. Third step") {
-		t.Error("Body missing properly formatted third step")
+		t.Errorf("Body missing properly formatted third step, got: %s", updated.Body)
 	}
 	if !strings.Contains(updated.Body, "- [ ] 4. Fourth step") {
-		t.Error("Body missing properly formatted fourth step")
+		t.Errorf("Body missing properly formatted fourth step, got: %s", updated.Body)
 	}
 
 	// Should preserve VERIFICATION section
@@ -845,6 +845,44 @@ func TestWriter_UpdateList_EmptyItems(t *testing.T) {
 	require.Contains(t, updated.Body, "## SCOPE")
 }
 
+func TestWriter_UpdateList_PlanWithNumberPrefixes(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "/test/mission.md"
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
+
+	mission := &Mission{
+		ID:        "test-123",
+		Status:    "planned",
+		Iteration: 1,
+		Body:      "## PLAN\n",
+	}
+
+	err := writer.Write(mission)
+	require.NoError(t, err)
+
+	// Bug reproduction: items with number prefixes should preserve numbers and add checkboxes
+	items := []string{"1. First step", "2. Second step", "3. Third step"}
+	err = writer.UpdateList("plan", items, false)
+	require.NoError(t, err)
+
+	updated, err := NewReader(fs, path).Read()
+	require.NoError(t, err)
+
+	// Verify numbers are preserved and checkboxes added
+	require.Contains(t, updated.Body, "- [ ] 1. First step")
+	require.Contains(t, updated.Body, "- [ ] 2. Second step")
+	require.Contains(t, updated.Body, "- [ ] 3. Third step")
+
+	// Verify incorrect formats are NOT present
+	require.NotContains(t, updated.Body, "- 1. First step")
+	require.NotContains(t, updated.Body, "- [ ] First step\n")
+}
+
 // Edge case: MarkPlanStepComplete with out-of-range step
 func TestWriter_MarkPlanStepComplete_OutOfRange(t *testing.T) {
 	fs := afero.NewMemMapFs()
@@ -939,4 +977,173 @@ func TestWriter_UpdateStatus_ConcurrentWrites(t *testing.T) {
 	updated, err := NewReader(fs, path).Read()
 	require.NoError(t, err)
 	require.NotEmpty(t, updated.Status, "Status should be set to one of the values")
+}
+
+func TestWriter_MarkPlanStepComplete_NumberedList(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "mission.md"
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
+
+	// Create mission with numbered list format
+	mission := &Mission{
+		ID:     "test-numbered",
+		Status: "active",
+		Body:   "## PLAN\n- 1. First step\n- 2. Second step\n- 3. Third step",
+	}
+
+	if err := writer.Write(mission); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	// Normalize the plan section (simulating what UpdateSection would do)
+	if err := writer.UpdateSection("plan", "- 1. First step\n- 2. Second step\n- 3. Third step"); err != nil {
+		t.Fatalf("UpdateSection failed: %v", err)
+	}
+
+	// Mark step 2 complete
+	if err := writer.MarkPlanStepComplete(2, "", ""); err != nil {
+		t.Fatalf("MarkPlanStepComplete failed: %v", err)
+	}
+
+	updated, err := NewReader(fs, path).Read()
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if !strings.Contains(updated.Body, "- [x] Second step") {
+		t.Errorf("Step 2 was not marked as complete. Body: %s", updated.Body)
+	}
+	if !strings.Contains(updated.Body, "- [ ] First step") {
+		t.Error("Step 1 should be normalized to checkbox format")
+	}
+	if !strings.Contains(updated.Body, "- [ ] Third step") {
+		t.Error("Step 3 should be normalized to checkbox format")
+	}
+}
+
+func TestWriter_MarkPlanStepComplete_MixedFormats(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	path := "mission.md"
+	writer := &Writer{
+		BaseService: NewBaseServiceWithPath(fs, "", path),
+		loggerConfig: &logger.Config{
+			Output: logger.OutputConsole,
+		},
+	}
+
+	// Create mission with mixed formats
+	mission := &Mission{
+		ID:     "test-mixed",
+		Status: "active",
+		Body:   "## PLAN\n- 1. Numbered step\n- Dash step\n- [ ] Checkbox step\n* Asterisk step",
+	}
+
+	if err := writer.Write(mission); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	// Normalize via UpdateSection
+	if err := writer.UpdateSection("plan", "- 1. Numbered step\n- Dash step\n- [ ] Checkbox step\n* Asterisk step"); err != nil {
+		t.Fatalf("UpdateSection failed: %v", err)
+	}
+
+	// All steps should now be normalized to checkbox format
+	updated, err := NewReader(fs, path).Read()
+	if err != nil {
+		t.Fatalf("Read after normalization failed: %v", err)
+	}
+
+	// Verify normalization happened
+	if !strings.Contains(updated.Body, "- [ ] Numbered step") {
+		t.Errorf("Step 1 should be normalized. Body: %s", updated.Body)
+	}
+	if !strings.Contains(updated.Body, "- [ ] Dash step") {
+		t.Errorf("Step 2 should be normalized. Body: %s", updated.Body)
+	}
+	if !strings.Contains(updated.Body, "- [ ] Checkbox step") {
+		t.Errorf("Step 3 should remain checkbox. Body: %s", updated.Body)
+	}
+	if !strings.Contains(updated.Body, "- [ ] Asterisk step") {
+		t.Errorf("Step 4 should be normalized. Body: %s", updated.Body)
+	}
+
+	// Now mark steps complete
+	if err := writer.MarkPlanStepComplete(3, "", ""); err != nil {
+		t.Fatalf("MarkPlanStepComplete(3) failed: %v", err)
+	}
+
+	updated, err = NewReader(fs, path).Read()
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if !strings.Contains(updated.Body, "- [x] Checkbox step") {
+		t.Errorf("Step 3 was not marked as complete. Body: %s", updated.Body)
+	}
+
+	if err := writer.MarkPlanStepComplete(1, "", ""); err != nil {
+		t.Fatalf("MarkPlanStepComplete(1) failed: %v", err)
+	}
+
+	updated, err = NewReader(fs, path).Read()
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if !strings.Contains(updated.Body, "- [x] Numbered step") {
+		t.Errorf("Step 1 was not marked as complete. Body: %s", updated.Body)
+	}
+}
+
+func TestNormalizePlanContent(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "numbered list",
+			input:    "1. First\n2. Second\n3. Third",
+			expected: "- [ ] First\n- [ ] Second\n- [ ] Third",
+		},
+		{
+			name:     "dash with numbers",
+			input:    "- 1. First\n- 2. Second",
+			expected: "- [ ] First\n- [ ] Second",
+		},
+		{
+			name:     "plain dash",
+			input:    "- First\n- Second",
+			expected: "- [ ] First\n- [ ] Second",
+		},
+		{
+			name:     "asterisk",
+			input:    "* First\n* Second",
+			expected: "- [ ] First\n- [ ] Second",
+		},
+		{
+			name:     "already checkbox",
+			input:    "- [ ] First\n- [x] Second",
+			expected: "- [ ] First\n- [x] Second",
+		},
+		{
+			name:     "mixed formats",
+			input:    "1. Numbered\n- Dash\n* Asterisk\n- [ ] Checkbox",
+			expected: "- [ ] Numbered\n- [ ] Dash\n- [ ] Asterisk\n- [ ] Checkbox",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := normalizePlanContent(tt.input)
+			if result != tt.expected {
+				t.Errorf("normalizePlanContent() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
 }

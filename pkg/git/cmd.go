@@ -152,3 +152,23 @@ func (c *CmdGitClient) GetUnstagedFiles() ([]string, error) {
 	}
 	return files, nil
 }
+
+// GetUntrackedFiles returns files that exist in the working directory but are not tracked by git.
+// These files have status "??" in git status --porcelain output.
+func (c *CmdGitClient) GetUntrackedFiles() ([]string, error) {
+	out, err := c.run("status", "--porcelain")
+	if err != nil {
+		return nil, err
+	}
+	var files []string
+	for _, line := range strings.Split(out, "\n") {
+		if len(line) < 3 {
+			continue
+		}
+		// Porcelain format: ?? filename means untracked
+		if line[0] == '?' && line[1] == '?' {
+			files = append(files, strings.TrimSpace(line[3:]))
+		}
+	}
+	return files, nil
+}

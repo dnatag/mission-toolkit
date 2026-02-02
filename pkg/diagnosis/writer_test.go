@@ -59,33 +59,62 @@ func TestCreateDiagnosis(t *testing.T) {
 			require.Contains(t, contentStr, "## SYMPTOM")
 			require.Contains(t, contentStr, tt.symptom)
 			require.Contains(t, contentStr, "## INVESTIGATION")
+			require.Contains(t, contentStr, "- [ ] Initial investigation pending")
 			require.Contains(t, contentStr, "## HYPOTHESES")
+			require.Contains(t, contentStr, "- 1. **[UNKNOWN]** Investigation not yet started")
 			require.Contains(t, contentStr, "## ROOT CAUSE")
 			require.Contains(t, contentStr, "## AFFECTED FILES")
+			require.Contains(t, contentStr, "- TBD")
 			require.Contains(t, contentStr, "## RECOMMENDED FIX")
 			require.Contains(t, contentStr, "## REPRODUCTION")
 		})
 	}
 }
 
-func TestDiagnosisExists(t *testing.T) {
+func TestUpdateList(t *testing.T) {
 	tests := []struct {
 		name       string
-		setupFile  bool
-		wantExists bool
+		section    string
+		items      []string
+		appendMode bool
 		wantErr    bool
+		validate   func(t *testing.T, content string)
 	}{
 		{
-			name:       "file exists",
-			setupFile:  true,
-			wantExists: true,
+			name:       "replace affected files",
+			section:    "affected-files",
+			items:      []string{"file1.go", "file2.go"},
+			appendMode: false,
 			wantErr:    false,
+			validate: func(t *testing.T, content string) {
+				require.Contains(t, content, "- file1.go")
+				require.Contains(t, content, "- file2.go")
+				// Check that AFFECTED FILES section doesn't contain TBD
+				require.Contains(t, content, "## AFFECTED FILES\n- file1.go\n- file2.go")
+			},
 		},
 		{
-			name:       "file does not exist",
-			setupFile:  false,
-			wantExists: false,
+			name:       "append to investigation",
+			section:    "investigation",
+			items:      []string{"Checked logs", "Reviewed code"},
+			appendMode: true,
 			wantErr:    false,
+			validate: func(t *testing.T, content string) {
+				require.Contains(t, content, "- [ ] Checked logs")
+				require.Contains(t, content, "- [ ] Reviewed code")
+			},
+		},
+		{
+			name:       "replace hypotheses",
+			section:    "hypotheses",
+			items:      []string{"**[HIGH]** Database connection issue", "**[LOW]** Network timeout"},
+			appendMode: false,
+			wantErr:    false,
+			validate: func(t *testing.T, content string) {
+				require.Contains(t, content, "1. **[HIGH]** Database connection issue")
+				require.Contains(t, content, "2. **[LOW]** Network timeout")
+				require.NotContains(t, content, "**[UNKNOWN]**")
+			},
 		},
 	}
 
@@ -94,19 +123,23 @@ func TestDiagnosisExists(t *testing.T) {
 			fs := afero.NewMemMapFs()
 			path := ".mission/diagnosis.md"
 
-			if tt.setupFile {
-				fs.MkdirAll(".mission", 0755)
-				afero.WriteFile(fs, path, []byte("test content"), 0644)
-			}
+			// Create initial diagnosis
+			err := CreateDiagnosis(fs, path, "Test symptom")
+			require.NoError(t, err)
 
-			exists, err := DiagnosisExists(fs, path)
+			// Update list
+			err = UpdateList(fs, path, tt.section, tt.items, tt.appendMode)
 			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tt.wantExists, exists)
+
+			// Validate content
+			content, err := afero.ReadFile(fs, path)
+			require.NoError(t, err)
+			tt.validate(t, string(content))
 		})
 	}
 }
@@ -311,6 +344,30 @@ Old cause
 			wantContains: "New cause",
 			wantErr:      false,
 		},
+		{
+			name: "normalizes hyphenated section names",
+			initialContent: `---
+id: DIAG-123
+status: investigating
+confidence: low
+created: 2026-01-24T10:00:00Z
+symptom: test
+---
+
+## SYMPTOM
+test
+
+## ROOT CAUSE
+To be determined
+
+## RECOMMENDED FIX
+To be determined after investigation
+`,
+			section:      "root-cause",
+			newContent:   "Fixed normalization issue",
+			wantContains: "Fixed normalization issue",
+			wantErr:      false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -350,6 +407,13 @@ Old cause
 			// For replace tests, verify old content is gone
 			if tt.name == "replaces non-list section" {
 				require.NotContains(t, string(content), "Old cause")
+			}
+
+			// For hyphenated section test, verify no duplicate sections created
+			if tt.name == "normalizes hyphenated section names" {
+				contentStr := string(content)
+				require.Equal(t, 1, strings.Count(contentStr, "## ROOT CAUSE"), "Should have exactly one ROOT CAUSE section, not duplicated")
+				require.NotContains(t, contentStr, "## ROOT-CAUSE", "Should not create hyphenated section header")
 			}
 		})
 	}

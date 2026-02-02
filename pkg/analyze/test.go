@@ -48,6 +48,9 @@ func (s *TestService) ProvideTemplate() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("reading current scope: %w", err)
 	}
+	if scope == "" {
+		scope = "(No scope defined yet)"
+	}
 
 	output, err := s.ExecuteTemplate("test", testTemplate, map[string]string{
 		"CurrentIntent": intent,

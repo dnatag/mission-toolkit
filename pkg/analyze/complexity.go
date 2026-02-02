@@ -48,6 +48,9 @@ func (s *ComplexityService) ProvideTemplate() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("reading current scope: %w", err)
 	}
+	if scope == "" {
+		scope = "(No scope defined yet)"
+	}
 
 	output, err := s.ExecuteTemplate("complexity", complexityTemplate, map[string]string{
 		"CurrentIntent": intent,

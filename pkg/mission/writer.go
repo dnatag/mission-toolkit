@@ -3,11 +3,12 @@ package mission
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/dnatag/mission-toolkit/pkg/logger"
+	"github.com/dnatag/mission-toolkit/pkg/md"
 	"github.com/spf13/afero"
-	"gopkg.in/yaml.v2"
 )
 
 // Writer handles writing mission files and updating status.
@@ -58,131 +59,110 @@ func (w *Writer) CreateWithIntent(missionID string, intent string) error {
 	return w.Write(mission)
 }
 
-// UpdateSection updates a text section (intent, verification).
-// UpdateSection updates a text section (intent, verification).
-// Ensures exactly one empty line between sections for consistent formatting.
-func (w *Writer) UpdateSection(section string, content string) error {
-	mission, err := NewReader(w.FS(), w.MissionPath()).Read()
-	if err != nil {
-		return fmt.Errorf("reading mission: %w", err)
-	}
-
-	lines := strings.Split(mission.Body, "\n")
-	var result []string
-	sectionHeader := "## " + strings.ToUpper(section)
-	foundSection := false
-
+// normalizePlanContent converts all list formats to checkbox format.
+func normalizePlanContent(content string) string {
+	lines := strings.Split(content, "\n")
 	for i, line := range lines {
-		if strings.TrimSpace(line) == sectionHeader {
-			foundSection = true
-			result = append(result, line, content, "")
-
-			// Skip old content until next section or end
-			for j := i + 1; j < len(lines); j++ {
-				if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
-					result = append(result, lines[j:]...)
-					break
-				}
-			}
-			break
-		}
-		result = append(result, line)
-	}
-
-	if !foundSection {
-		// Add new section at end
-		result = append(result, "", sectionHeader, content)
-	}
-
-	mission.Body = strings.Join(result, "\n")
-	return w.Write(mission)
-}
-
-// UpdateList updates a list section (scope, plan) with optional append mode.
-// Ensures exactly one empty line between sections for consistent formatting.
-func (w *Writer) UpdateList(section string, items []string, appendMode bool) error {
-	mission, err := NewReader(w.FS(), w.MissionPath()).Read()
-	if err != nil {
-		return fmt.Errorf("reading mission: %w", err)
-	}
-
-	lines := strings.Split(mission.Body, "\n")
-	var result []string
-	sectionHeader := "## " + strings.ToUpper(section)
-	foundSection := false
-	lineIndex := 0
-
-	for lineIndex < len(lines) {
-		currentLine := lines[lineIndex]
-
-		if strings.TrimSpace(currentLine) == sectionHeader {
-			result = append(result, currentLine)
-
-			if appendMode {
-				existingItems := w.extractExistingItems(lines, lineIndex+1)
-				result = append(result, existingItems...)
-			}
-
-			w.addFormattedItems(&result, section, items)
-
-			foundSection = true
-			nextSectionIndex := w.skipSectionContent(lines, lineIndex+1)
-			if nextSectionIndex < len(lines) {
-				result = append(result, "")
-			}
-			lineIndex = nextSectionIndex
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
 			continue
 		}
 
-		result = append(result, currentLine)
-		lineIndex++
-	}
+		indent := line[:len(line)-len(trimmed)]
+		var normalized string
 
-	if !foundSection {
-		result = append(result, "", sectionHeader)
-		w.addFormattedItems(&result, section, items)
-	}
+		// Already checkbox format
+		if strings.HasPrefix(trimmed, "- [ ] ") || strings.HasPrefix(trimmed, "- [x] ") {
+			continue
+		}
+		// Dash with number: "- 1. item" → "- [ ] item"
+		if matched, _ := regexp.MatchString(`^-\s+\d+\.\s`, trimmed); matched {
+			parts := strings.SplitN(trimmed, ". ", 2)
+			if len(parts) == 2 {
+				normalized = indent + "- [ ] " + parts[1]
+			}
+		} else if matched, _ := regexp.MatchString(`^\d+\.\s`, trimmed); matched {
+			// Pure numbered: "1. item" → "- [ ] item"
+			parts := strings.SplitN(trimmed, ". ", 2)
+			if len(parts) == 2 {
+				normalized = indent + "- [ ] " + parts[1]
+			}
+		} else if strings.HasPrefix(trimmed, "- ") {
+			// Plain dash: "- item" → "- [ ] item"
+			normalized = indent + "- [ ] " + strings.TrimPrefix(trimmed, "- ")
+		} else if strings.HasPrefix(trimmed, "* ") {
+			// Asterisk: "* item" → "- [ ] item"
+			normalized = indent + "- [ ] " + strings.TrimPrefix(trimmed, "* ")
+		}
 
-	mission.Body = strings.Join(result, "\n")
-	return w.Write(mission)
+		if normalized != "" {
+			lines[i] = normalized
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
-// extractExistingItems collects existing items from a section.
-func (w *Writer) extractExistingItems(lines []string, startIndex int) []string {
-	var existingItems []string
-	for j := startIndex; j < len(lines); j++ {
-		if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
-			break
+// UpdateSection updates a text section (intent, verification).
+func (w *Writer) UpdateSection(section string, content string) error {
+	// Allow empty section name for backward compatibility (creates "## " section)
+	if section == "" {
+		mission, err := NewReader(w.FS(), w.MissionPath()).Read()
+		if err != nil {
+			return fmt.Errorf("reading mission: %w", err)
 		}
-		if strings.TrimSpace(lines[j]) != "" {
-			existingItems = append(existingItems, lines[j])
-		}
+		mission.Body = mission.Body + "\n## \n" + content + "\n"
+		return w.Write(mission)
 	}
-	return existingItems
+
+	// Normalize PLAN section to checkbox format
+	if strings.ToLower(section) == "plan" {
+		content = normalizePlanContent(content)
+	}
+
+	doc, err := w.parseDocument()
+	if err != nil {
+		return err
+	}
+
+	if err := doc.UpdateSectionContent(strings.ToUpper(section), content); err != nil {
+		return fmt.Errorf("updating section %q: %w", section, err)
+	}
+
+	return w.writeDocument(doc)
 }
 
-// addFormattedItems adds items with proper formatting based on section type.
-func (w *Writer) addFormattedItems(result *[]string, section string, items []string) {
+// UpdateList updates a list section (scope, plan) with optional append mode.
+func (w *Writer) UpdateList(section string, items []string, appendMode bool) error {
+	doc, err := w.parseDocument()
+	if err != nil {
+		return err
+	}
+
+	sectionName := strings.ToUpper(section)
+
+	// Format items based on section type
+	// Plan sections use checkboxes: "- [ ] item"
+	// Other sections use plain lists: "- item"
+	formattedItems := items
 	if section == "plan" {
-		for _, item := range items {
-			*result = append(*result, "- [ ] "+item)
+		formattedItems = make([]string, len(items))
+		for i, item := range items {
+			formattedItems[i] = "[ ] " + item
 		}
-	} else {
-		*result = append(*result, items...)
 	}
-}
 
-// skipSectionContent skips content until the next section and returns the index.
-// This ensures proper section boundary handling when updating list sections.
-func (w *Writer) skipSectionContent(lines []string, startIndex int) int {
-	for j := startIndex; j < len(lines); j++ {
-		if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
-			// Found next section header, return its index
-			return j
-		}
+	var updateErr error
+	if appendMode {
+		updateErr = doc.AppendSectionList(sectionName, formattedItems)
+	} else {
+		updateErr = doc.UpdateSectionList(sectionName, formattedItems)
 	}
-	// No more sections found, return end of file
-	return len(lines)
+
+	if updateErr != nil {
+		return fmt.Errorf("updating %q section: %w", section, updateErr)
+	}
+
+	return w.writeDocument(doc)
 }
 
 // MarkPlanStepComplete marks a specific plan step as completed and optionally logs a message.
@@ -194,49 +174,92 @@ func (w *Writer) MarkPlanStepComplete(step int, status, message string) error {
 
 	// Handle logging if message is provided
 	if message != "" {
-		if status == "" {
-			status = "INFO"
-		}
-		var log *logger.Logger
-		if w.loggerConfig != nil {
-			log = logger.NewWithConfig(mission.ID, w.loggerConfig)
-		} else {
-			log = logger.New(mission.ID)
-		}
-		log.LogStep(status, fmt.Sprintf("Plan Step %d", step), message)
+		w.logPlanStep(mission.ID, step, status, message)
 	}
 
-	lines := strings.Split(mission.Body, "\n")
-	var result []string
-	inPlan := false
+	doc, err := w.parseDocument()
+	if err != nil {
+		return err
+	}
+
+	// Get the raw section content to preserve checkbox states
+	planContent, err := doc.GetSection("PLAN")
+	if err != nil {
+		return fmt.Errorf("getting plan section: %w", err)
+	}
+
+	updatedContent, err := w.markStepComplete(planContent, step)
+	if err != nil {
+		return err
+	}
+
+	if err := doc.UpdateSectionContent("PLAN", updatedContent); err != nil {
+		return fmt.Errorf("updating plan section: %w", err)
+	}
+
+	return w.writeDocument(doc)
+}
+
+// parseDocument reads and parses the mission document.
+func (w *Writer) parseDocument() (*md.Document, error) {
+	data, err := afero.ReadFile(w.FS(), w.MissionPath())
+	if err != nil {
+		return nil, fmt.Errorf("reading mission file: %w", err)
+	}
+
+	doc, err := md.Parse(data)
+	if err != nil {
+		return nil, fmt.Errorf("parsing mission: %w", err)
+	}
+
+	return doc, nil
+}
+
+// writeDocument writes the document back to the mission file.
+func (w *Writer) writeDocument(doc *md.Document) error {
+	output, err := doc.Write()
+	if err != nil {
+		return fmt.Errorf("writing document: %w", err)
+	}
+
+	return afero.WriteFile(w.FS(), w.MissionPath(), output, 0644)
+}
+
+// logPlanStep logs a plan step completion message.
+func (w *Writer) logPlanStep(missionID string, step int, status, message string) {
+	if status == "" {
+		status = "INFO"
+	}
+	var log *logger.Logger
+	if w.loggerConfig != nil {
+		log = logger.NewWithConfig(missionID, w.loggerConfig)
+	} else {
+		log = logger.New(missionID)
+	}
+	log.LogStep(status, fmt.Sprintf("Plan Step %d", step), message)
+}
+
+// markStepComplete marks a specific step as complete in the plan content.
+// Expects plan content to be in checkbox format (normalized by UpdateSection/UpdateList).
+func (w *Writer) markStepComplete(planContent string, step int) (string, error) {
+	lines := strings.Split(planContent, "\n")
 	planStepCount := 0
 
-	for _, line := range lines {
+	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		if trimmed == "## PLAN" {
-			inPlan = true
-			result = append(result, line)
-			continue
-		} else if strings.HasPrefix(trimmed, "## ") {
-			inPlan = false
-		}
-
-		if inPlan && strings.HasPrefix(trimmed, "- [") {
+		if strings.HasPrefix(trimmed, "- [ ] ") || strings.HasPrefix(trimmed, "- [x] ") {
 			planStepCount++
 			if planStepCount == step {
-				line = strings.Replace(line, "- [ ]", "- [x]", 1)
+				lines[i] = strings.Replace(line, "- [ ]", "- [x]", 1)
 			}
 		}
-
-		result = append(result, line)
 	}
 
-	if step > planStepCount {
-		return fmt.Errorf("step %d not found (total steps: %d)", step, planStepCount)
+	if step < 1 || step > planStepCount {
+		return "", fmt.Errorf("step %d not found (total steps: %d)", step, planStepCount)
 	}
 
-	mission.Body = strings.Join(result, "\n")
-	return w.Write(mission)
+	return strings.Join(lines, "\n"), nil
 }
 
 // UpdateFrontmatter updates frontmatter fields.
@@ -269,7 +292,9 @@ func (w *Writer) UpdateFrontmatter(pairs []string) error {
 }
 
 // format converts a Mission struct to markdown with YAML frontmatter.
+// format formats a Mission struct into markdown with YAML frontmatter using pkg/md abstraction.
 func (w *Writer) format(mission *Mission) (string, error) {
+	// Build frontmatter map with required fields
 	frontmatter := map[string]interface{}{
 		"id":        mission.ID,
 		"type":      mission.Type,
@@ -278,6 +303,7 @@ func (w *Writer) format(mission *Mission) (string, error) {
 		"status":    mission.Status,
 	}
 
+	// Add optional fields if present
 	if mission.ParentMission != "" {
 		frontmatter["parent_mission"] = mission.ParentMission
 	}
@@ -286,16 +312,16 @@ func (w *Writer) format(mission *Mission) (string, error) {
 		frontmatter["domains"] = mission.Domains
 	}
 
-	yamlData, err := yaml.Marshal(frontmatter)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal frontmatter: %w", err)
+	// Use pkg/md to write document with frontmatter
+	doc := &md.Document{
+		Frontmatter: frontmatter,
+		Body:        mission.Body,
 	}
 
-	var sb strings.Builder
-	sb.WriteString("---\n")
-	sb.Write(yamlData)
-	sb.WriteString("---\n\n")
-	sb.WriteString(mission.Body)
+	data, err := doc.Write()
+	if err != nil {
+		return "", fmt.Errorf("writing document: %w", err)
+	}
 
-	return sb.String(), nil
+	return string(data), nil
 }
