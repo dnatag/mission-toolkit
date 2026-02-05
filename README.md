@@ -35,8 +35,11 @@ go build -o m main.go && sudo mv m /usr/local/bin/
 ## Quick Start
 
 ```bash
-# 1. Initialize
+# 1. Initialize (project-specific)
 m init --ai q    # or: claude, kiro, opencode
+
+# Or initialize globally (applies to all projects)
+m init --ai q --global
 
 # 2. Plan a mission
 /m.plan "Add user authentication to the API"
