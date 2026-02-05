@@ -41,6 +41,29 @@ func NewServiceWithGit(fs afero.Fs, missionDir string, gitClient git.GitClient) 
 	}
 }
 
+// commitWithRetry handles pre-commit hooks that modify files by retrying Add+Commit
+// until no unstaged changes remain (max 3 retries).
+func (s *Service) commitWithRetry(files []string, message string) (string, error) {
+	const maxRetries = 3
+	for i := 0; i < maxRetries; i++ {
+		if err := s.git.Add(files); err != nil {
+			return "", fmt.Errorf("staging files: %w", err)
+		}
+		commitHash, err := s.git.Commit(message)
+		if err != nil {
+			return "", err
+		}
+		unstaged, err := s.git.GetUnstagedFiles()
+		if err != nil {
+			return "", fmt.Errorf("checking unstaged files: %w", err)
+		}
+		if len(unstaged) == 0 {
+			return commitHash, nil
+		}
+	}
+	return "", fmt.Errorf("pre-commit hooks modified files after %d retries", maxRetries)
+}
+
 // Create creates a new checkpoint for the current mission
 func (s *Service) Create(missionID string) (string, error) {
 	stagableFiles, err := s.getStagableScope()
@@ -55,11 +78,7 @@ func (s *Service) Create(missionID string) (string, error) {
 
 	checkpointName := fmt.Sprintf("%s-%d", missionID, num)
 
-	if err := s.git.Add(stagableFiles); err != nil {
-		return "", fmt.Errorf("staging files: %w", err)
-	}
-
-	commitHash, err := s.git.Commit(fmt.Sprintf("checkpoint: %s", checkpointName))
+	commitHash, err := s.commitWithRetry(stagableFiles, fmt.Sprintf("checkpoint: %s", checkpointName))
 	if err != nil {
 		if !errors.Is(err, git.ErrNoChanges) {
 			return "", fmt.Errorf("creating checkpoint commit: %w", err)

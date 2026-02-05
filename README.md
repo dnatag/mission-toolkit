@@ -35,8 +35,11 @@ go build -o m main.go && sudo mv m /usr/local/bin/
 ## Quick Start
 
 ```bash
-# 1. Initialize
+# 1. Initialize (project-specific)
 m init --ai q    # or: claude, kiro, opencode
+
+# Or initialize globally (applies to all projects)
+m init --ai q --global
 
 # 2. Plan a mission
 /m.plan "Add user authentication to the API"
@@ -65,10 +68,6 @@ m.plan → 🤝 Review → m.apply → 🤝 Review → m.complete
 - [Workflows](docs/workflows.md) — Mission lifecycle, bugfix workflow, project structure
 - [CLI Reference](docs/cli-reference.md) — All commands and options
 
-## License
-
-See [LICENSE](LICENSE) file.
-
 ## Versioning
 
 ```bash
@@ -90,3 +89,7 @@ m version                          # Check current version
 - Linux (amd64, arm64)
 - macOS (amd64, arm64)
 - Windows (amd64, arm64)
+
+## License
+
+See [LICENSE](LICENSE) file.
