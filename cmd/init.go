@@ -17,6 +17,7 @@ import (
 )
 
 var aiType string
+var globalMode bool
 
 // initCmd represents the init command
 var initCmd = &cobra.Command{
@@ -25,6 +26,9 @@ var initCmd = &cobra.Command{
 	Long: `Initialize Mission Toolkit project structure with templates
 for the specified AI assistant type. Creates .mission/ directory with governance files
 and AI-specific prompt templates.
+
+By default, templates are installed in the current project directory. Use --global flag
+to install to global config directory in user home directory instead.
 
 If a Git repository is not found, it will be initialized automatically.`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -45,7 +49,7 @@ If a Git repository is not found, it will be initialized automatically.`,
 		fs := afero.NewOsFs()
 
 		// Write templates
-		if err := templates.WriteTemplates(fs, cwd, aiType); err != nil {
+		if err := templates.WriteTemplates(fs, cwd, aiType, globalMode); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing templates: %v\n", err)
 			os.Exit(1)
 		}
@@ -72,7 +76,17 @@ If a Git repository is not found, it will be initialized automatically.`,
 			os.Exit(1)
 		}
 
-		fmt.Printf("Mission Toolkit project initialized successfully for AI type: %s\n", aiType)
+		if globalMode {
+			fmt.Printf("Mission Toolkit initialized successfully for AI type: %s (global mode)\n", aiType)
+			fmt.Printf("Prompts installed to: ~/%s\n", map[string]string{
+				"q":        ".aws/amazonq/prompts",
+				"claude":   ".claude/commands",
+				"kiro":     ".kiro/prompts",
+				"opencode": ".config/opencode/commands",
+			}[aiType])
+		} else {
+			fmt.Printf("Mission Toolkit project initialized successfully for AI type: %s\n", aiType)
+		}
 
 		// Add .mission/ to .gitignore
 		if err := git.EnsureEntry(fs, cwd, ".mission/"); err != nil {
@@ -99,4 +113,7 @@ func init() {
 	// Add --ai flag
 	initCmd.Flags().StringVar(&aiType, "ai", "", "AI assistant type (required). Supported: q, claude, kiro, opencode")
 	initCmd.MarkFlagRequired("ai")
+
+	// Add --global flag
+	initCmd.Flags().BoolVarP(&globalMode, "global", "g", false, "Install to global config directory in user home")
 }

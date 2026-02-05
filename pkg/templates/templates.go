@@ -42,8 +42,31 @@ func ValidateAIType(aiType string) error {
 	return fmt.Errorf("unsupported AI type '%s'. Supported types: %v", aiType, SupportedAITypes)
 }
 
+// getGlobalConfigDir returns the global config directory path for the given AI type.
+// For global mode, these directories are installed under the user's home directory.
+func getGlobalConfigDir(aiType string) (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get user home directory: %w", err)
+	}
+
+	globalDirs := map[string]string{
+		"q":        ".aws/amazonq/prompts",
+		"claude":   ".claude/commands",
+		"kiro":     ".kiro/prompts",
+		"opencode": ".config/opencode/commands",
+	}
+
+	relDir, ok := globalDirs[aiType]
+	if !ok {
+		return "", fmt.Errorf("unsupported AI type '%s' for global config directory", aiType)
+	}
+
+	return filepath.Join(homeDir, relDir), nil
+}
+
 // WriteTemplates writes embedded templates to the specified filesystem
-func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
+func WriteTemplates(fs afero.Fs, targetDir string, aiType string, globalMode bool) error {
 	// Validate AI type first
 	if err := ValidateAIType(aiType); err != nil {
 		return err
@@ -86,10 +109,19 @@ func WriteTemplates(fs afero.Fs, targetDir string, aiType string) error {
 		"q":        ".amazonq/prompts",
 		"claude":   ".claude/commands",
 		"kiro":     ".kiro/prompts",
-		"opencode": ".opencode/command",
+		"opencode": ".opencode/commands",
 	}
 
-	promptDir := filepath.Join(targetDir, aiDirs[aiType])
+	var promptDir string
+	if globalMode {
+		globalDir, err := getGlobalConfigDir(aiType)
+		if err != nil {
+			return err
+		}
+		promptDir = globalDir
+	} else {
+		promptDir = filepath.Join(targetDir, aiDirs[aiType])
+	}
 
 	if err := fs.MkdirAll(promptDir, 0755); err != nil {
 		return err

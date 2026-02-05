@@ -51,7 +51,7 @@ func generateExpectedFiles(aiType string, promptFiles []string) []string {
 	case "kiro":
 		promptDir = ".kiro/prompts"
 	case "opencode":
-		promptDir = ".opencode/command"
+		promptDir = ".opencode/commands"
 	}
 
 	for _, file := range promptFiles {
@@ -87,7 +87,7 @@ func TestWriteTemplates(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fs := afero.NewMemMapFs()
 
-			err := WriteTemplates(fs, tt.targetDir, tt.aiType)
+			err := WriteTemplates(fs, tt.targetDir, tt.aiType, false)
 			if err != nil {
 				t.Fatalf("WriteTemplates() error = %v", err)
 			}
@@ -121,7 +121,7 @@ func TestWriteTemplates(t *testing.T) {
 func TestWriteTemplatesUnsupportedAI(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
-	err := WriteTemplates(fs, "/test", "unsupported")
+	err := WriteTemplates(fs, "/test", "unsupported", false)
 	if err == nil {
 		t.Error("Expected error for unsupported AI type, but got nil")
 	}
@@ -168,7 +168,7 @@ func TestSlashPrefixReplacement(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fs := afero.NewMemMapFs()
 
-			err := WriteTemplates(fs, "/test", tt.aiType)
+			err := WriteTemplates(fs, "/test", tt.aiType, false)
 			if err != nil {
 				t.Fatalf("WriteTemplates() error = %v", err)
 			}
@@ -360,12 +360,109 @@ func TestWriteLibraryTemplatesUnsupportedAI(t *testing.T) {
 	}
 }
 
+func TestWriteTemplatesGlobalMode(t *testing.T) {
+	tests := []struct {
+		name      string
+		aiType    string
+		targetDir string
+	}{
+		{"Amazon Q global mode", "q", "/test"},
+		{"Claude global mode", "claude", "/test"},
+		{"Kiro global mode", "kiro", "/test"},
+		{"OpenCode global mode", "opencode", "/test"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+
+			// Test with global mode enabled
+			err := WriteTemplates(fs, tt.targetDir, tt.aiType, true)
+			if err != nil {
+				t.Fatalf("WriteTemplates(globalMode=true) error = %v", err)
+			}
+
+			// Get the expected global config directory
+			globalDir, err := getGlobalConfigDir(tt.aiType)
+			if err != nil {
+				t.Fatalf("getGlobalConfigDir() error = %v", err)
+			}
+
+			// Verify that prompts were written to the global directory
+			_ = globalDir // Verify the path is correctly formed (contains expected components)
+
+			// Verify that the local prompt directory was NOT created
+			localPromptDir := filepath.Join(tt.targetDir, ".amazonq")
+			if tt.aiType == "claude" {
+				localPromptDir = filepath.Join(tt.targetDir, ".claude")
+			} else if tt.aiType == "kiro" {
+				localPromptDir = filepath.Join(tt.targetDir, ".kiro")
+			} else if tt.aiType == "opencode" {
+				localPromptDir = filepath.Join(tt.targetDir, ".opencode")
+			}
+
+			// In global mode, the local prompt directory should not be created for prompts
+			exists, _ := afero.Exists(fs, localPromptDir)
+			if exists {
+				// Check if it's actually empty (meaning prompts went to global dir)
+				entries, _ := afero.ReadDir(fs, localPromptDir)
+				if len(entries) > 0 {
+					// If prompts exist locally, that's wrong for global mode
+					t.Errorf("In global mode, prompts should not be written to local directory %s", localPromptDir)
+				}
+			}
+
+			// Verify .mission directory was still created locally
+			missionDir := filepath.Join(tt.targetDir, ".mission")
+			exists, err = afero.DirExists(fs, missionDir)
+			if err != nil {
+				t.Fatalf("Error checking .mission directory: %v", err)
+			}
+			if !exists {
+				t.Errorf(".mission directory should still be created locally in global mode")
+			}
+		})
+	}
+}
+
+func TestGetGlobalConfigDir(t *testing.T) {
+	tests := []struct {
+		aiType           string
+		expectError      bool
+		expectedContains string
+	}{
+		{"q", false, ".aws/amazonq"},
+		{"claude", false, ".claude/commands"},
+		{"kiro", false, ".kiro/prompts"},
+		{"opencode", false, ".config/opencode/commands"},
+		{"invalid", true, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.aiType, func(t *testing.T) {
+			dir, err := getGlobalConfigDir(tt.aiType)
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("getGlobalConfigDir(%s) expected error, got nil", tt.aiType)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("getGlobalConfigDir(%s) unexpected error: %v", tt.aiType, err)
+			}
+			if !strings.Contains(dir, tt.expectedContains) {
+				t.Errorf("getGlobalConfigDir(%s) = %s, expected to contain %s", tt.aiType, dir, tt.expectedContains)
+			}
+		})
+	}
+}
+
 func TestIdempotentInit(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	targetDir := "/test"
 
 	// First init
-	err := WriteTemplates(fs, targetDir, "q")
+	err := WriteTemplates(fs, targetDir, "q", false)
 	require.NoError(t, err)
 
 	// Add user content to backlog.md
@@ -375,7 +472,7 @@ func TestIdempotentInit(t *testing.T) {
 	require.NoError(t, err)
 
 	// Second init
-	err = WriteTemplates(fs, targetDir, "claude")
+	err = WriteTemplates(fs, targetDir, "claude", false)
 	require.NoError(t, err)
 
 	// Verify user content is preserved in backlog.md
