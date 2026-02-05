@@ -68,10 +68,6 @@ m.plan → 🤝 Review → m.apply → 🤝 Review → m.complete
 - [Workflows](docs/workflows.md) — Mission lifecycle, bugfix workflow, project structure
 - [CLI Reference](docs/cli-reference.md) — All commands and options
 
-## License
-
-See [LICENSE](LICENSE) file.
-
 ## Versioning
 
 ```bash
@@ -93,3 +89,7 @@ m version                          # Check current version
 - Linux (amd64, arm64)
 - macOS (amd64, arm64)
 - Windows (amd64, arm64)
+
+## License
+
+See [LICENSE](LICENSE) file.
