@@ -13,6 +13,10 @@ func (m *MockGitClient) Commit(message string) (string, error) {
 	return "mock-hash", nil
 }
 
+func (m *MockGitClient) CommitNoVerify(message string) (string, error) {
+	return "mock-hash", nil
+}
+
 func (m *MockGitClient) CreateTag(name string, commitHash string) error {
 	return nil
 }

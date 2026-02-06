@@ -8,6 +8,9 @@ var ErrNoChanges = errors.New("no changes to commit")
 type GitClient interface {
 	Add(files []string) error
 	Commit(message string) (string, error)
+	// CommitNoVerify creates a commit without running git hooks (pre-commit, commit-msg, etc.).
+	// This is used for internal checkpoint commits to avoid hook interference.
+	CommitNoVerify(message string) (string, error)
 	CreateTag(name string, commitHash string) error
 	Restore(checkpointName string, files []string) error
 	ListTags(prefix string) ([]string, error)

@@ -49,6 +49,23 @@ func (c *CmdGitClient) Commit(message string) (string, error) {
 	return strings.TrimSpace(out), err
 }
 
+// CommitNoVerify creates a commit without running git hooks.
+// This is used for internal checkpoint commits to prevent pre-commit hooks
+// from modifying files and causing checkpoint creation failures.
+func (c *CmdGitClient) CommitNoVerify(message string) (string, error) {
+	output, err := c.run("commit", "--no-verify", "-m", message)
+	if err != nil {
+		if strings.Contains(output, "nothing to commit") {
+			return "", ErrNoChanges
+		}
+		return "", fmt.Errorf("git commit failed: %s", output)
+	}
+
+	// Get the commit hash
+	out, err := c.run("rev-parse", "HEAD")
+	return strings.TrimSpace(out), err
+}
+
 func (c *CmdGitClient) CreateTag(name string, commitHash string) error {
 	args := []string{"tag", name}
 	if commitHash != "" {
