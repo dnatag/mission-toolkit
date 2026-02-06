@@ -35,10 +35,12 @@ go build -o m main.go && sudo mv m /usr/local/bin/
 ## Quick Start
 
 ```bash
-# 1. Initialize (project-specific)
+# 1. Initialize
+# Project-specific (creates git-ignored .mission/ folder in current project)
 m init --ai q    # or: claude, kiro, opencode
 
-# Or initialize globally (applies to all projects)
+# Global (installs prompts to $HOME, keeps project folder clean)
+# Only creates git-ignored .mission/ folder when you run commands
 m init --ai q --global
 
 # 2. Plan a mission

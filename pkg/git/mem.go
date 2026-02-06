@@ -87,6 +87,11 @@ func (c *MemGitClient) Commit(message string) (string, error) {
 	return hash.String(), nil
 }
 
+// CommitNoVerify delegates to Commit since in-memory git has no hooks.
+func (c *MemGitClient) CommitNoVerify(message string) (string, error) {
+	return c.Commit(message)
+}
+
 func (c *MemGitClient) CreateTag(name string, commitHash string) error {
 	hash := plumbing.NewHash(commitHash)
 	_, err := c.repo.CreateTag(name, hash, &git.CreateTagOptions{
