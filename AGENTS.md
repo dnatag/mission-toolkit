@@ -10,9 +10,8 @@
 ## Project Architecture
 
 ### Core Components
-- **CLI Commands**: `cmd/` - Root, init, dashboard, version, analyze, mission, diagnosis, backlog, checkpoint, check, log
+- **CLI Commands**: `cmd/` - Root, init, version, analyze, mission, diagnosis, backlog, checkpoint, check, log
 - **Templates**: `internal/templates/` - Embedded mission and prompt templates
-- **TUI**: `internal/tui/` - Terminal user interface with dashboard
 - **Mission Logic**: `internal/mission/` - Mission lifecycle management
 - **Diagnosis Logic**: `internal/diagnosis/` - Bug diagnosis lifecycle management
 - **Analysis**: `internal/analyze/` - Intent, scope, complexity analysis
@@ -58,7 +57,6 @@ m init --ai kiro                   # Initialize with Kiro
 m init --ai opencode               # Initialize with OpenCode
 
 # Mission management
-m dashboard                        # Interactive TUI dashboard
 m mission check --context plan    # Check mission state for planning
 m mission create --intent "desc"   # Create new mission
 m mission update --status active   # Update mission status

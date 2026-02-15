@@ -7,7 +7,6 @@ Complete reference for all `m` CLI commands.
 ```bash
 m version                          # Show version
 m init --ai <q|claude|kiro|opencode>  # Initialize project
-m dashboard                        # Interactive TUI dashboard
 ```
 
 ## AI Commands

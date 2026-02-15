@@ -13,5 +13,3 @@ version: 1.0.0
 2. Pause & start new: `m mission pause && /m.plan "{{NEW_INTENT}}"`
 3. Complete: `/m.complete`
 4. Abandon (⚠️ discards): `m mission archive --force && /m.plan "{{NEW_INTENT}}"`
-
-💡 Run `m dashboard` for full status

@@ -93,7 +93,6 @@ All CLI commands are documented in `libraries/cli-reference.md` (auto-generated 
 
 ### Core Commands
 - `m init` - Initialize project with AI-specific templates
-- `m dashboard` - Interactive TUI with mission details and logs
 - `m version` - Show version information
 - `m check` - Validate input strings
 - `m docs` - Generate CLI documentation schema
