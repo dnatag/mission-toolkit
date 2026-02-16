@@ -2,8 +2,7 @@ package backlog
 
 // BacklogProvider defines the interface for backlog operations.
 // Implementations must support listing, adding, completing, and cleaning up backlog items,
-// as well as epic decomposition. Pattern-specific methods like AddWithPattern and
-// GetPatternCount are excluded as they are implementation-specific (e.g., markdown-based).
+// as well as pattern tracking and epic decomposition.
 type BacklogProvider interface {
 	// List returns backlog items, optionally including completed items and filtering by type.
 	// include: types to include (decomposed, refactor, future, completed)
@@ -12,6 +11,10 @@ type BacklogProvider interface {
 
 	// Add adds a new item to the specified section.
 	Add(description, itemType string) error
+
+	// AddWithPattern adds a new item with optional pattern ID tracking.
+	// For refactor items with a patternID, increments count if pattern exists.
+	AddWithPattern(description, itemType, patternID string) error
 
 	// AddMultiple adds multiple items to the specified section in a single operation.
 	AddMultiple(descriptions []string, itemType string) error
@@ -24,6 +27,10 @@ type BacklogProvider interface {
 	// Returns the number of items removed.
 	Cleanup(itemType string) (int, error)
 
+	// GetPatternCount returns the occurrence count for a pattern ID.
+	// Returns 0 if pattern not found.
+	GetPatternCount(patternID string) (int, error)
+
 	// Decompose adds multiple sub-intents with dependency tracking.
 	// Accepts a JSON string containing decomposed intent information.
 	// For implementations without dependency graph support, falls back to AddMultiple.
@@ -32,3 +39,11 @@ type BacklogProvider interface {
 
 // Compile-time interface check: verify BacklogManager satisfies BacklogProvider
 var _ BacklogProvider = (*BacklogManager)(nil)
+
+// NewProvider creates a BacklogProvider for the given mission directory.
+// Currently returns a BacklogManager. This factory function enables
+// dependency injection and supports future pluggable implementations
+// (e.g., BeadsProvider for Beads integration).
+func NewProvider(missionDir string) BacklogProvider {
+	return NewManager(missionDir)
+}

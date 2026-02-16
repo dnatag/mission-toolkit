@@ -27,8 +27,8 @@ var backlogListCmd = &cobra.Command{
 			return fmt.Errorf("--include and --exclude are mutually exclusive")
 		}
 
-		manager := backlog.NewManager(missionDir)
-		items, err := manager.List(include, exclude)
+		provider := backlog.NewProvider(missionDir)
+		items, err := provider.List(include, exclude)
 		if err != nil {
 			return fmt.Errorf("listing backlog: %w", err)
 		}
@@ -49,20 +49,20 @@ var backlogAddCmd = &cobra.Command{
 		itemType, _ := cmd.Flags().GetString("type")
 		patternID, _ := cmd.Flags().GetString("pattern-id")
 
-		manager := backlog.NewManager(missionDir)
+		provider := backlog.NewProvider(missionDir)
 
 		if len(args) == 1 {
-			if err := manager.AddWithPattern(args[0], itemType, patternID); err != nil {
+			if err := provider.AddWithPattern(args[0], itemType, patternID); err != nil {
 				return fmt.Errorf("adding backlog item: %w", err)
 			}
 			if patternID != "" {
-				count, _ := manager.GetPatternCount(patternID)
+				count, _ := provider.GetPatternCount(patternID)
 				fmt.Printf("Added backlog item (pattern: %s, count: %d): %s\n", patternID, count, args[0])
 			} else {
 				fmt.Printf("Added backlog item: %s\n", args[0])
 			}
 		} else {
-			if err := manager.AddMultiple(args, itemType); err != nil {
+			if err := provider.AddMultiple(args, itemType); err != nil {
 				return fmt.Errorf("adding backlog items: %w", err)
 			}
 			fmt.Printf("Added %d backlog items\n", len(args))
@@ -81,8 +81,8 @@ var backlogCompleteCmd = &cobra.Command{
 			return fmt.Errorf("--item flag is required")
 		}
 
-		manager := backlog.NewManager(missionDir)
-		if err := manager.Complete(item); err != nil {
+		provider := backlog.NewProvider(missionDir)
+		if err := provider.Complete(item); err != nil {
 			return fmt.Errorf("completing backlog item: %w", err)
 		}
 
@@ -105,8 +105,8 @@ Examples:
 	RunE: func(cmd *cobra.Command, args []string) error {
 		itemType, _ := cmd.Flags().GetString("type")
 
-		manager := backlog.NewManager(missionDir)
-		count, err := manager.Cleanup(itemType)
+		provider := backlog.NewProvider(missionDir)
+		count, err := provider.Cleanup(itemType)
 		if err != nil {
 			return fmt.Errorf("cleaning up backlog: %w", err)
 		}
