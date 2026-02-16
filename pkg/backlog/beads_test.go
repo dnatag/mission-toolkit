@@ -790,3 +790,325 @@ func TestBeadsProviderGetPatternCount(t *testing.T) {
 		t.Errorf("Expected pattern count 0 for non-existent, got %d", count)
 	}
 }
+
+func TestBeadsProviderComplete(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	// Mock list responses for each epic type
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-feature-1", "--json"},
+		`[{"id":"bd-task-1","title":"Feature task 1"},{"id":"bd-task-2","title":"Task to complete"}]`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-bugfix-1", "--json"},
+		`[{"id":"bd-task-3","title":"Bugfix task"}]`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-decomposed-1", "--json"},
+		`[]`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-refactor-1", "--json"},
+		`[]`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-future-1", "--json"},
+		`[]`,
+		nil,
+	)
+
+	// Mock close response
+	mockRunner.setResponse(
+		[]string{"close", "bd-task-2", "--reason", "Completed"},
+		``,
+		nil,
+	)
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"feature":    "bd-feature-1",
+			"bugfix":     "bd-bugfix-1",
+			"decomposed": "bd-decomposed-1",
+			"refactor":   "bd-refactor-1",
+			"future":     "bd-future-1",
+		},
+	}
+	data, err := json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test Complete
+	err = provider.Complete("Task to complete")
+	if err != nil {
+		t.Fatalf("Complete failed: %v", err)
+	}
+}
+
+func TestBeadsProviderCompleteNotFound(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	// Mock list responses returning no matching task
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-feature-1", "--json"},
+		`[{"id":"bd-task-1","title":"Other task"}]`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-bugfix-1", "--json"},
+		`[]`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-decomposed-1", "--json"},
+		`[]`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-refactor-1", "--json"},
+		`[]`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-future-1", "--json"},
+		`[]`,
+		nil,
+	)
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"feature":    "bd-feature-1",
+			"bugfix":     "bd-bugfix-1",
+			"decomposed": "bd-decomposed-1",
+			"refactor":   "bd-refactor-1",
+			"future":     "bd-future-1",
+		},
+	}
+	data, err := json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test Complete with non-existent item
+	err = provider.Complete("Non-existent task")
+	if err == nil {
+		t.Fatal("Expected error for non-existent task, got nil")
+	}
+	expectedErr := "item not found: Non-existent task"
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error '%s', got '%s'", expectedErr, err.Error())
+	}
+}
+
+func TestBeadsProviderCleanupAll(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	// Mock list responses with mixed open and closed items
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-feature-1", "--json"},
+		`[{"id":"bd-task-1","title":"Open feature","status":"open"},{"id":"bd-task-2","title":"Closed feature","status":"closed"}]`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-bugfix-1", "--json"},
+		`[{"id":"bd-task-3","title":"Closed bugfix","status":"closed"}]`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-decomposed-1", "--json"},
+		`[{"id":"bd-task-4","title":"Open decomposed","status":"open"}]`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-refactor-1", "--json"},
+		`[]`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-future-1", "--json"},
+		`[]`,
+		nil,
+	)
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"feature":    "bd-feature-1",
+			"bugfix":     "bd-bugfix-1",
+			"decomposed": "bd-decomposed-1",
+			"refactor":   "bd-refactor-1",
+			"future":     "bd-future-1",
+		},
+	}
+	data, err := json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test Cleanup with no itemType (all types)
+	count, err := provider.Cleanup("")
+	if err != nil {
+		t.Fatalf("Cleanup failed: %v", err)
+	}
+
+	// Should count 2 closed items (1 feature + 1 bugfix)
+	if count != 2 {
+		t.Errorf("Expected 2 closed items, got %d", count)
+	}
+}
+
+func TestBeadsProviderCleanupByType(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	// Mock list response for feature epic only
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-feature-1", "--json"},
+		`[{"id":"bd-task-1","title":"Open feature","status":"open"},{"id":"bd-task-2","title":"Closed feature 1","status":"closed"},{"id":"bd-task-3","title":"Closed feature 2","status":"closed"}]`,
+		nil,
+	)
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"feature":    "bd-feature-1",
+			"bugfix":     "bd-bugfix-1",
+			"decomposed": "bd-decomposed-1",
+			"refactor":   "bd-refactor-1",
+			"future":     "bd-future-1",
+		},
+	}
+	data, err := json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test Cleanup with itemType specified
+	count, err := provider.Cleanup("feature")
+	if err != nil {
+		t.Fatalf("Cleanup failed: %v", err)
+	}
+
+	// Should count 2 closed items in feature epic
+	if count != 2 {
+		t.Errorf("Expected 2 closed feature items, got %d", count)
+	}
+}
+
+func TestBeadsProviderCleanupInvalidType(t *testing.T) {
+	tempDir := t.TempDir()
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"feature": "bd-feature-1",
+		},
+	}
+	data, err := json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	mockRunner := newMockCommandRunner()
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test Cleanup with invalid itemType
+	count, err := provider.Cleanup("invalid")
+	if err == nil {
+		t.Fatal("Expected error for invalid type, got nil")
+	}
+	if count != 0 {
+		t.Errorf("Expected count 0 for invalid type, got %d", count)
+	}
+}

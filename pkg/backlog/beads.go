@@ -446,15 +446,125 @@ func (p *BeadsProvider) AddMultiple(descriptions []string, itemType string) erro
 }
 
 // Complete marks an item as completed.
-// TODO: Implement in Task 6
+// It searches all epic types for a task with matching title and marks it as closed.
 func (p *BeadsProvider) Complete(itemText string) error {
-	return fmt.Errorf("Complete: not yet implemented")
+	// Ensure epics are loaded
+	if err := p.ensureEpics(); err != nil {
+		return fmt.Errorf("failed to ensure epics: %w", err)
+	}
+
+	// Search all epic types for the matching task
+	epicTypes := []string{
+		EpicTypeFeature,
+		EpicTypeBugfix,
+		EpicTypeDecomposed,
+		EpicTypeRefactor,
+		EpicTypeFuture,
+	}
+
+	for _, itemType := range epicTypes {
+		epicID, ok := p.epicCache.Epics[itemType]
+		if !ok {
+			continue
+		}
+
+		// Query children of this epic
+		output, err := p.commandRunner.Run("list", "--parent", epicID, "--json")
+		if err != nil {
+			return fmt.Errorf("failed to list %s items: %w", itemType, err)
+		}
+
+		var items []struct {
+			ID    string `json:"id"`
+			Title string `json:"title"`
+		}
+		if err := json.Unmarshal([]byte(output), &items); err != nil {
+			return fmt.Errorf("failed to parse list output for %s: %w", itemType, err)
+		}
+
+		// Find the task with matching title
+		for _, item := range items {
+			if item.Title == itemText {
+				// Mark the task as closed
+				_, err := p.commandRunner.Run("close", item.ID, "--reason", "Completed")
+				if err != nil {
+					return fmt.Errorf("failed to close task '%s': %w", itemText, err)
+				}
+				return nil
+			}
+		}
+	}
+
+	return fmt.Errorf("item not found: %s", itemText)
 }
 
 // Cleanup removes completed items.
-// TODO: Implement in Task 6
+// For Beads, this counts and returns the number of closed items across the specified epic types.
+// Actual deletion is not performed since closed items are already archived in Beads.
 func (p *BeadsProvider) Cleanup(itemType string) (int, error) {
-	return 0, fmt.Errorf("Cleanup: not yet implemented")
+	// Ensure epics are loaded
+	if err := p.ensureEpics(); err != nil {
+		return 0, fmt.Errorf("failed to ensure epics: %w", err)
+	}
+
+	// Determine which epic types to query
+	var queryTypes []string
+	if itemType != "" {
+		// Validate item type
+		validTypes := map[string]bool{
+			EpicTypeFeature:    true,
+			EpicTypeBugfix:     true,
+			EpicTypeDecomposed: true,
+			EpicTypeRefactor:   true,
+			EpicTypeFuture:     true,
+		}
+		if !validTypes[itemType] {
+			return 0, fmt.Errorf("invalid type: %s. Valid types: feature, bugfix, decomposed, refactor, future", itemType)
+		}
+		queryTypes = []string{itemType}
+	} else {
+		// Query all epic types
+		queryTypes = []string{
+			EpicTypeFeature,
+			EpicTypeBugfix,
+			EpicTypeDecomposed,
+			EpicTypeRefactor,
+			EpicTypeFuture,
+		}
+	}
+
+	// Count closed items across the specified epic types
+	closedCount := 0
+	for _, itemType := range queryTypes {
+		epicID, ok := p.epicCache.Epics[itemType]
+		if !ok {
+			continue
+		}
+
+		// Query children of this epic
+		output, err := p.commandRunner.Run("list", "--parent", epicID, "--json")
+		if err != nil {
+			return 0, fmt.Errorf("failed to list %s items: %w", itemType, err)
+		}
+
+		var items []struct {
+			ID     string `json:"id"`
+			Title  string `json:"title"`
+			Status string `json:"status"`
+		}
+		if err := json.Unmarshal([]byte(output), &items); err != nil {
+			return 0, fmt.Errorf("failed to parse list output for %s: %w", itemType, err)
+		}
+
+		// Count closed items
+		for _, item := range items {
+			if item.Status == "closed" {
+				closedCount++
+			}
+		}
+	}
+
+	return closedCount, nil
 }
 
 // GetPatternCount returns the occurrence count for a pattern ID.
