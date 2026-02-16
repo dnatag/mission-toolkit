@@ -2,6 +2,7 @@ package backlog
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -440,4 +441,44 @@ func (m *BacklogManager) Cleanup(itemType string) (int, error) {
 	}
 
 	return removedCount, nil
+}
+
+// Decompose adds multiple sub-intents with dependency tracking.
+// Accepts a JSON string containing decomposed intent information.
+// Falls back to AddMultiple with dependency hints in descriptions for implementations
+// without dependency graph support.
+func (m *BacklogManager) Decompose(jsonInput string) error {
+	// Parse the decompose JSON input
+	var decompose struct {
+		Action     string `json:"action"`
+		SubIntents []struct {
+			Intent         string   `json:"intent"`
+			Rationale      string   `json:"rationale"`
+			EstimatedFiles int      `json:"estimated_files"`
+			Dependencies   []string `json:"dependencies"`
+		} `json:"sub_intents"`
+		DecompositionRationale string `json:"decomposition_rationale"`
+	}
+
+	if err := json.Unmarshal([]byte(jsonInput), &decompose); err != nil {
+		return fmt.Errorf("parsing decompose JSON: %w", err)
+	}
+
+	if len(decompose.SubIntents) == 0 {
+		return fmt.Errorf("no sub-intents found in decompose input")
+	}
+
+	// Build descriptions with dependency hints
+	descriptions := make([]string, len(decompose.SubIntents))
+	for i, subIntent := range decompose.SubIntents {
+		description := subIntent.Intent
+		// Add dependency hints if present
+		if len(subIntent.Dependencies) > 0 {
+			description += fmt.Sprintf(" (depends on: %s)", strings.Join(subIntent.Dependencies, ", "))
+		}
+		descriptions[i] = description
+	}
+
+	// Add all items as decomposed type
+	return m.AddMultiple(descriptions, "decomposed")
 }
