@@ -41,9 +41,21 @@ type BacklogProvider interface {
 var _ BacklogProvider = (*BacklogManager)(nil)
 
 // NewProvider creates a BacklogProvider for the given mission directory.
-// Currently returns a BacklogManager. This factory function enables
-// dependency injection and supports future pluggable implementations
-// (e.g., BeadsProvider for Beads integration).
+// Auto-detects Beads availability and returns BeadsProvider when available,
+// otherwise falls back to BacklogManager.
 func NewProvider(missionDir string) BacklogProvider {
+	// Check if Beads is available in the mission directory
+	available, err := BeadsAvailableInDir(missionDir)
+	if err != nil {
+		// Error indicates an issue with PATH lookup or .beads validation
+		// (e.g., .beads exists but is not a directory). Fall back to BacklogManager.
+		return NewManager(missionDir)
+	}
+
+	if available {
+		return NewBeadsProvider(missionDir)
+	}
+
+	// Fallback to BacklogManager when Beads is not available
 	return NewManager(missionDir)
 }
