@@ -621,7 +621,113 @@ func (p *BeadsProvider) GetPatternCount(patternID string) (int, error) {
 }
 
 // Decompose adds multiple sub-intents with dependency tracking.
-// TODO: Implement in Task 7
+// It parses JSON input containing sub-intents with dependencies and creates
+// them in Beads with proper dependency wiring using the bd CLI's dependency graph.
+//
+// The JSON input format matches the BacklogProvider interface:
+//
+//	{
+//	  "action": "decompose",
+//	  "sub_intents": [
+//	    {
+//	      "intent": "Task description",
+//	      "rationale": "Why this task is needed",
+//	      "estimated_files": 3,
+//	      "dependencies": ["Other task description"]
+//	    }
+//	  ],
+//	  "decomposition_rationale": "Why we decomposed this"
+//	}
+//
+// The implementation:
+// 1. Creates all tasks in the decomposed epic first
+// 2. Maps intent descriptions to Beads task IDs
+// 3. Wires dependencies using Beads' native dependency graph
+//
+// This two-phase approach ensures all tasks exist before wiring dependencies,
+// avoiding ordering constraints in the input.
 func (p *BeadsProvider) Decompose(jsonInput string) error {
-	return fmt.Errorf("Decompose: not yet implemented")
+	// Parse the decompose JSON input
+	var decompose struct {
+		Action     string `json:"action"`
+		SubIntents []struct {
+			Intent         string   `json:"intent"`
+			Rationale      string   `json:"rationale"`
+			EstimatedFiles int      `json:"estimated_files"`
+			Dependencies   []string `json:"dependencies"`
+		} `json:"sub_intents"`
+		DecompositionRationale string `json:"decomposition_rationale"`
+	}
+
+	if err := json.Unmarshal([]byte(jsonInput), &decompose); err != nil {
+		return fmt.Errorf("parsing decompose JSON: %w", err)
+	}
+
+	if len(decompose.SubIntents) == 0 {
+		return fmt.Errorf("no sub-intents found in decompose input")
+	}
+
+	// Ensure epics are loaded
+	if err := p.ensureEpics(); err != nil {
+		return fmt.Errorf("failed to ensure epics: %w", err)
+	}
+
+	// Get the decomposed epic ID
+	epicID, ok := p.epicCache.Epics[EpicTypeDecomposed]
+	if !ok {
+		return fmt.Errorf("decomposed epic not found in cache")
+	}
+
+	// Phase 1: Create all tasks and build the intent-to-task-ID mapping.
+	// We create all tasks first to avoid ordering issues with dependencies.
+	intentToTaskID := make(map[string]string, len(decompose.SubIntents))
+	for _, subIntent := range decompose.SubIntents {
+		// Create task using bd CLI: bd create "<intent>" -t task --parent <epicID> --json
+		output, err := p.commandRunner.Run("create", subIntent.Intent, "-t", "task", "--parent", epicID, "--json")
+		if err != nil {
+			return fmt.Errorf("failed to create task for sub-intent '%s': %w", subIntent.Intent, err)
+		}
+
+		// Parse JSON output to extract the created task ID
+		var result struct {
+			ID string `json:"id"`
+		}
+		if err := json.Unmarshal([]byte(output), &result); err != nil {
+			return fmt.Errorf("failed to parse create output for '%s': %w", subIntent.Intent, err)
+		}
+
+		if result.ID == "" {
+			return fmt.Errorf("bd create returned empty ID for sub-intent '%s'", subIntent.Intent)
+		}
+
+		// Store the mapping from intent description to task ID for dependency wiring
+		intentToTaskID[subIntent.Intent] = result.ID
+	}
+
+	// Phase 2: Wire dependencies using Beads' native dependency graph.
+	// Now that all tasks exist, we can safely add dependencies between them.
+	for _, subIntent := range decompose.SubIntents {
+		taskID := intentToTaskID[subIntent.Intent]
+
+		// Skip tasks with no dependencies
+		if len(subIntent.Dependencies) == 0 {
+			continue
+		}
+
+		// For each dependency reference, find the corresponding task ID and add the dependency
+		for _, depIntent := range subIntent.Dependencies {
+			depTaskID, ok := intentToTaskID[depIntent]
+			if !ok {
+				return fmt.Errorf("dependency task not found: '%s' referenced by '%s'", depIntent, subIntent.Intent)
+			}
+
+			// Add dependency using bd CLI: bd add-dep <taskID> <depTaskID>
+			_, err := p.commandRunner.Run("add-dep", taskID, depTaskID)
+			if err != nil {
+				return fmt.Errorf("failed to add dependency from '%s' to '%s': %w", subIntent.Intent, depIntent, err)
+			}
+		}
+	}
+
+	return nil
 }

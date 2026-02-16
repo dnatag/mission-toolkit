@@ -1112,3 +1112,400 @@ func TestBeadsProviderCleanupInvalidType(t *testing.T) {
 		t.Errorf("Expected count 0 for invalid type, got %d", count)
 	}
 }
+
+func TestBeadsProviderDecompose(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	// Mock create responses for sub-intents
+	mockRunner.setResponse(
+		[]string{"create", "Implement authentication", "-t", "task", "--parent", "bd-decomposed-1", "--json"},
+		`{"id":"bd-task-1"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Add user registration", "-t", "task", "--parent", "bd-decomposed-1", "--json"},
+		`{"id":"bd-task-2"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Add login form", "-t", "task", "--parent", "bd-decomposed-1", "--json"},
+		`{"id":"bd-task-3"}`,
+		nil,
+	)
+
+	// Mock add-dep responses (task 2 depends on task 1)
+	mockRunner.setResponse(
+		[]string{"add-dep", "bd-task-2", "bd-task-1"},
+		``,
+		nil,
+	)
+	// Mock add-dep responses (task 3 depends on task 2)
+	mockRunner.setResponse(
+		[]string{"add-dep", "bd-task-3", "bd-task-2"},
+		``,
+		nil,
+	)
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"decomposed": "bd-decomposed-1",
+		},
+	}
+	data, err := json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test Decompose with valid JSON and dependencies
+	jsonInput := `{
+		"action": "decompose",
+		"sub_intents": [
+			{
+				"intent": "Implement authentication",
+				"rationale": "Core authentication system",
+				"estimated_files": 3,
+				"dependencies": []
+			},
+			{
+				"intent": "Add user registration",
+				"rationale": "User registration flow",
+				"estimated_files": 2,
+				"dependencies": ["Implement authentication"]
+			},
+			{
+				"intent": "Add login form",
+				"rationale": "Login UI",
+				"estimated_files": 1,
+				"dependencies": ["Add user registration"]
+			}
+		],
+		"decomposition_rationale": "Breaking down authentication feature"
+	}`
+
+	err = provider.Decompose(jsonInput)
+	if err != nil {
+		t.Fatalf("Decompose failed: %v", err)
+	}
+}
+
+func TestBeadsProviderDecomposeInvalidJSON(t *testing.T) {
+	tempDir := t.TempDir()
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"decomposed": "bd-decomposed-1",
+		},
+	}
+	data, err := json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	mockRunner := newMockCommandRunner()
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test Decompose with invalid JSON
+	err = provider.Decompose("invalid json")
+	if err == nil {
+		t.Fatal("Expected error for invalid JSON, got nil")
+	}
+	if !strings.Contains(err.Error(), "parsing decompose JSON") {
+		t.Errorf("Expected JSON parsing error, got: %v", err)
+	}
+}
+
+func TestBeadsProviderDecomposeEmptySubIntents(t *testing.T) {
+	tempDir := t.TempDir()
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"decomposed": "bd-decomposed-1",
+		},
+	}
+	data, err := json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	mockRunner := newMockCommandRunner()
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test Decompose with empty sub_intents
+	jsonInput := `{
+		"action": "decompose",
+		"sub_intents": [],
+		"decomposition_rationale": "Test"
+	}`
+
+	err = provider.Decompose(jsonInput)
+	if err == nil {
+		t.Fatal("Expected error for empty sub_intents, got nil")
+	}
+	if !strings.Contains(err.Error(), "no sub-intents found") {
+		t.Errorf("Expected 'no sub-intents found' error, got: %v", err)
+	}
+}
+
+func TestBeadsProviderDecomposeMissingDependency(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	// Mock create responses
+	mockRunner.setResponse(
+		[]string{"create", "Task A", "-t", "task", "--parent", "bd-decomposed-1", "--json"},
+		`{"id":"bd-task-1"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Task B", "-t", "task", "--parent", "bd-decomposed-1", "--json"},
+		`{"id":"bd-task-2"}`,
+		nil,
+	)
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"decomposed": "bd-decomposed-1",
+		},
+	}
+	data, err := json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test Decompose with missing dependency
+	jsonInput := `{
+		"action": "decompose",
+		"sub_intents": [
+			{
+				"intent": "Task A",
+				"rationale": "First task",
+				"estimated_files": 1,
+				"dependencies": []
+			},
+			{
+				"intent": "Task B",
+				"rationale": "Second task",
+				"estimated_files": 1,
+				"dependencies": ["Non-existent Task"]
+			}
+		],
+		"decomposition_rationale": "Test"
+	}`
+
+	err = provider.Decompose(jsonInput)
+	if err == nil {
+		t.Fatal("Expected error for missing dependency, got nil")
+	}
+	if !strings.Contains(err.Error(), "dependency task not found") {
+		t.Errorf("Expected 'dependency task not found' error, got: %v", err)
+	}
+}
+
+func TestBeadsProviderDecomposeCLICreateFailure(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	// Mock create failure
+	mockRunner.setResponse(
+		[]string{"create", "Task A", "-t", "task", "--parent", "bd-decomposed-1", "--json"},
+		``,
+		fmt.Errorf("bd CLI failed"),
+	)
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"decomposed": "bd-decomposed-1",
+		},
+	}
+	data, err := json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test Decompose with CLI create failure
+	jsonInput := `{
+		"action": "decompose",
+		"sub_intents": [
+			{
+				"intent": "Task A",
+				"rationale": "First task",
+				"estimated_files": 1,
+				"dependencies": []
+			}
+		],
+		"decomposition_rationale": "Test"
+	}`
+
+	err = provider.Decompose(jsonInput)
+	if err == nil {
+		t.Fatal("Expected error for CLI create failure, got nil")
+	}
+	if !strings.Contains(err.Error(), "failed to create task") {
+		t.Errorf("Expected 'failed to create task' error, got: %v", err)
+	}
+}
+
+func TestBeadsProviderDecomposeAddDepFailure(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	// Mock create responses
+	mockRunner.setResponse(
+		[]string{"create", "Task A", "-t", "task", "--parent", "bd-decomposed-1", "--json"},
+		`{"id":"bd-task-1"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Task B", "-t", "task", "--parent", "bd-decomposed-1", "--json"},
+		`{"id":"bd-task-2"}`,
+		nil,
+	)
+
+	// Mock add-dep failure
+	mockRunner.setResponse(
+		[]string{"add-dep", "bd-task-2", "bd-task-1"},
+		``,
+		fmt.Errorf("bd add-dep failed"),
+	)
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"decomposed": "bd-decomposed-1",
+		},
+	}
+	data, err := json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test Decompose with add-dep failure
+	jsonInput := `{
+		"action": "decompose",
+		"sub_intents": [
+			{
+				"intent": "Task A",
+				"rationale": "First task",
+				"estimated_files": 1,
+				"dependencies": []
+			},
+			{
+				"intent": "Task B",
+				"rationale": "Second task",
+				"estimated_files": 1,
+				"dependencies": ["Task A"]
+			}
+		],
+		"decomposition_rationale": "Test"
+	}`
+
+	err = provider.Decompose(jsonInput)
+	if err == nil {
+		t.Fatal("Expected error for add-dep failure, got nil")
+	}
+	if !strings.Contains(err.Error(), "failed to add dependency") {
+		t.Errorf("Expected 'failed to add dependency' error, got: %v", err)
+	}
+}
