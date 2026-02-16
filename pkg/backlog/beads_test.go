@@ -4,54 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 )
-
-// mockCommandRunner implements CommandRunner for testing.
-type mockCommandRunner struct {
-	outputs map[string]string // args -> output
-	errors  map[string]error  // args -> error
-}
-
-// newMockCommandRunner creates a new mockCommandRunner.
-func newMockCommandRunner() *mockCommandRunner {
-	return &mockCommandRunner{
-		outputs: make(map[string]string),
-		errors:  make(map[string]error),
-	}
-}
-
-// setResponse sets the mock response for a given command.
-func (m *mockCommandRunner) setResponse(args []string, output string, err error) {
-	key := argsToString(args)
-	m.outputs[key] = output
-	m.errors[key] = err
-}
-
-// Run executes the mock command.
-func (m *mockCommandRunner) Run(args ...string) (string, error) {
-	key := argsToString(args)
-	output, ok := m.outputs[key]
-	if !ok {
-		return "", fmt.Errorf("unexpected command: %s", key)
-	}
-	return output, m.errors[key]
-}
-
-// argsToString converts args to a string key for map lookup.
-func argsToString(args []string) string {
-	key := ""
-	for i, arg := range args {
-		if i > 0 {
-			key += " "
-		}
-		key += arg
-	}
-	return key
-}
 
 func TestNewBeadsProvider(t *testing.T) {
 	projectRoot := "/test/project"
@@ -226,114 +182,6 @@ func TestEnsureEpics_LoadsCacheOnSubsequentCalls(t *testing.T) {
 			t.Errorf("expected epic ID %s for %s, got %s", expectedID, itemType, actualID)
 		}
 	}
-}
-
-func TestSaveEpicCache(t *testing.T) {
-	tempDir := t.TempDir()
-	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
-
-	provider := &BeadsProvider{
-		projectRoot: tempDir,
-		epicCache: &epicCache{
-			Epics: map[string]string{
-				"feature": "bd-test-1",
-				"bugfix":  "bd-test-2",
-			},
-		},
-		cachePath: cachePath,
-	}
-
-	err := provider.saveEpicCache()
-	if err != nil {
-		t.Fatalf("saveEpicCache failed: %v", err)
-	}
-
-	// Verify file was created
-	data, err := os.ReadFile(cachePath)
-	if err != nil {
-		t.Fatalf("failed to read cache file: %v", err)
-	}
-
-	var cache epicCache
-	if err := json.Unmarshal(data, &cache); err != nil {
-		t.Fatalf("failed to parse cache file: %v", err)
-	}
-
-	if cache.Epics["feature"] != "bd-test-1" {
-		t.Errorf("expected feature epic ID bd-test-1, got %s", cache.Epics["feature"])
-	}
-
-	if cache.Epics["bugfix"] != "bd-test-2" {
-		t.Errorf("expected bugfix epic ID bd-test-2, got %s", cache.Epics["bugfix"])
-	}
-}
-
-func TestLoadEpicCache(t *testing.T) {
-	tempDir := t.TempDir()
-	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
-
-	// Create a cache file
-	testCache := epicCache{
-		Epics: map[string]string{
-			"feature": "bd-load-test-1",
-			"bugfix":  "bd-load-test-2",
-		},
-	}
-
-	data, err := json.MarshalIndent(testCache, "", "  ")
-	if err != nil {
-		t.Fatalf("failed to marshal cache: %v", err)
-	}
-
-	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
-		t.Fatalf("failed to create cache directory: %v", err)
-	}
-
-	if err := os.WriteFile(cachePath, data, 0644); err != nil {
-		t.Fatalf("failed to write cache file: %v", err)
-	}
-
-	provider := &BeadsProvider{
-		projectRoot: tempDir,
-		epicCache:   &epicCache{Epics: make(map[string]string)},
-		cachePath:   cachePath,
-	}
-
-	err = provider.loadEpicCache()
-	if err != nil {
-		t.Fatalf("loadEpicCache failed: %v", err)
-	}
-
-	if provider.epicCache.Epics["feature"] != "bd-load-test-1" {
-		t.Errorf("expected feature epic ID bd-load-test-1, got %s", provider.epicCache.Epics["feature"])
-	}
-
-	if provider.epicCache.Epics["bugfix"] != "bd-load-test-2" {
-		t.Errorf("expected bugfix epic ID bd-load-test-2, got %s", provider.epicCache.Epics["bugfix"])
-	}
-}
-
-func TestBdCommandRunner_Run(t *testing.T) {
-	// This test requires the bd CLI to be installed
-	// Skip if bd is not available
-	if _, err := exec.LookPath("bd"); err != nil {
-		t.Skip("bd CLI not installed, skipping integration test")
-	}
-
-	tempDir := t.TempDir()
-	runner := NewBDCommandRunner(tempDir)
-
-	// Test with a simple command like 'bd --help'
-	output, err := runner.Run("--help")
-	if err != nil {
-		t.Logf("bd --help failed (expected if bd not initialized): %v", err)
-	}
-
-	if output == "" {
-		t.Log("bd --help produced no output")
-	}
-
-	t.Logf("bd --help output: %s", output)
 }
 
 func TestBeadsProviderList(t *testing.T) {

@@ -6,68 +6,9 @@ package backlog
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 )
-
-// List format constants for matching BacklogManager output format.
-const (
-	ListItemOpenFormat   = "- [ ] "
-	ListItemClosedFormat = "- [x] "
-)
-
-// Epic type constants for Beads provider.
-const (
-	EpicTypeFeature    = "feature"
-	EpicTypeBugfix     = "bugfix"
-	EpicTypeDecomposed = "decomposed"
-	EpicTypeRefactor   = "refactor"
-	EpicTypeFuture     = "future"
-)
-
-// Epic title constants for Beads provider.
-const (
-	EpicTitleFeatures                 = "Features"
-	EpicTitleBugfixes                 = "Bugfixes"
-	EpicTitleDecomposedIntents        = "Decomposed Intents"
-	EpicTitleRefactoringOpportunities = "Refactoring Opportunities"
-	EpicTitleFutureEnhancements       = "Future Enhancements"
-)
-
-// CommandRunner defines the interface for executing external commands.
-// This abstraction enables testability by allowing mock implementations.
-type CommandRunner interface {
-	Run(args ...string) (string, error)
-}
-
-// bdCommandRunner implements CommandRunner for the bd CLI.
-type bdCommandRunner struct {
-	workDir string
-}
-
-// NewBDCommandRunner creates a new bdCommandRunner for the given working directory.
-func NewBDCommandRunner(workDir string) CommandRunner {
-	return &bdCommandRunner{workDir: workDir}
-}
-
-// Run executes a bd command with the provided arguments.
-// It returns the combined stdout/stderr output and any error encountered.
-func (r *bdCommandRunner) Run(args ...string) (string, error) {
-	cmd := exec.Command("bd", args...)
-	cmd.Dir = r.workDir
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return string(output), fmt.Errorf("bd %v failed: %w", args, err)
-	}
-	return string(output), nil
-}
-
-// epicCache represents the structure for storing epic ID mappings.
-type epicCache struct {
-	Epics map[string]string `json:"epics"` // itemType -> epicID
-}
 
 // BeadsProvider implements BacklogProvider using the bd CLI.
 // It manages backlog items through Beads' dependency-aware task system.
@@ -91,76 +32,6 @@ func NewBeadsProvider(projectRoot string) *BeadsProvider {
 	}
 }
 
-// defineEpicTypes returns the mapping of item types to epic titles.
-// This encapsulates the epic type definitions used by ensureEpics.
-func defineEpicTypes() map[string]string {
-	return map[string]string{
-		EpicTypeFeature:    EpicTitleFeatures,
-		EpicTypeBugfix:     EpicTitleBugfixes,
-		EpicTypeDecomposed: EpicTitleDecomposedIntents,
-		EpicTypeRefactor:   EpicTitleRefactoringOpportunities,
-		EpicTypeFuture:     EpicTitleFutureEnhancements,
-	}
-}
-
-// ensureEpics verifies that all required epics exist in Beads.
-// It loads the epic cache if it exists, otherwise creates the epics via bd CLI.
-func (p *BeadsProvider) ensureEpics() error {
-	// Try to load existing cache
-	if err := p.loadEpicCache(); err == nil {
-		// Cache loaded successfully, epics already exist
-		return nil
-	}
-
-	// Cache doesn't exist or is invalid, create epics
-	epicTypes := defineEpicTypes()
-
-	for itemType, epicTitle := range epicTypes {
-		output, err := p.commandRunner.Run("create", epicTitle, "-t", "epic", "--json")
-		if err != nil {
-			return fmt.Errorf("failed to create %s epic (%s): %w", itemType, epicTitle, err)
-		}
-
-		// Parse the JSON output to extract the epic ID
-		var result struct {
-			ID string `json:"id"`
-		}
-		if err := json.Unmarshal([]byte(output), &result); err != nil {
-			return fmt.Errorf("failed to parse epic creation output for %s (%s): %w", itemType, epicTitle, err)
-		}
-
-		p.epicCache.Epics[itemType] = result.ID
-	}
-
-	// Save the cache
-	return p.saveEpicCache()
-}
-
-// loadEpicCache loads the epic ID mappings from the cache file.
-func (p *BeadsProvider) loadEpicCache() error {
-	data, err := os.ReadFile(p.cachePath)
-	if err != nil {
-		return err
-	}
-
-	return json.Unmarshal(data, p.epicCache)
-}
-
-// saveEpicCache saves the epic ID mappings to the cache file.
-func (p *BeadsProvider) saveEpicCache() error {
-	// Ensure the directory exists
-	if err := os.MkdirAll(filepath.Dir(p.cachePath), 0755); err != nil {
-		return fmt.Errorf("failed to create cache directory: %w", err)
-	}
-
-	data, err := json.MarshalIndent(p.epicCache, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal epic cache: %w", err)
-	}
-
-	return os.WriteFile(p.cachePath, data, 0644)
-}
-
 // Compile-time interface check: verify BeadsProvider satisfies BacklogProvider
 // Note: These are placeholder methods that will be implemented in subsequent tasks.
 var _ BacklogProvider = (*BeadsProvider)(nil)
@@ -177,15 +48,15 @@ func (p *BeadsProvider) List(include []string, exclude []string) ([]string, erro
 
 	// Determine which epic types to query
 	epicTypes := []string{
-		EpicTypeFeature,
-		EpicTypeBugfix,
-		EpicTypeDecomposed,
-		EpicTypeRefactor,
-		EpicTypeFuture,
+		ItemTypeFeature,
+		ItemTypeBugfix,
+		ItemTypeDecomposed,
+		ItemTypeRefactor,
+		ItemTypeFuture,
 	}
 
 	// Apply include/exclude filters
-	queryTypes := p.filterEpicTypes(epicTypes, include, exclude)
+	queryTypes := filterStringSlice(epicTypes, include, exclude)
 
 	var results []string
 	for _, itemType := range queryTypes {
@@ -210,42 +81,6 @@ func (p *BeadsProvider) List(include []string, exclude []string) ([]string, erro
 	}
 
 	return results, nil
-}
-
-// filterEpicTypes filters epic types based on include/exclude parameters.
-// Uses O(n) lookup with maps for better performance with larger filter lists.
-func (p *BeadsProvider) filterEpicTypes(types []string, include []string, exclude []string) []string {
-	if len(include) == 0 && len(exclude) == 0 {
-		return types
-	}
-
-	// Convert exclude/include slices to maps for O(1) lookup
-	excludeMap := make(map[string]bool, len(exclude))
-	for _, ex := range exclude {
-		excludeMap[ex] = true
-	}
-
-	includeMap := make(map[string]bool, len(include))
-	for _, inc := range include {
-		includeMap[inc] = true
-	}
-
-	filtered := make([]string, 0, len(types))
-	for _, t := range types {
-		// Check exclude first
-		if excludeMap[t] {
-			continue
-		}
-
-		// If include is specified, only include matching types
-		if len(include) > 0 && !includeMap[t] {
-			continue
-		}
-
-		filtered = append(filtered, t)
-	}
-
-	return filtered
 }
 
 // parseListOutput parses JSON output from bd list command and formats items.
@@ -289,11 +124,11 @@ func (p *BeadsProvider) Add(description, itemType string) error {
 
 	// Validate item type
 	validTypes := map[string]bool{
-		EpicTypeFeature:    true,
-		EpicTypeBugfix:     true,
-		EpicTypeDecomposed: true,
-		EpicTypeRefactor:   true,
-		EpicTypeFuture:     true,
+		ItemTypeFeature:    true,
+		ItemTypeBugfix:     true,
+		ItemTypeDecomposed: true,
+		ItemTypeRefactor:   true,
+		ItemTypeFuture:     true,
 	}
 
 	if !validTypes[itemType] {
@@ -336,7 +171,7 @@ func (p *BeadsProvider) AddWithPattern(description, itemType, patternID string) 
 	}
 
 	// Only add pattern tracking for refactor items
-	if itemType != EpicTypeRefactor || patternID == "" {
+	if itemType != ItemTypeRefactor || patternID == "" {
 		return nil
 	}
 
@@ -405,11 +240,11 @@ func (p *BeadsProvider) AddMultiple(descriptions []string, itemType string) erro
 
 	// Validate item type
 	validTypes := map[string]bool{
-		EpicTypeFeature:    true,
-		EpicTypeBugfix:     true,
-		EpicTypeDecomposed: true,
-		EpicTypeRefactor:   true,
-		EpicTypeFuture:     true,
+		ItemTypeFeature:    true,
+		ItemTypeBugfix:     true,
+		ItemTypeDecomposed: true,
+		ItemTypeRefactor:   true,
+		ItemTypeFuture:     true,
 	}
 
 	if !validTypes[itemType] {
@@ -455,11 +290,11 @@ func (p *BeadsProvider) Complete(itemText string) error {
 
 	// Search all epic types for the matching task
 	epicTypes := []string{
-		EpicTypeFeature,
-		EpicTypeBugfix,
-		EpicTypeDecomposed,
-		EpicTypeRefactor,
-		EpicTypeFuture,
+		ItemTypeFeature,
+		ItemTypeBugfix,
+		ItemTypeDecomposed,
+		ItemTypeRefactor,
+		ItemTypeFuture,
 	}
 
 	for _, itemType := range epicTypes {
@@ -512,11 +347,11 @@ func (p *BeadsProvider) Cleanup(itemType string) (int, error) {
 	if itemType != "" {
 		// Validate item type
 		validTypes := map[string]bool{
-			EpicTypeFeature:    true,
-			EpicTypeBugfix:     true,
-			EpicTypeDecomposed: true,
-			EpicTypeRefactor:   true,
-			EpicTypeFuture:     true,
+			ItemTypeFeature:    true,
+			ItemTypeBugfix:     true,
+			ItemTypeDecomposed: true,
+			ItemTypeRefactor:   true,
+			ItemTypeFuture:     true,
 		}
 		if !validTypes[itemType] {
 			return 0, fmt.Errorf("invalid type: %s. Valid types: feature, bugfix, decomposed, refactor, future", itemType)
@@ -525,11 +360,11 @@ func (p *BeadsProvider) Cleanup(itemType string) (int, error) {
 	} else {
 		// Query all epic types
 		queryTypes = []string{
-			EpicTypeFeature,
-			EpicTypeBugfix,
-			EpicTypeDecomposed,
-			EpicTypeRefactor,
-			EpicTypeFuture,
+			ItemTypeFeature,
+			ItemTypeBugfix,
+			ItemTypeDecomposed,
+			ItemTypeRefactor,
+			ItemTypeFuture,
 		}
 	}
 
@@ -576,7 +411,7 @@ func (p *BeadsProvider) GetPatternCount(patternID string) (int, error) {
 	}
 
 	// Get the refactor epic ID
-	epicID, ok := p.epicCache.Epics[EpicTypeRefactor]
+	epicID, ok := p.epicCache.Epics[ItemTypeRefactor]
 	if !ok {
 		return 0, nil // No refactor epic means no patterns
 	}
@@ -673,7 +508,7 @@ func (p *BeadsProvider) Decompose(jsonInput string) error {
 	}
 
 	// Get the decomposed epic ID
-	epicID, ok := p.epicCache.Epics[EpicTypeDecomposed]
+	epicID, ok := p.epicCache.Epics[ItemTypeDecomposed]
 	if !ok {
 		return fmt.Errorf("decomposed epic not found in cache")
 	}
