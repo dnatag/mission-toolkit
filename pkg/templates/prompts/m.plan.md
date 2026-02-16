@@ -100,14 +100,22 @@ If governance.md is not loaded, stop and report error.
         - Execute `m mission archive --force` to clean up generated mission.md
         - Load `.mission/libraries/displays/plan-atomic.md`, fill with `{{REFINED_INTENT}}` and `{{SUGGESTED_EDIT}}`
         - Display and **STOP**
-    *   **Track 4 (Epic)**: 
-        - Run `m analyze decompose` → Parse JSON, read `template_path`, follow template for decomposition guidance
-        - Decompose intent into sub-intents based on template analysis
-        - `m backlog list --exclude refactor --exclude completed` (parse JSON)
-        - `m backlog add "[sub-intent]" ... --type decomposed`
-        - Execute `m mission archive --force` to clean up generated mission.md
-        - Load `.mission/libraries/displays/plan-epic.md`, fill with `{{SUB_INTENTS}}`
-        - Display and **STOP**
+    *   **Track 4 (Epic)**:
+        - **Check Beads Availability**: Run `m beads available` to check if Beads is available
+        - **If Beads Available**:
+          - Run `m backlog decompose --json "$ARGUMENTS"` → Parse JSON output
+          - JSON output includes: `sub_intents` array with dependencies and `dependency_graph` for visualization
+          - Execute `m mission archive --force` to clean up generated mission.md
+          - Load `.mission/libraries/displays/plan-epic.md`, fill with `{{SUB_INTENTS}}` and `{{DEPENDENCY_GRAPH}}`
+          - Display and **STOP**
+        - **If Beads Not Available**:
+          - Run `m analyze decompose` → Parse JSON, read `template_path`, follow template for decomposition guidance
+          - Decompose intent into sub-intents based on template analysis
+          - `m backlog list --exclude refactor --exclude completed` (parse JSON)
+          - `m backlog add "[sub-intent]" ... --type decomposed`
+          - Execute `m mission archive --force` to clean up generated mission.md
+          - Load `.mission/libraries/displays/plan-epic.md`, fill with `{{SUB_INTENTS}}`
+          - Display and **STOP**
     *   **Track 2 or 3**: Continue to Step 4
 4.  **Log**: `m log --step "Analyze" "Complexity analysis complete. Track: [TRACK]"`
 
