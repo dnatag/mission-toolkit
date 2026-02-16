@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -333,4 +334,459 @@ func TestBdCommandRunner_Run(t *testing.T) {
 	}
 
 	t.Logf("bd --help output: %s", output)
+}
+
+func TestBeadsProviderList(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	// Mock list responses for different epic types
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-feature-1", "--json"},
+		`[{"id":"bd-f1-1","title":"Implement user auth","status":"open"},{"id":"bd-f1-2","title":"Add login page","status":"closed"}]`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-bugfix-1", "--json"},
+		`[{"id":"bd-b1-1","title":"Fix null pointer","status":"open"}]`,
+		nil,
+	)
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"feature": "bd-feature-1",
+			"bugfix":  "bd-bugfix-1",
+		},
+	}
+	var data []byte
+	var err error
+	data, err = json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test List with no filters
+	results, err := provider.List(nil, nil)
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+
+	if len(results) != 3 {
+		t.Errorf("Expected 3 items, got %d", len(results))
+	}
+
+	// Check formatting
+	expectedResults := []string{
+		"- [ ] Implement user auth",
+		"- [x] Add login page",
+		"- [ ] Fix null pointer",
+	}
+	for i, expected := range expectedResults {
+		if i >= len(results) {
+			t.Errorf("Missing result %d: %s", i, expected)
+			continue
+		}
+		if results[i] != expected {
+			t.Errorf("Result %d mismatch:\nExpected: %s\nGot: %s", i, expected, results[i])
+		}
+	}
+}
+
+func TestBeadsProviderListWithFilters(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	// Mock list responses
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-feature-1", "--json"},
+		`[{"id":"bd-f1-1","title":"Feature 1","status":"open"}]`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-bugfix-1", "--json"},
+		`[{"id":"bd-b1-1","title":"Bugfix 1","status":"open"}]`,
+		nil,
+	)
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"feature": "bd-feature-1",
+			"bugfix":  "bd-bugfix-1",
+		},
+	}
+	var data []byte
+	var err error
+	data, err = json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test with include filter (only feature)
+	results, err := provider.List([]string{"feature"}, nil)
+	if err != nil {
+		t.Fatalf("List with include failed: %v", err)
+	}
+
+	if len(results) != 1 {
+		t.Errorf("Expected 1 item with feature filter, got %d", len(results))
+	}
+	if results[0] != "- [ ] Feature 1" {
+		t.Errorf("Expected '- [ ] Feature 1', got '%s'", results[0])
+	}
+
+	// Test with exclude filter (exclude feature)
+	results, err = provider.List(nil, []string{"feature"})
+	if err != nil {
+		t.Fatalf("List with exclude failed: %v", err)
+	}
+
+	if len(results) != 1 {
+		t.Errorf("Expected 1 item with feature excluded, got %d", len(results))
+	}
+	if results[0] != "- [ ] Bugfix 1" {
+		t.Errorf("Expected '- [ ] Bugfix 1', got '%s'", results[0])
+	}
+}
+
+func TestBeadsProviderAdd(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	// Mock create response
+	mockRunner.setResponse(
+		[]string{"create", "New feature task", "-t", "task", "--parent", "bd-feature-1", "--json"},
+		`{"id":"bd-task-1","title":"New feature task"}`,
+		nil,
+	)
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"feature": "bd-feature-1",
+		},
+	}
+	var data []byte
+	var err error
+	data, err = json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test Add
+	err = provider.Add("New feature task", "feature")
+	if err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+}
+
+func TestBeadsProviderAddInvalidType(t *testing.T) {
+	tempDir := t.TempDir()
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"feature": "bd-feature-1",
+		},
+	}
+	var data []byte
+	var err error
+	data, err = json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: newMockCommandRunner(),
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test Add with invalid type
+	err = provider.Add("Test task", "invalid")
+	if err == nil {
+		t.Fatal("Expected error for invalid type, got nil")
+	}
+
+	expectedErrMsg := "invalid type: invalid"
+	if !strings.Contains(err.Error(), expectedErrMsg) {
+		t.Errorf("Expected error to contain '%s', got '%s'", expectedErrMsg, err.Error())
+	}
+}
+
+func TestBeadsProviderAddWithPattern(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	// Mock create response
+	mockRunner.setResponse(
+		[]string{"create", "Refactor authentication", "-t", "task", "--parent", "bd-refactor-1", "--json"},
+		`{"id":"bd-task-1","title":"Refactor authentication"}`,
+		nil,
+	)
+
+	// Mock list response for finding the task
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-refactor-1", "--json"},
+		`[{"id":"bd-task-1","title":"Refactor authentication","notes":""}]`,
+		nil,
+	)
+
+	// Mock update response
+	mockRunner.setResponse(
+		[]string{"update", "bd-task-1", "--notes", "PATTERN:auth-refactor COUNT:1"},
+		``,
+		nil,
+	)
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"refactor": "bd-refactor-1",
+			"feature":  "bd-feature-1",
+		},
+	}
+	var data []byte
+	var err error
+	data, err = json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test AddWithPattern for refactor type
+	err = provider.AddWithPattern("Refactor authentication", "refactor", "auth-refactor")
+	if err != nil {
+		t.Fatalf("AddWithPattern failed: %v", err)
+	}
+
+	// Test AddWithPattern for non-refactor type (should not add pattern tracking)
+	mockRunner.setResponse(
+		[]string{"create", "New feature", "-t", "task", "--parent", "bd-feature-1", "--json"},
+		`{"id":"bd-task-2","title":"New feature"}`,
+		nil,
+	)
+
+	err = provider.AddWithPattern("New feature", "feature", "some-pattern")
+	if err != nil {
+		t.Fatalf("AddWithPattern for non-refactor failed: %v", err)
+	}
+}
+
+func TestBeadsProviderAddMultiple(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	descriptions := []string{"Task 1", "Task 2", "Task 3"}
+
+	// Mock create responses for each task
+	for i, desc := range descriptions {
+		taskID := fmt.Sprintf("bd-task-%d", i+1)
+		mockRunner.setResponse(
+			[]string{"create", desc, "-t", "task", "--parent", "bd-feature-1", "--json"},
+			fmt.Sprintf(`{"id":"%s","title":"%s"}`, taskID, desc),
+			nil,
+		)
+	}
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"feature": "bd-feature-1",
+		},
+	}
+	var data []byte
+	var err error
+	data, err = json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test AddMultiple
+	err = provider.AddMultiple(descriptions, "feature")
+	if err != nil {
+		t.Fatalf("AddMultiple failed: %v", err)
+	}
+
+	// Test with empty slice
+	err = provider.AddMultiple([]string{}, "feature")
+	if err != nil {
+		t.Fatalf("AddMultiple with empty slice failed: %v", err)
+	}
+
+	// Test with invalid type
+	err = provider.AddMultiple([]string{"Task 1"}, "invalid")
+	if err == nil {
+		t.Fatal("Expected error for invalid type, got nil")
+	}
+}
+
+func TestBeadsProviderGetPatternCount(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	// Mock list response with pattern notes
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-refactor-1", "--json"},
+		`[
+			{"id":"bd-r1","title":"Refactor 1","notes":"PATTERN:auth COUNT:1"},
+			{"id":"bd-r2","title":"Refactor 2","notes":"PATTERN:auth COUNT:2"},
+			{"id":"bd-r3","title":"Refactor 3","notes":"PATTERN:db COUNT:1"}
+		]`,
+		nil,
+	)
+
+	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
+
+	// Create epic cache file with pre-populated data
+	epicCacheData := epicCache{
+		Epics: map[string]string{
+			"refactor": "bd-refactor-1",
+		},
+	}
+	var data []byte
+	var err error
+	data, err = json.MarshalIndent(epicCacheData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal epic cache: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		t.Fatalf("Failed to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		t.Fatalf("Failed to write cache file: %v", err)
+	}
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     cachePath,
+	}
+
+	// Test GetPatternCount for existing pattern
+	count, err := provider.GetPatternCount("auth")
+	if err != nil {
+		t.Fatalf("GetPatternCount failed: %v", err)
+	}
+
+	if count != 2 {
+		t.Errorf("Expected pattern count 2 for 'auth', got %d", count)
+	}
+
+	// Test GetPatternCount for pattern with single occurrence
+	count, err = provider.GetPatternCount("db")
+	if err != nil {
+		t.Fatalf("GetPatternCount for 'db' failed: %v", err)
+	}
+
+	if count != 1 {
+		t.Errorf("Expected pattern count 1 for 'db', got %d", count)
+	}
+
+	// Test GetPatternCount for non-existent pattern
+	count, err = provider.GetPatternCount("nonexistent")
+	if err != nil {
+		t.Fatalf("GetPatternCount for non-existent failed: %v", err)
+	}
+
+	if count != 0 {
+		t.Errorf("Expected pattern count 0 for non-existent, got %d", count)
+	}
 }
