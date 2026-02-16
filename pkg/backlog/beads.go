@@ -6,8 +6,10 @@ package backlog
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // BeadsProvider implements BacklogProvider using the bd CLI.
@@ -159,6 +161,9 @@ func (p *BeadsProvider) Add(description, itemType string) error {
 		return fmt.Errorf("create returned empty ID for %s item '%s'", itemType, description)
 	}
 
+	// Generate snapshot after successful operation
+	p.generateSnapshot()
+
 	return nil
 }
 
@@ -223,6 +228,9 @@ func (p *BeadsProvider) AddWithPattern(description, itemType, patternID string) 
 		return fmt.Errorf("failed to update task notes: %w", err)
 	}
 
+	// Generate snapshot after successful operation
+	p.generateSnapshot()
+
 	return nil
 }
 
@@ -277,6 +285,9 @@ func (p *BeadsProvider) AddMultiple(descriptions []string, itemType string) erro
 		}
 	}
 
+	// Generate snapshot after successful operation
+	p.generateSnapshot()
+
 	return nil
 }
 
@@ -325,6 +336,8 @@ func (p *BeadsProvider) Complete(itemText string) error {
 				if err != nil {
 					return fmt.Errorf("failed to close task '%s': %w", itemText, err)
 				}
+				// Generate snapshot after successful operation
+				p.generateSnapshot()
 				return nil
 			}
 		}
@@ -564,5 +577,82 @@ func (p *BeadsProvider) Decompose(jsonInput string) error {
 		}
 	}
 
+	// Generate snapshot after successful operation
+	p.generateSnapshot()
+
 	return nil
+}
+
+// generateSnapshot writes the current Beads state to .mission/backlog.md.
+// This creates a canonical representation of the backlog that can be used
+// for reconciliation and manual inspection. Errors are logged but don't fail operations.
+func (p *BeadsProvider) generateSnapshot() {
+	// Build snapshot content
+	var content strings.Builder
+
+	// Add frontmatter
+	content.WriteString("---\n")
+	content.WriteString(fmt.Sprintf("last_updated: %s\n", time.Now().Format(time.RFC3339)))
+	content.WriteString("source: beads\n")
+	content.WriteString("---\n\n")
+
+	// Add title
+	content.WriteString("# Backlog\n\n")
+
+	// Define section order and types
+	sections := []struct {
+		title string
+		desc  string
+		typ   string
+	}{
+		{"FEATURES", "User-defined feature requests and enhancements", ItemTypeFeature},
+		{"BUGFIXES", "Bug reports and issues to be fixed", ItemTypeBugfix},
+		{"DECOMPOSED INTENTS", "Sub-intents from Track 4 Epic requests that need separate missions", ItemTypeDecomposed},
+		{"REFACTORING OPPORTUNITIES", "Detected duplication patterns that need DRY missions", ItemTypeRefactor},
+		{"FUTURE ENHANCEMENTS", "Ideas and improvements for later consideration", ItemTypeFuture},
+		{"COMPLETED", "History of completed backlog items", "completed"},
+	}
+
+	// Build each section
+	for _, section := range sections {
+		content.WriteString(fmt.Sprintf("## %s\n", section.title))
+		content.WriteString(fmt.Sprintf("(%s)\n", section.desc))
+
+		// Get items for this section
+		var items []string
+		var err error
+
+		if section.typ == "completed" {
+			// Get completed items
+			items, err = p.List([]string{"completed"}, nil)
+		} else {
+			// Get open items for this type
+			items, err = p.List([]string{section.typ}, []string{"completed"})
+		}
+
+		if err != nil {
+			// Log error but continue with empty section
+			fmt.Fprintf(os.Stderr, "Warning: failed to list %s items for snapshot: %v\n", section.typ, err)
+			items = []string{}
+		}
+
+		// Add items to section
+		for _, item := range items {
+			content.WriteString(item + "\n")
+		}
+
+		content.WriteString("\n")
+	}
+
+	// Write to file
+	backlogPath := filepath.Join(p.projectRoot, ".mission", "backlog.md")
+	if err := os.MkdirAll(filepath.Dir(backlogPath), 0755); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to create .mission directory for snapshot: %v\n", err)
+		return
+	}
+
+	if err := os.WriteFile(backlogPath, []byte(content.String()), 0644); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to write snapshot to %s: %v\n", backlogPath, err)
+		return
+	}
 }

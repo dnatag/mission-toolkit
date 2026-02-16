@@ -1357,3 +1357,316 @@ func TestBeadsProviderDecomposeAddDepFailure(t *testing.T) {
 		t.Errorf("Expected 'failed to add dependency' error, got: %v", err)
 	}
 }
+
+func TestGenerateSnapshot_Success(t *testing.T) {
+	// Create temporary directory for testing
+	tempDir := t.TempDir()
+
+	// Create mock command runner with epic and item responses
+	mockRunner := newMockCommandRunner()
+
+	// Setup epic creation responses
+	mockRunner.setResponse(
+		[]string{"create", "Features", "-t", "epic", "--json"},
+		`{"id": "bd-feature-1"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Bugfixes", "-t", "epic", "--json"},
+		`{"id": "bd-bugfix-1"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Decomposed Intents", "-t", "epic", "--json"},
+		`{"id": "bd-decomposed-1"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Refactoring Opportunities", "-t", "epic", "--json"},
+		`{"id": "bd-refactor-1"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Future Enhancements", "-t", "epic", "--json"},
+		`{"id": "bd-future-1"}`,
+		nil,
+	)
+
+	// Setup list responses for each epic type
+	featureItems := []map[string]interface{}{
+		{"id": "task-1", "title": "Add new feature", "status": "open"},
+		{"id": "task-2", "title": "Completed feature", "status": "closed"},
+	}
+	featureJSON, _ := json.Marshal(featureItems)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-feature-1", "--json"},
+		string(featureJSON),
+		nil,
+	)
+
+	bugfixItems := []map[string]interface{}{
+		{"id": "task-3", "title": "Fix login bug", "status": "open"},
+	}
+	bugfixJSON, _ := json.Marshal(bugfixItems)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-bugfix-1", "--json"},
+		string(bugfixJSON),
+		nil,
+	)
+
+	// Setup empty responses for other types
+	emptyJSON, _ := json.Marshal([]interface{}{})
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-decomposed-1", "--json"},
+		string(emptyJSON),
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-refactor-1", "--json"},
+		string(emptyJSON),
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-future-1", "--json"},
+		string(emptyJSON),
+		nil,
+	)
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     filepath.Join(tempDir, ".mission", "beads-epics.json"),
+	}
+
+	// Ensure epics are loaded
+	if err := provider.ensureEpics(); err != nil {
+		t.Fatalf("ensureEpics failed: %v", err)
+	}
+
+	// Generate snapshot
+	provider.generateSnapshot()
+
+	// Verify snapshot file was created
+	backlogPath := filepath.Join(tempDir, ".mission", "backlog.md")
+	if _, err := os.Stat(backlogPath); os.IsNotExist(err) {
+		t.Fatal("Snapshot file was not created")
+	}
+
+	// Read and verify snapshot content
+	content, err := os.ReadFile(backlogPath)
+	if err != nil {
+		t.Fatalf("Failed to read snapshot: %v", err)
+	}
+
+	snapshot := string(content)
+
+	// Verify frontmatter
+	if !strings.Contains(snapshot, "---") {
+		t.Error("Snapshot missing frontmatter")
+	}
+	if !strings.Contains(snapshot, "source: beads") {
+		t.Error("Snapshot missing source: beads in frontmatter")
+	}
+
+	// Verify title
+	if !strings.Contains(snapshot, "# Backlog") {
+		t.Error("Snapshot missing title")
+	}
+
+	// Verify sections
+	expectedSections := []string{
+		"## FEATURES",
+		"## BUGFIXES",
+		"## DECOMPOSED INTENTS",
+		"## REFACTORING OPPORTUNITIES",
+		"## FUTURE ENHANCEMENTS",
+		"## COMPLETED",
+	}
+	for _, section := range expectedSections {
+		if !strings.Contains(snapshot, section) {
+			t.Errorf("Snapshot missing section: %s", section)
+		}
+	}
+
+	// Verify items
+	if !strings.Contains(snapshot, "Add new feature") {
+		t.Error("Snapshot missing feature item")
+	}
+	if !strings.Contains(snapshot, "Fix login bug") {
+		t.Error("Snapshot missing bugfix item")
+	}
+}
+
+func TestGenerateSnapshot_ListError(t *testing.T) {
+	// Create temporary directory for testing
+	tempDir := t.TempDir()
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	// Setup epic creation responses
+	mockRunner.setResponse(
+		[]string{"create", "Features", "-t", "epic", "--json"},
+		`{"id": "bd-feature-1"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Bugfixes", "-t", "epic", "--json"},
+		`{"id": "bd-bugfix-1"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Decomposed Intents", "-t", "epic", "--json"},
+		`{"id": "bd-decomposed-1"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Refactoring Opportunities", "-t", "epic", "--json"},
+		`{"id": "bd-refactor-1"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Future Enhancements", "-t", "epic", "--json"},
+		`{"id": "bd-future-1"}`,
+		nil,
+	)
+
+	// Setup list response that returns an error
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-feature-1", "--json"},
+		"",
+		fmt.Errorf("list error"),
+	)
+
+	// Setup empty responses for other types
+	emptyJSON, _ := json.Marshal([]interface{}{})
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-bugfix-1", "--json"},
+		string(emptyJSON),
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-decomposed-1", "--json"},
+		string(emptyJSON),
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-refactor-1", "--json"},
+		string(emptyJSON),
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-future-1", "--json"},
+		string(emptyJSON),
+		nil,
+	)
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     filepath.Join(tempDir, ".mission", "beads-epics.json"),
+	}
+
+	// Ensure epics are loaded
+	if err := provider.ensureEpics(); err != nil {
+		t.Fatalf("ensureEpics failed: %v", err)
+	}
+
+	// Generate snapshot should not fail even with list error
+	provider.generateSnapshot()
+
+	// Verify snapshot file was still created
+	backlogPath := filepath.Join(tempDir, ".mission", "backlog.md")
+	if _, err := os.Stat(backlogPath); os.IsNotExist(err) {
+		t.Fatal("Snapshot file should have been created even with list error")
+	}
+}
+
+func TestGenerateSnapshot_WriteError(t *testing.T) {
+	// Create temporary directory for testing
+	tempDir := t.TempDir()
+
+	// Create a read-only backlog.md file to cause a write error
+	backlogPath := filepath.Join(tempDir, ".mission", "backlog.md")
+	if err := os.MkdirAll(filepath.Dir(backlogPath), 0755); err != nil {
+		t.Fatalf("Failed to create .mission directory: %v", err)
+	}
+	if err := os.WriteFile(backlogPath, []byte("existing content"), 0444); err != nil {
+		t.Fatalf("Failed to create read-only file: %v", err)
+	}
+
+	// Create mock command runner
+	mockRunner := newMockCommandRunner()
+
+	// Setup epic creation responses
+	mockRunner.setResponse(
+		[]string{"create", "Features", "-t", "epic", "--json"},
+		`{"id": "bd-feature-1"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Bugfixes", "-t", "epic", "--json"},
+		`{"id": "bd-bugfix-1"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Decomposed Intents", "-t", "epic", "--json"},
+		`{"id": "bd-decomposed-1"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Refactoring Opportunities", "-t", "epic", "--json"},
+		`{"id": "bd-refactor-1"}`,
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"create", "Future Enhancements", "-t", "epic", "--json"},
+		`{"id": "bd-future-1"}`,
+		nil,
+	)
+
+	// Setup empty responses
+	emptyJSON, _ := json.Marshal([]interface{}{})
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-feature-1", "--json"},
+		string(emptyJSON),
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-bugfix-1", "--json"},
+		string(emptyJSON),
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-decomposed-1", "--json"},
+		string(emptyJSON),
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-refactor-1", "--json"},
+		string(emptyJSON),
+		nil,
+	)
+	mockRunner.setResponse(
+		[]string{"list", "--parent", "bd-future-1", "--json"},
+		string(emptyJSON),
+		nil,
+	)
+
+	provider := &BeadsProvider{
+		projectRoot:   tempDir,
+		commandRunner: mockRunner,
+		epicCache:     &epicCache{Epics: make(map[string]string)},
+		cachePath:     filepath.Join(tempDir, ".mission", "beads-epics.json"),
+	}
+
+	// Ensure epics are loaded
+	if err := provider.ensureEpics(); err != nil {
+		t.Fatalf("ensureEpics failed: %v", err)
+	}
+
+	// Generate snapshot should not panic with write error
+	provider.generateSnapshot()
+}
