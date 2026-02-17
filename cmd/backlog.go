@@ -2,19 +2,35 @@ package cmd
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/dnatag/mission-toolkit/pkg/backlog"
+	"github.com/dnatag/mission-toolkit/pkg/backlog/beads"
+	"github.com/dnatag/mission-toolkit/pkg/backlog/file"
 	"github.com/spf13/cobra"
 )
 
-// backlogCmd represents the backlog command
+// newBacklogProvider creates the appropriate BacklogProvider based on Beads availability.
+func newBacklogProvider() backlog.BacklogProvider {
+	projectRoot := filepath.Dir(missionDir)
+	if projectRoot == "." {
+		projectRoot = ""
+	}
+
+	available, err := beads.AvailableInDir(projectRoot)
+	if err == nil && available {
+		return beads.NewProvider(projectRoot)
+	}
+
+	return file.NewManager(missionDir)
+}
+
 var backlogCmd = &cobra.Command{
 	Use:   "backlog",
 	Short: "Manage mission backlog items",
 	Long:  `Manage mission backlog items including decomposed intents, refactoring opportunities, and future enhancements.`,
 }
 
-// backlogListCmd lists backlog items
 var backlogListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List backlog items",
@@ -22,12 +38,11 @@ var backlogListCmd = &cobra.Command{
 		include, _ := cmd.Flags().GetStringArray("include")
 		exclude, _ := cmd.Flags().GetStringArray("exclude")
 
-		// Validate mutual exclusivity
 		if len(include) > 0 && len(exclude) > 0 {
 			return fmt.Errorf("--include and --exclude are mutually exclusive")
 		}
 
-		provider := backlog.NewProvider(missionDir)
+		provider := newBacklogProvider()
 		items, err := provider.List(include, exclude)
 		if err != nil {
 			return fmt.Errorf("listing backlog: %w", err)
@@ -40,7 +55,6 @@ var backlogListCmd = &cobra.Command{
 	},
 }
 
-// backlogAddCmd adds backlog items (single or multiple)
 var backlogAddCmd = &cobra.Command{
 	Use:   "add [description...]",
 	Short: "Add one or more backlog items",
@@ -49,7 +63,7 @@ var backlogAddCmd = &cobra.Command{
 		itemType, _ := cmd.Flags().GetString("type")
 		patternID, _ := cmd.Flags().GetString("pattern-id")
 
-		provider := backlog.NewProvider(missionDir)
+		provider := newBacklogProvider()
 
 		if len(args) == 1 {
 			if err := provider.AddWithPattern(args[0], itemType, patternID); err != nil {
@@ -71,7 +85,6 @@ var backlogAddCmd = &cobra.Command{
 	},
 }
 
-// backlogCompleteCmd marks a backlog item as complete
 var backlogCompleteCmd = &cobra.Command{
 	Use:   "complete",
 	Short: "Mark a backlog item as complete",
@@ -81,7 +94,7 @@ var backlogCompleteCmd = &cobra.Command{
 			return fmt.Errorf("--item flag is required")
 		}
 
-		provider := backlog.NewProvider(missionDir)
+		provider := newBacklogProvider()
 		if err := provider.Complete(item); err != nil {
 			return fmt.Errorf("completing backlog item: %w", err)
 		}
@@ -91,7 +104,6 @@ var backlogCompleteCmd = &cobra.Command{
 	},
 }
 
-// backlogCleanupCmd removes completed items from the backlog
 var backlogCleanupCmd = &cobra.Command{
 	Use:   "cleanup",
 	Short: "Remove completed items from the backlog",
@@ -105,7 +117,7 @@ Examples:
 	RunE: func(cmd *cobra.Command, args []string) error {
 		itemType, _ := cmd.Flags().GetString("type")
 
-		provider := backlog.NewProvider(missionDir)
+		provider := newBacklogProvider()
 		count, err := provider.Cleanup(itemType)
 		if err != nil {
 			return fmt.Errorf("cleaning up backlog: %w", err)
@@ -120,22 +132,56 @@ Examples:
 	},
 }
 
-// backlogResolveCmd is deprecated - pattern count tracking replaces RESOLVED workflow
-var backlogResolveCmd = &cobra.Command{
-	Use:        "resolve",
-	Short:      "DEPRECATED: Use pattern-id tracking instead",
-	Deprecated: "Pattern count tracking (--pattern-id) replaces the RESOLVED workflow",
-	Hidden:     true,
+var backlogDecomposeCmd = &cobra.Command{
+	Use:   "decompose",
+	Short: "Decompose an epic into sub-intents with dependency tracking",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return fmt.Errorf("resolve command is deprecated: use --pattern-id with 'backlog add' for Rule-of-Three tracking")
+		jsonInput, _ := cmd.Flags().GetString("json")
+		if jsonInput == "" {
+			return fmt.Errorf("--json flag is required")
+		}
+
+		provider := newBacklogProvider()
+		if err := provider.Decompose(jsonInput); err != nil {
+			return fmt.Errorf("decomposing backlog: %w", err)
+		}
+
+		fmt.Println("Decomposed epic into sub-intents")
+		return nil
+	},
+}
+
+var backlogBeadsCmd = &cobra.Command{
+	Use:   "beads",
+	Short: "Beads integration commands",
+}
+
+var backlogBeadsAvailableCmd = &cobra.Command{
+	Use:   "available",
+	Short: "Check if Beads (bd) is available for backlog management",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		projectRoot := filepath.Dir(missionDir)
+		if projectRoot == "." {
+			projectRoot = ""
+		}
+		available, err := beads.AvailableInDir(projectRoot)
+		if err != nil {
+			return fmt.Errorf("checking beads availability: %w", err)
+		}
+		if available {
+			fmt.Println("true")
+		} else {
+			fmt.Println("false")
+		}
+		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(backlogCmd)
-	backlogCmd.AddCommand(backlogListCmd, backlogAddCmd, backlogCompleteCmd, backlogCleanupCmd)
+	backlogCmd.AddCommand(backlogListCmd, backlogAddCmd, backlogCompleteCmd, backlogCleanupCmd, backlogDecomposeCmd, backlogBeadsCmd)
+	backlogBeadsCmd.AddCommand(backlogBeadsAvailableCmd)
 
-	// Add flags
 	backlogListCmd.Flags().StringArray("include", []string{}, "Include only these types (decomposed, refactor, future, completed)")
 	backlogListCmd.Flags().StringArray("exclude", []string{}, "Exclude these types (decomposed, refactor, future, completed)")
 	backlogAddCmd.Flags().String("type", "", "Item type (decomposed, refactor, future)")
@@ -144,4 +190,6 @@ func init() {
 	backlogCompleteCmd.Flags().String("item", "", "Exact text of the item to complete")
 	backlogCompleteCmd.MarkFlagRequired("item")
 	backlogCleanupCmd.Flags().String("type", "", "Filter by item type (decomposed, refactor, future)")
+	backlogDecomposeCmd.Flags().String("json", "", "JSON input from m analyze decompose output")
+	backlogDecomposeCmd.MarkFlagRequired("json")
 }

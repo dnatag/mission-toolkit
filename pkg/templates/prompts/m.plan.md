@@ -101,7 +101,7 @@ If governance.md is not loaded, stop and report error.
         - Load `.mission/libraries/displays/plan-atomic.md`, fill with `{{REFINED_INTENT}}` and `{{SUGGESTED_EDIT}}`
         - Display and **STOP**
     *   **Track 4 (Epic)**:
-        - **Check Beads Availability**: Run `m beads available` to check if Beads is available
+        - **Check Beads Availability**: Run `m backlog beads available` to check if Beads is available
         - **If Beads Available**:
           - Run `m backlog decompose --json "$ARGUMENTS"` → Parse JSON output
           - JSON output includes: `sub_intents` array with dependencies and `dependency_graph` for visualization

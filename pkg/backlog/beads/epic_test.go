@@ -1,31 +1,33 @@
 // Package backlog provides tests for epic management.
-package backlog
+package beads
 
 import (
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
+
+	backlog "github.com/dnatag/mission-toolkit/pkg/backlog"
 )
 
-func TestDefineEpicTypes(t *testing.T) {
-	epicTypes := defineEpicTypes()
+func TestOrderedEpicTypes(t *testing.T) {
+	epicTypes := OrderedEpicTypes()
 
-	expectedTypes := []string{ItemTypeFeature, ItemTypeBugfix, ItemTypeDecomposed, ItemTypeRefactor, ItemTypeFuture}
-	expectedTitles := []string{EpicTitleFeatures, EpicTitleBugfixes, EpicTitleDecomposedIntents, EpicTitleRefactoringOpportunities, EpicTitleFutureEnhancements}
-
-	if len(epicTypes) != len(expectedTypes) {
-		t.Errorf("Expected %d epic types, got %d", len(expectedTypes), len(epicTypes))
+	expected := []EpicTypeDef{
+		{backlog.ItemTypeFeature, EpicTitleFeatures},
+		{backlog.ItemTypeBugfix, EpicTitleBugfixes},
+		{backlog.ItemTypeDecomposed, EpicTitleDecomposedIntents},
+		{backlog.ItemTypeRefactor, EpicTitleRefactoringOpportunities},
+		{backlog.ItemTypeFuture, EpicTitleFutureEnhancements},
 	}
 
-	for i, itemType := range expectedTypes {
-		title, ok := epicTypes[itemType]
-		if !ok {
-			t.Errorf("Missing epic type: %s", itemType)
-			continue
-		}
-		if title != expectedTitles[i] {
-			t.Errorf("Epic type %s: expected title '%s', got '%s'", itemType, expectedTitles[i], title)
+	if len(epicTypes) != len(expected) {
+		t.Fatalf("Expected %d epic types, got %d", len(expected), len(epicTypes))
+	}
+
+	for i, et := range epicTypes {
+		if et.ItemType != expected[i].ItemType || et.EpicTitle != expected[i].EpicTitle {
+			t.Errorf("Index %d: expected {%s, %s}, got {%s, %s}", i, expected[i].ItemType, expected[i].EpicTitle, et.ItemType, et.EpicTitle)
 		}
 	}
 }
@@ -35,13 +37,13 @@ func TestLoadEpicCache(t *testing.T) {
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create test epic cache data
-	epicCacheData := epicCache{
+	EpicCacheData := EpicCache{
 		Epics: map[string]string{
-			ItemTypeFeature: "bd-feature-1",
-			ItemTypeBugfix:  "bd-bugfix-1",
+			backlog.ItemTypeFeature: "bd-feature-1",
+			backlog.ItemTypeBugfix:  "bd-bugfix-1",
 		},
 	}
-	data, err := json.MarshalIndent(epicCacheData, "", "  ")
+	data, err := json.MarshalIndent(EpicCacheData, "", "  ")
 	if err != nil {
 		t.Fatalf("Failed to marshal epic cache: %v", err)
 	}
@@ -52,9 +54,9 @@ func TestLoadEpicCache(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot: tempDir,
-		epicCache:   &epicCache{Epics: make(map[string]string)},
+		epicCache:   &EpicCache{Epics: make(map[string]string)},
 		cachePath:   cachePath,
 	}
 
@@ -67,8 +69,8 @@ func TestLoadEpicCache(t *testing.T) {
 		t.Errorf("Expected 2 epics, got %d", len(provider.epicCache.Epics))
 	}
 
-	if provider.epicCache.Epics[ItemTypeFeature] != "bd-feature-1" {
-		t.Errorf("Expected feature epic ID bd-feature-1, got %s", provider.epicCache.Epics[ItemTypeFeature])
+	if provider.epicCache.Epics[backlog.ItemTypeFeature] != "bd-feature-1" {
+		t.Errorf("Expected feature epic ID bd-feature-1, got %s", provider.epicCache.Epics[backlog.ItemTypeFeature])
 	}
 }
 
@@ -76,9 +78,9 @@ func TestLoadEpicCacheMissingFile(t *testing.T) {
 	tempDir := t.TempDir()
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot: tempDir,
-		epicCache:   &epicCache{Epics: make(map[string]string)},
+		epicCache:   &EpicCache{Epics: make(map[string]string)},
 		cachePath:   cachePath,
 	}
 
@@ -92,12 +94,12 @@ func TestSaveEpicCache(t *testing.T) {
 	tempDir := t.TempDir()
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot: tempDir,
-		epicCache: &epicCache{
+		epicCache: &EpicCache{
 			Epics: map[string]string{
-				ItemTypeFeature: "bd-feature-1",
-				ItemTypeBugfix:  "bd-bugfix-1",
+				backlog.ItemTypeFeature: "bd-feature-1",
+				backlog.ItemTypeBugfix:  "bd-bugfix-1",
 			},
 		},
 		cachePath: cachePath,
@@ -115,7 +117,7 @@ func TestSaveEpicCache(t *testing.T) {
 	}
 
 	// Verify content
-	var loadedCache epicCache
+	var loadedCache EpicCache
 	if err := json.Unmarshal(data, &loadedCache); err != nil {
 		t.Fatalf("Failed to unmarshal cache: %v", err)
 	}
@@ -124,7 +126,7 @@ func TestSaveEpicCache(t *testing.T) {
 		t.Errorf("Expected 2 epics in saved cache, got %d", len(loadedCache.Epics))
 	}
 
-	if loadedCache.Epics[ItemTypeFeature] != "bd-feature-1" {
-		t.Errorf("Expected feature epic ID bd-feature-1, got %s", loadedCache.Epics[ItemTypeFeature])
+	if loadedCache.Epics[backlog.ItemTypeFeature] != "bd-feature-1" {
+		t.Errorf("Expected feature epic ID bd-feature-1, got %s", loadedCache.Epics[backlog.ItemTypeFeature])
 	}
 }

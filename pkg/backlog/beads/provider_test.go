@@ -1,4 +1,4 @@
-package backlog
+package beads
 
 import (
 	"encoding/json"
@@ -9,12 +9,12 @@ import (
 	"testing"
 )
 
-func TestNewBeadsProvider(t *testing.T) {
+func TestNewProvider(t *testing.T) {
 	projectRoot := "/test/project"
-	provider := NewBeadsProvider(projectRoot)
+	provider := NewProvider(projectRoot)
 
 	if provider == nil {
-		t.Fatal("NewBeadsProvider returned nil")
+		t.Fatal("NewProvider returned nil")
 	}
 
 	if provider.projectRoot != projectRoot {
@@ -71,10 +71,10 @@ func TestEnsureEpics_CreatesEpicsOnFirstCall(t *testing.T) {
 		nil,
 	)
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     filepath.Join(tempDir, ".mission", "beads-epics.json"),
 	}
 
@@ -110,7 +110,7 @@ func TestEnsureEpics_CreatesEpicsOnFirstCall(t *testing.T) {
 		t.Fatalf("failed to read cache file: %v", err)
 	}
 
-	var cache epicCache
+	var cache EpicCache
 	if err := json.Unmarshal(data, &cache); err != nil {
 		t.Fatalf("failed to parse cache file: %v", err)
 	}
@@ -133,7 +133,7 @@ func TestEnsureEpics_LoadsCacheOnSubsequentCalls(t *testing.T) {
 
 	// Create an existing cache file
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
-	existingCache := epicCache{
+	existingCache := EpicCache{
 		Epics: map[string]string{
 			"feature":    "bd-feature-existing",
 			"bugfix":     "bd-bugfix-existing",
@@ -158,10 +158,10 @@ func TestEnsureEpics_LoadsCacheOnSubsequentCalls(t *testing.T) {
 
 	// Create provider with mock runner (should not be called)
 	mockRunner := newMockCommandRunner()
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -184,7 +184,7 @@ func TestEnsureEpics_LoadsCacheOnSubsequentCalls(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderList(t *testing.T) {
+func TestProviderList(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create mock command runner
@@ -205,7 +205,7 @@ func TestBeadsProviderList(t *testing.T) {
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"feature": "bd-feature-1",
 			"bugfix":  "bd-bugfix-1",
@@ -224,10 +224,10 @@ func TestBeadsProviderList(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -258,7 +258,7 @@ func TestBeadsProviderList(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderListWithFilters(t *testing.T) {
+func TestProviderListWithFilters(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create mock command runner
@@ -279,7 +279,7 @@ func TestBeadsProviderListWithFilters(t *testing.T) {
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"feature": "bd-feature-1",
 			"bugfix":  "bd-bugfix-1",
@@ -298,10 +298,10 @@ func TestBeadsProviderListWithFilters(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -332,7 +332,7 @@ func TestBeadsProviderListWithFilters(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderAdd(t *testing.T) {
+func TestProviderAdd(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create mock command runner
@@ -348,7 +348,7 @@ func TestBeadsProviderAdd(t *testing.T) {
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"feature": "bd-feature-1",
 		},
@@ -366,10 +366,10 @@ func TestBeadsProviderAdd(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -380,13 +380,13 @@ func TestBeadsProviderAdd(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderAddInvalidType(t *testing.T) {
+func TestProviderAddInvalidType(t *testing.T) {
 	tempDir := t.TempDir()
 
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"feature": "bd-feature-1",
 		},
@@ -404,10 +404,10 @@ func TestBeadsProviderAddInvalidType(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: newMockCommandRunner(),
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -423,7 +423,7 @@ func TestBeadsProviderAddInvalidType(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderAddWithPattern(t *testing.T) {
+func TestProviderAddWithPattern(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create mock command runner
@@ -453,7 +453,7 @@ func TestBeadsProviderAddWithPattern(t *testing.T) {
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"refactor": "bd-refactor-1",
 			"feature":  "bd-feature-1",
@@ -472,10 +472,10 @@ func TestBeadsProviderAddWithPattern(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -498,7 +498,7 @@ func TestBeadsProviderAddWithPattern(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderAddMultiple(t *testing.T) {
+func TestProviderAddMultiple(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create mock command runner
@@ -519,7 +519,7 @@ func TestBeadsProviderAddMultiple(t *testing.T) {
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"feature": "bd-feature-1",
 		},
@@ -537,10 +537,10 @@ func TestBeadsProviderAddMultiple(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -563,7 +563,7 @@ func TestBeadsProviderAddMultiple(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderGetPatternCount(t *testing.T) {
+func TestProviderGetPatternCount(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create mock command runner
@@ -583,7 +583,7 @@ func TestBeadsProviderGetPatternCount(t *testing.T) {
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"refactor": "bd-refactor-1",
 		},
@@ -601,10 +601,10 @@ func TestBeadsProviderGetPatternCount(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -639,7 +639,7 @@ func TestBeadsProviderGetPatternCount(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderComplete(t *testing.T) {
+func TestProviderComplete(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create mock command runner
@@ -682,7 +682,7 @@ func TestBeadsProviderComplete(t *testing.T) {
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"feature":    "bd-feature-1",
 			"bugfix":     "bd-bugfix-1",
@@ -702,10 +702,10 @@ func TestBeadsProviderComplete(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -716,7 +716,7 @@ func TestBeadsProviderComplete(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderCompleteNotFound(t *testing.T) {
+func TestProviderCompleteNotFound(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create mock command runner
@@ -752,7 +752,7 @@ func TestBeadsProviderCompleteNotFound(t *testing.T) {
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"feature":    "bd-feature-1",
 			"bugfix":     "bd-bugfix-1",
@@ -772,10 +772,10 @@ func TestBeadsProviderCompleteNotFound(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -790,7 +790,7 @@ func TestBeadsProviderCompleteNotFound(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderCleanupAll(t *testing.T) {
+func TestProviderCleanupAll(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create mock command runner
@@ -826,7 +826,7 @@ func TestBeadsProviderCleanupAll(t *testing.T) {
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"feature":    "bd-feature-1",
 			"bugfix":     "bd-bugfix-1",
@@ -846,10 +846,10 @@ func TestBeadsProviderCleanupAll(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -865,7 +865,7 @@ func TestBeadsProviderCleanupAll(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderCleanupByType(t *testing.T) {
+func TestProviderCleanupByType(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create mock command runner
@@ -881,7 +881,7 @@ func TestBeadsProviderCleanupByType(t *testing.T) {
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"feature":    "bd-feature-1",
 			"bugfix":     "bd-bugfix-1",
@@ -901,10 +901,10 @@ func TestBeadsProviderCleanupByType(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -920,13 +920,13 @@ func TestBeadsProviderCleanupByType(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderCleanupInvalidType(t *testing.T) {
+func TestProviderCleanupInvalidType(t *testing.T) {
 	tempDir := t.TempDir()
 
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"feature": "bd-feature-1",
 		},
@@ -944,10 +944,10 @@ func TestBeadsProviderCleanupInvalidType(t *testing.T) {
 
 	mockRunner := newMockCommandRunner()
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -961,7 +961,7 @@ func TestBeadsProviderCleanupInvalidType(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderDecompose(t *testing.T) {
+func TestProviderDecompose(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create mock command runner
@@ -984,15 +984,15 @@ func TestBeadsProviderDecompose(t *testing.T) {
 		nil,
 	)
 
-	// Mock add-dep responses (task 2 depends on task 1)
+	// Mock dep add responses (task 2 depends on task 1)
 	mockRunner.setResponse(
-		[]string{"add-dep", "bd-task-2", "bd-task-1"},
+		[]string{"dep", "add", "bd-task-2", "bd-task-1"},
 		``,
 		nil,
 	)
-	// Mock add-dep responses (task 3 depends on task 2)
+	// Mock dep add responses (task 3 depends on task 2)
 	mockRunner.setResponse(
-		[]string{"add-dep", "bd-task-3", "bd-task-2"},
+		[]string{"dep", "add", "bd-task-3", "bd-task-2"},
 		``,
 		nil,
 	)
@@ -1000,7 +1000,7 @@ func TestBeadsProviderDecompose(t *testing.T) {
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"decomposed": "bd-decomposed-1",
 		},
@@ -1016,10 +1016,10 @@ func TestBeadsProviderDecompose(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -1055,13 +1055,13 @@ func TestBeadsProviderDecompose(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderDecomposeInvalidJSON(t *testing.T) {
+func TestProviderDecomposeInvalidJSON(t *testing.T) {
 	tempDir := t.TempDir()
 
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"decomposed": "bd-decomposed-1",
 		},
@@ -1079,10 +1079,10 @@ func TestBeadsProviderDecomposeInvalidJSON(t *testing.T) {
 
 	mockRunner := newMockCommandRunner()
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -1096,13 +1096,13 @@ func TestBeadsProviderDecomposeInvalidJSON(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderDecomposeEmptySubIntents(t *testing.T) {
+func TestProviderDecomposeEmptySubIntents(t *testing.T) {
 	tempDir := t.TempDir()
 
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"decomposed": "bd-decomposed-1",
 		},
@@ -1120,10 +1120,10 @@ func TestBeadsProviderDecomposeEmptySubIntents(t *testing.T) {
 
 	mockRunner := newMockCommandRunner()
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -1143,7 +1143,7 @@ func TestBeadsProviderDecomposeEmptySubIntents(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderDecomposeMissingDependency(t *testing.T) {
+func TestProviderDecomposeMissingDependency(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create mock command runner
@@ -1164,7 +1164,7 @@ func TestBeadsProviderDecomposeMissingDependency(t *testing.T) {
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"decomposed": "bd-decomposed-1",
 		},
@@ -1180,10 +1180,10 @@ func TestBeadsProviderDecomposeMissingDependency(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -1216,7 +1216,7 @@ func TestBeadsProviderDecomposeMissingDependency(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderDecomposeCLICreateFailure(t *testing.T) {
+func TestProviderDecomposeCLICreateFailure(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create mock command runner
@@ -1232,7 +1232,7 @@ func TestBeadsProviderDecomposeCLICreateFailure(t *testing.T) {
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"decomposed": "bd-decomposed-1",
 		},
@@ -1248,10 +1248,10 @@ func TestBeadsProviderDecomposeCLICreateFailure(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
@@ -1278,7 +1278,7 @@ func TestBeadsProviderDecomposeCLICreateFailure(t *testing.T) {
 	}
 }
 
-func TestBeadsProviderDecomposeAddDepFailure(t *testing.T) {
+func TestProviderDecomposeAddDepFailure(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create mock command runner
@@ -1296,17 +1296,17 @@ func TestBeadsProviderDecomposeAddDepFailure(t *testing.T) {
 		nil,
 	)
 
-	// Mock add-dep failure
+	// Mock dep add failure
 	mockRunner.setResponse(
-		[]string{"add-dep", "bd-task-2", "bd-task-1"},
+		[]string{"dep", "add", "bd-task-2", "bd-task-1"},
 		``,
-		fmt.Errorf("bd add-dep failed"),
+		fmt.Errorf("bd dep add failed"),
 	)
 
 	cachePath := filepath.Join(tempDir, ".mission", "beads-epics.json")
 
 	// Create epic cache file with pre-populated data
-	epicCacheData := epicCache{
+	epicCacheData := EpicCache{
 		Epics: map[string]string{
 			"decomposed": "bd-decomposed-1",
 		},
@@ -1322,14 +1322,14 @@ func TestBeadsProviderDecomposeAddDepFailure(t *testing.T) {
 		t.Fatalf("Failed to write cache file: %v", err)
 	}
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     cachePath,
 	}
 
-	// Test Decompose with add-dep failure
+	// Test Decompose with dep add failure
 	jsonInput := `{
 		"action": "decompose",
 		"sub_intents": [
@@ -1432,10 +1432,10 @@ func TestGenerateSnapshot_Success(t *testing.T) {
 		nil,
 	)
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     filepath.Join(tempDir, ".mission", "beads-epics.json"),
 	}
 
@@ -1445,7 +1445,7 @@ func TestGenerateSnapshot_Success(t *testing.T) {
 	}
 
 	// Generate snapshot
-	provider.generateSnapshot()
+	provider.GenerateSnapshot()
 
 	// Verify snapshot file was created
 	backlogPath := filepath.Join(tempDir, ".mission", "backlog.md")
@@ -1562,10 +1562,10 @@ func TestGenerateSnapshot_ListError(t *testing.T) {
 		nil,
 	)
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     filepath.Join(tempDir, ".mission", "beads-epics.json"),
 	}
 
@@ -1575,7 +1575,7 @@ func TestGenerateSnapshot_ListError(t *testing.T) {
 	}
 
 	// Generate snapshot should not fail even with list error
-	provider.generateSnapshot()
+	provider.GenerateSnapshot()
 
 	// Verify snapshot file was still created
 	backlogPath := filepath.Join(tempDir, ".mission", "backlog.md")
@@ -1655,10 +1655,10 @@ func TestGenerateSnapshot_WriteError(t *testing.T) {
 		nil,
 	)
 
-	provider := &BeadsProvider{
+	provider := &Provider{
 		projectRoot:   tempDir,
 		commandRunner: mockRunner,
-		epicCache:     &epicCache{Epics: make(map[string]string)},
+		epicCache:     &EpicCache{Epics: make(map[string]string)},
 		cachePath:     filepath.Join(tempDir, ".mission", "beads-epics.json"),
 	}
 
@@ -1668,5 +1668,5 @@ func TestGenerateSnapshot_WriteError(t *testing.T) {
 	}
 
 	// Generate snapshot should not panic with write error
-	provider.generateSnapshot()
+	provider.GenerateSnapshot()
 }

@@ -1,4 +1,4 @@
-package backlog
+package file
 
 import (
 	"fmt"
@@ -7,8 +7,7 @@ import (
 )
 
 // GetPatternCount returns the occurrence count for a pattern ID.
-// Returns 0 if pattern not found.
-func (m *BacklogManager) GetPatternCount(patternID string) (int, error) {
+func (m *Manager) GetPatternCount(patternID string) (int, error) {
 	if err := m.ensureBacklogExists(); err != nil {
 		return 0, err
 	}
@@ -28,8 +27,7 @@ func (m *BacklogManager) GetPatternCount(patternID string) (int, error) {
 	return 0, nil
 }
 
-// incrementPatternCount increments the count for an existing pattern ID.
-func (m *BacklogManager) incrementPatternCount(patternID string) error {
+func (m *Manager) incrementPatternCount(patternID string) error {
 	body, _, err := m.readBacklogWithMetadata()
 	if err != nil {
 		return err

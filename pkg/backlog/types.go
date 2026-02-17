@@ -1,31 +1,30 @@
-// Package backlog provides backlog management functionality with support for
-// multiple backend implementations.
 package backlog
 
 // Item type constants for backlog items.
-// These types are used across both BacklogManager and BeadsProvider implementations.
 const (
-	// ItemTypeFeature represents a new feature or enhancement.
-	ItemTypeFeature = "feature"
-
-	// ItemTypeBugfix represents a bug fix or correction.
-	ItemTypeBugfix = "bugfix"
-
-	// ItemTypeDecomposed represents a decomposed sub-intent.
+	ItemTypeFeature    = "feature"
+	ItemTypeBugfix     = "bugfix"
 	ItemTypeDecomposed = "decomposed"
-
-	// ItemTypeRefactor represents a refactoring opportunity.
-	ItemTypeRefactor = "refactor"
-
-	// ItemTypeFuture represents a future enhancement idea.
-	ItemTypeFuture = "future"
+	ItemTypeRefactor   = "refactor"
+	ItemTypeFuture     = "future"
 )
 
-// Markdown list format constants for matching BacklogManager output format.
+// Markdown list format constants.
 const (
-	// ListItemOpenFormat represents an unchecked/open list item.
-	ListItemOpenFormat = "- [ ] "
-
-	// ListItemClosedFormat represents a checked/closed list item.
+	ListItemOpenFormat   = "- [ ] "
 	ListItemClosedFormat = "- [x] "
 )
+
+// ValidTypes is the set of valid backlog item types.
+var ValidTypes = map[string]bool{
+	ItemTypeFeature:    true,
+	ItemTypeBugfix:     true,
+	ItemTypeDecomposed: true,
+	ItemTypeRefactor:   true,
+	ItemTypeFuture:     true,
+}
+
+// IsValidType checks if the given type is a valid backlog item type.
+func IsValidType(itemType string) bool {
+	return ValidTypes[itemType]
+}

@@ -1,5 +1,5 @@
 // Package backlog provides tests for command execution abstraction.
-package backlog
+package beads
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-package backlog
+package beads
 
 import (
 	"testing"
@@ -17,7 +17,7 @@ func TestBeadsAvailable_BothConditionsMet(t *testing.T) {
 
 	// This test will pass the directory check but fail the PATH check
 	// In a real scenario with bd installed, both would pass
-	available, err := BeadsAvailable(fs)
+	available, err := Available(fs)
 	if err != nil {
 		t.Fatalf("BeadsAvailable returned error: %v", err)
 	}
@@ -37,7 +37,7 @@ func TestBeadsAvailable_NoBeadsDirectory(t *testing.T) {
 	// Create an empty mock filesystem
 	fs := afero.NewMemMapFs()
 
-	available, err := BeadsAvailable(fs)
+	available, err := Available(fs)
 	if err != nil {
 		t.Fatalf("BeadsAvailable returned error: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestBeadsAvailable_BeadsIsFileNotDirectory(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	afero.WriteFile(fs, ".beads", []byte("not a directory"), 0644)
 
-	available, err := BeadsAvailable(fs)
+	available, err := Available(fs)
 	if err == nil {
 		t.Error("Expected error when .beads is a file, not a directory")
 	}
@@ -62,7 +62,7 @@ func TestBeadsAvailable_BeadsIsFileNotDirectory(t *testing.T) {
 	}
 }
 
-func TestBeadsAvailableInDir(t *testing.T) {
+func TestAvailableInDir(t *testing.T) {
 	// Create a temporary directory structure for testing
 	fs := afero.NewMemMapFs()
 
@@ -73,7 +73,7 @@ func TestBeadsAvailableInDir(t *testing.T) {
 	// Use BasePathFs to root the filesystem at the project directory
 	baseFS := afero.NewBasePathFs(fs, projectDir)
 
-	available, err := BeadsAvailable(baseFS)
+	available, err := Available(baseFS)
 	if err != nil {
 		t.Fatalf("BeadsAvailable returned error: %v", err)
 	}
@@ -87,7 +87,7 @@ func TestBeadsAvailable_EmptyFilesystem(t *testing.T) {
 	// Create an empty mock filesystem
 	fs := afero.NewMemMapFs()
 
-	available, err := BeadsAvailable(fs)
+	available, err := Available(fs)
 	if err != nil {
 		t.Fatalf("BeadsAvailable returned error: %v", err)
 	}

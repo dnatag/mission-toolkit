@@ -43,8 +43,8 @@ func (r *Reconciler) DetectRogueEdits() ([]RogueEdit, error) {
 		return nil, fmt.Errorf("failed to list backlog.md items: %w", err)
 	}
 
-	// Get all items from Beads (excluding completed to match backlog structure)
-	beadsItems, err := r.beadsProvider.List(nil, []string{"completed"})
+	// Get all items from Beads (including completed for full comparison)
+	beadsItems, err := r.beadsProvider.List(nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list Beads items: %w", err)
 	}
@@ -265,6 +265,6 @@ func inferTypeFromDescription(description string) string {
 		return ItemTypeFeature
 	}
 
-	// Default to future for unclear items
-	return ItemTypeFuture
+	// Default to feature for unclear items
+	return ItemTypeFeature
 }

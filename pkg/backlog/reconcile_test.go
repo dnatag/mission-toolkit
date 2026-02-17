@@ -485,8 +485,8 @@ func TestInferTypeFromDescription(t *testing.T) {
 		{"Consolidate similar code", ItemTypeRefactor},
 		{"Task (from Epic: Main epic)", ItemTypeDecomposed},
 		{"Sub-intent for feature", ItemTypeDecomposed},
-		{"Unclear future item", ItemTypeFuture},
-		{"Generic task", ItemTypeFuture},
+		{"Unclear future item", ItemTypeFeature},
+		{"Generic task", ItemTypeFeature},
 	}
 
 	for _, tt := range tests {
