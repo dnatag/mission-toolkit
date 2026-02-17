@@ -67,6 +67,17 @@ func (p *Provider) GenerateSnapshot() {
 	}
 
 	backlogPath := filepath.Join(p.projectRoot, ".mission", "backlog.md")
+
+	// Safety check: don't overwrite existing backlog with empty content.
+	// If all sections returned 0 items, Beads may be in a bad state (e.g., DB lock).
+	totalItems := strings.Count(content.String(), "- [ ] ") + strings.Count(content.String(), "- [x] ")
+	if totalItems == 0 {
+		if info, err := os.Stat(backlogPath); err == nil && info.Size() > 0 {
+			fmt.Fprintf(os.Stderr, "Warning: snapshot skipped — Beads returned 0 items but backlog.md exists\n")
+			return
+		}
+	}
+
 	if err := os.MkdirAll(filepath.Dir(backlogPath), 0755); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to create .mission directory for snapshot: %v\n", err)
 		return

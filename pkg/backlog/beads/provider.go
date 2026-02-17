@@ -509,7 +509,11 @@ func (p *Provider) Decompose(jsonInput string) error {
 		for _, depIntent := range subIntent.Dependencies {
 			depTaskID, ok := intentToTaskID[depIntent]
 			if !ok {
-				return fmt.Errorf("dependency task not found: '%s' referenced by '%s'", depIntent, subIntent.Intent)
+				available := make([]string, 0, len(intentToTaskID))
+				for k := range intentToTaskID {
+					available = append(available, k)
+				}
+				return fmt.Errorf("dependency task not found: '%s' referenced by '%s'\navailable intents: %v", depIntent, subIntent.Intent, available)
 			}
 			_, err := p.commandRunner.Run("dep", "add", taskID, depTaskID)
 			if err != nil {

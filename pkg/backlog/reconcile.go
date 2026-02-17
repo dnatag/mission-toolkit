@@ -86,23 +86,34 @@ func (r *Reconciler) DetectRogueEdits() ([]RogueEdit, error) {
 //
 // Returns the number of items successfully imported and any error encountered.
 func (r *Reconciler) ImportToBeads(edits []RogueEdit) (int, error) {
+	// Get current Beads items for deduplication
+	beadsItems, err := r.beadsProvider.List(nil, nil)
+	if err != nil {
+		return 0, fmt.Errorf("failed to list Beads items for dedup: %w", err)
+	}
+	beadsSet := make(map[string]bool, len(beadsItems))
+	for _, item := range beadsItems {
+		beadsSet[normalizeDescription(item)] = true
+	}
+
 	imported := 0
 
 	for _, edit := range edits {
+		// Skip if already in Beads (dedup guard)
+		if beadsSet[normalizeDescription(edit.Description)] {
+			continue
+		}
+
 		// Build description with dependencies if present
 		description := edit.Description
 		if len(edit.Dependencies) > 0 {
 			description += fmt.Sprintf(" (depends on: %s)", strings.Join(edit.Dependencies, ", "))
 		}
 
-		// Add the item to Beads
 		if err := r.beadsProvider.Add(description, edit.Type); err != nil {
 			return imported, fmt.Errorf("failed to import '%s': %w", edit.Description, err)
 		}
 
-		// If the item was completed, mark it as complete in Beads.
-		// We silently ignore completion errors since the item was successfully created.
-		// The user can manually complete the item if needed.
 		if edit.Status == "completed" {
 			r.beadsProvider.Complete(edit.Description) //nolint:errcheck // Non-critical: item already created
 		}
