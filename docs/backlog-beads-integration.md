@@ -4,7 +4,7 @@
 
 Mission Toolkit uses `.mission/backlog.json` as the **primary backlog management tool** for tracking features, bugs, refactoring tasks, and decomposed intents. It also provides **JSON export** for integration with external tools.
 
-**Key Principle:** backlog.json is the single source of truth for mission-toolkit's backlog. Users can add items manually, and mission-toolkit generates items automatically (epic decomposition, pattern tracking). Export capability allows integration with external tools.
+**Key Principle:** backlog.json is mission-toolkit's backlog management tool. Users can add items manually, and mission-toolkit generates items automatically (epic decomposition). Pattern tracking for WET→DRY is determined by code analysis, not backlog state.
 
 ## Architecture
 
@@ -55,8 +55,9 @@ Mission Toolkit uses `.mission/backlog.json` as the **primary backlog management
 **How Items Are Added:**
 1. **Manually** - User adds features, bugs via `m backlog add`
 2. **Automatically** - Mission-toolkit generates:
-   - Pattern tracking (duplication detection)
-   - Epic decomposition (Track 4)
+   - Epic decomposition (Track 4) - Sub-intents with dependencies
+
+**Note:** Pattern tracking (WET→DRY) is determined by code analysis during `m analyze duplication`, not by backlog state. See Pattern Tracking section below.
 
 **Pattern Tracking (Rule of Three):**
 - During `m analyze duplication`, patterns are detected
@@ -67,6 +68,35 @@ Mission Toolkit uses `.mission/backlog.json` as the **primary backlog management
 **Epic Decomposition:**
 - During `@m.plan`, Track 4 epics are decomposed
 - Sub-intents added to backlog.json with dependencies
+
+### Pattern Tracking (WET→DRY)
+
+**Pattern tracking is self-contained in code analysis, not backlog state.**
+
+**How It Works:**
+1. During `@m.plan`, `m analyze duplication` runs
+2. AI uses duplication.md template to scan codebase
+3. AI finds similar code patterns and counts occurrences in actual code
+4. AI determines mission type based on count:
+   - count < 3 → WET (allow duplication)
+   - count >= 3 → DRY (refactor pattern)
+
+**Example:**
+```bash
+# During @m.plan
+$ m analyze duplication
+
+# AI scans codebase, finds:
+# - Email validation pattern in users/handler.go:45
+# - Email validation pattern in products/handler.go:78
+# - Email validation pattern in orders/handler.go:23
+# Count: 3 → DRY threshold reached
+
+# Mission type automatically set to DRY
+# User can optionally add refactor item to backlog for tracking
+```
+
+**Key Point:** Pattern count comes from analyzing actual code, not from counting backlog items. The duplication.md template guides AI to perform self-contained code analysis.
 
 ### JSON Export (Optional)
 
@@ -117,7 +147,6 @@ Mission Toolkit uses backlog.json as the primary backlog:
       "status": "open",
       "description": "Extract email validation into shared utility",
       "estimated_files": 3,
-      "pattern_id": "validation-pattern",
       "location": "users/handler.go:45",
       "created_at": "2026-02-17T10:05:00Z"
     },
@@ -153,8 +182,8 @@ m backlog add "Add user authentication" --type feature --estimated-files 5
 # Add bug
 m backlog add "Fix null pointer in login" --type bug --location "auth/handler.go:45"
 
-# Add refactor (with pattern tracking)
-m backlog add "Extract validation logic" --type refactor --pattern-id validation-pattern --location "users/handler.go:45"
+# Add refactor
+m backlog add "Extract validation logic" --type refactor --location "users/handler.go:45"
 ```
 
 **Automatically Generated:**
@@ -169,31 +198,6 @@ m backlog list [--type TYPE] [--status STATUS]
 
 # Show item details
 m backlog show --id <id>
-
-# Count pattern occurrences
-m backlog count --pattern-id <pattern-id>
-```
-
-### Pattern Tracking (Rule of Three)
-
-```bash
-# During @m.plan, duplication analysis runs
-$ m analyze duplication
-
-# Finds patterns, adds to backlog.json:
-# - pattern_id: "validation-pattern"
-# - count: 2
-
-# View pattern occurrences
-$ m backlog list --type refactor --pattern-id validation-pattern
-Pattern: validation-pattern (count: 2)
-- refactor-001: Extract validation logic [users/handler.go:45]
-- refactor-002: Extract validation logic [products/handler.go:78]
-
-# Third occurrence triggers DRY
-$ @m.plan "Add email validation to orders"
-# Mission type: DRY (refactor pattern)
-# Automatically adds refactor-003 to backlog.json
 ```
 
 ## JSON Export
@@ -318,34 +322,36 @@ $ @m.complete
 ### Workflow 2: Pattern Tracking (Rule of Three)
 
 ```bash
-# 1. During planning, duplication detected
+# 1. First occurrence - WET mission
 $ @m.plan "Add email validation to products"
 
-# Duplication analysis finds similar code in users/handler.go
-# Automatically adds to backlog.json:
-# - pattern_id: "validation-pattern"
-# - count: 2 (not yet at threshold)
+# Duplication analysis scans codebase:
+# - Found: users/handler.go:45 (existing)
+# - Found: products/handler.go:78 (current intent)
+# Count: 2 → WET (allow duplication)
 
-# 2. View pattern occurrences
-$ m backlog list --type refactor --pattern-id validation-pattern
-Pattern: validation-pattern (count: 2)
-- refactor-001: Extract validation logic [users/handler.go:45]
-- refactor-002: Extract validation logic [products/handler.go:78]
+# Mission proceeds as WET
 
-# 3. Third occurrence triggers DRY
+# 2. Second occurrence - still WET
 $ @m.plan "Add email validation to orders"
-# Mission type: DRY (refactor pattern)
-# Automatically adds refactor-003 to backlog.json
 
-# 4. Export refactor tasks
-$ m backlog export --type refactor --pattern-id validation-pattern > refactors.json
-$ jq -r '.items[] | "bd create \"\(.title)\" --label type:refactor --label pattern:\(.pattern_id)"' refactors.json | sh
+# Duplication analysis scans codebase:
+# - Found: users/handler.go:45
+# - Found: products/handler.go:78
+# - Found: orders/handler.go:23 (current intent)
+# Count: 3 → DRY threshold reached!
+
+# Mission type automatically set to DRY
+# AI creates refactoring plan to extract pattern
+
+# 3. Optional: Add refactor items to backlog for tracking
+$ m backlog add "Extract email validation pattern" --type refactor
 ```
 
 ### Workflow 3: AI Agent Managing Backlog
 
 ```bash
-# AI agent reads generated backlog
+# AI agent reads backlog
 $ cat .mission/backlog.json
 
 # AI agent analyzes and prioritizes items
@@ -482,51 +488,63 @@ type: WET
 
 **m backlog add**
 ```bash
-m backlog add "description" [--type TYPE] [--pattern-id ID]
+m backlog add "description" --type TYPE [OPTIONS]
+
+# Options:
+#   --estimated-files N      Estimated number of files
+#   --location PATH:LINE     Source location
+#   --description TEXT       Detailed description
 
 # Examples
-m backlog add "Add user authentication" --type feature
-m backlog add "Extract validation logic" --type refactor --pattern-id validation-pattern
-m backlog add "Fix null pointer" --type bug
+m backlog add "Add user authentication" --type feature --estimated-files 5
+m backlog add "Extract validation logic" --type refactor --location "users/handler.go:45"
+m backlog add "Fix null pointer" --type bug --location "auth/handler.go:45"
 ```
 
 **m backlog list**
 ```bash
-m backlog list [--include TYPE] [--exclude TYPE] [--pattern-id ID]
+m backlog list [--type TYPE] [--status STATUS]
 
 # Examples
-m backlog list                                    # All items
-m backlog list --include refactor                 # Only refactor items
-m backlog list --pattern-id validation-pattern    # Specific pattern
+m backlog list                    # All items
+m backlog list --type refactor    # Only refactor items
+m backlog list --status open      # Only open items
+```
+
+**m backlog show**
+```bash
+m backlog show --id ID
+
+# Example
+m backlog show --id feature-001
 ```
 
 **m backlog complete**
 ```bash
-m backlog complete --item "description"
+m backlog complete --id ID
 
 # Example
-m backlog complete --item "Add user authentication"
+m backlog complete --id feature-001
 ```
 
 **m backlog cleanup**
 ```bash
-m backlog cleanup [--type TYPE]
+m backlog cleanup
 
-# Examples
-m backlog cleanup              # Remove all completed items
-m backlog cleanup --type bug   # Remove completed bugs only
+# Removes all completed items
 ```
 
 ### Export Commands
 
 **m backlog export**
 ```bash
-m backlog export --format json [--include TYPE] [--decomposed]
+m backlog export [--type TYPE] [--status STATUS] > output.json
 
 # Examples
-m backlog export --format json > backlog.json
-m backlog export --format json --include bug > bugs.json
-m backlog export --format json --decomposed > epic.json
+m backlog export > backlog.json
+m backlog export --type bug > bugs.json
+m backlog export --type decomposed > epic.json
+m backlog export --status open > open-items.json
 ```
 
 ### Mission vs Backlog Operations
@@ -541,7 +559,10 @@ m mission mark-complete --step 1 --status success --message "Added validation"
 
 **Backlog Item Completion (Future Work):**
 ```bash
-m backlog complete --item "Add user authentication"
+m backlog complete --id feature-001
+```
+- Marks backlog item as completed in backlog.json
+- Separate from mission step tracking
 ```
 - Marks backlog item as done
 - Marks [x] in backlog.md
