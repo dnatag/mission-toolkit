@@ -134,7 +134,7 @@ func (p *Provider) parseListOutput(output string) ([]string, error) {
 		Status string `json:"status"`
 	}
 
-	if err := json.Unmarshal([]byte(output), &items); err != nil {
+	if err := json.Unmarshal([]byte(extractJSON(output)), &items); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
 	}
 
@@ -185,7 +185,7 @@ func (p *Provider) addItem(description, itemType string) error {
 	var result struct {
 		ID string `json:"id"`
 	}
-	if err := json.Unmarshal([]byte(output), &result); err != nil {
+	if err := json.Unmarshal([]byte(extractJSON(output)), &result); err != nil {
 		return fmt.Errorf("failed to parse create output: %w", err)
 	}
 
@@ -227,7 +227,7 @@ func (p *Provider) AddWithPattern(description, itemType, patternID string) error
 		ID    string `json:"id"`
 		Title string `json:"title"`
 	}
-	if err := json.Unmarshal([]byte(output), &items); err != nil {
+	if err := json.Unmarshal([]byte(extractJSON(output)), &items); err != nil {
 		return fmt.Errorf("failed to parse list output: %w", err)
 	}
 
@@ -283,7 +283,7 @@ func (p *Provider) AddMultiple(descriptions []string, itemType string) error {
 		var result struct {
 			ID string `json:"id"`
 		}
-		if err := json.Unmarshal([]byte(output), &result); err != nil {
+		if err := json.Unmarshal([]byte(extractJSON(output)), &result); err != nil {
 			return fmt.Errorf("failed to parse create output: %w", err)
 		}
 
@@ -327,7 +327,7 @@ func (p *Provider) Complete(itemText string) error {
 			ID    string `json:"id"`
 			Title string `json:"title"`
 		}
-		if err := json.Unmarshal([]byte(output), &items); err != nil {
+		if err := json.Unmarshal([]byte(extractJSON(output)), &items); err != nil {
 			return fmt.Errorf("failed to parse list output for %s: %w", itemType, err)
 		}
 
@@ -386,7 +386,7 @@ func (p *Provider) Cleanup(itemType string) (int, error) {
 			ID     string `json:"id"`
 			Status string `json:"status"`
 		}
-		if err := json.Unmarshal([]byte(output), &items); err != nil {
+		if err := json.Unmarshal([]byte(extractJSON(output)), &items); err != nil {
 			return 0, fmt.Errorf("failed to parse list output for %s: %w", itemType, err)
 		}
 
@@ -422,7 +422,7 @@ func (p *Provider) GetPatternCount(patternID string) (int, error) {
 		ID    string `json:"id"`
 		Notes string `json:"notes"`
 	}
-	if err := json.Unmarshal([]byte(output), &items); err != nil {
+	if err := json.Unmarshal([]byte(extractJSON(output)), &items); err != nil {
 		return 0, fmt.Errorf("failed to parse list output: %w", err)
 	}
 
@@ -490,7 +490,7 @@ func (p *Provider) Decompose(jsonInput string) error {
 		var result struct {
 			ID string `json:"id"`
 		}
-		if err := json.Unmarshal([]byte(output), &result); err != nil {
+		if err := json.Unmarshal([]byte(extractJSON(output)), &result); err != nil {
 			return fmt.Errorf("failed to parse create output for '%s': %w", subIntent.Intent, err)
 		}
 

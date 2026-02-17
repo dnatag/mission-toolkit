@@ -28,3 +28,16 @@ func (r *bdCommandRunner) Run(args ...string) (string, error) {
 	}
 	return string(output), nil
 }
+
+// extractJSON strips non-JSON preamble (warnings, etc.) from bd output.
+func extractJSON(output string) string {
+	for i, c := range output {
+		if c == '{' || c == '[' {
+			if i > 0 {
+				return output[i:]
+			}
+			break
+		}
+	}
+	return output
+}
