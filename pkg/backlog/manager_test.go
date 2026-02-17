@@ -1,4 +1,4 @@
-package file
+package backlog
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestManager_List(t *testing.T) {
+func TestBacklogManager_List(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
@@ -61,7 +61,7 @@ func TestManager_List(t *testing.T) {
 	}
 }
 
-func TestManager_Add(t *testing.T) {
+func TestBacklogManager_Add(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
@@ -100,7 +100,7 @@ func TestManager_Add(t *testing.T) {
 	}
 }
 
-func TestManager_Complete(t *testing.T) {
+func TestBacklogManager_Complete(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
@@ -133,7 +133,7 @@ func TestManager_Complete(t *testing.T) {
 	}
 }
 
-func TestManager_Complete_MissingCompletedSection(t *testing.T) {
+func TestBacklogManager_Complete_MissingCompletedSection(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
@@ -170,7 +170,7 @@ func TestManager_Complete_MissingCompletedSection(t *testing.T) {
 	}
 }
 
-func TestManager_ensureBacklogExists(t *testing.T) {
+func TestBacklogManager_ensureBacklogExists(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
@@ -210,7 +210,7 @@ func TestManager_ensureBacklogExists(t *testing.T) {
 	}
 }
 
-func TestManager_validateType(t *testing.T) {
+func TestBacklogManager_validateType(t *testing.T) {
 	manager := NewManager("")
 
 	validTypes := []string{"decomposed", "refactor", "future"}
@@ -228,7 +228,7 @@ func TestManager_validateType(t *testing.T) {
 	}
 }
 
-func TestManager_AddToEmptySection(t *testing.T) {
+func TestBacklogManager_AddToEmptySection(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
@@ -269,7 +269,7 @@ func TestManager_AddToEmptySection(t *testing.T) {
 	}
 }
 
-func TestManager_ExistingBacklogWithEmptySections(t *testing.T) {
+func TestBacklogManager_ExistingBacklogWithEmptySections(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
@@ -336,7 +336,7 @@ func TestManager_ExistingBacklogWithEmptySections(t *testing.T) {
 	}
 }
 
-func TestManager_getSectionHeader(t *testing.T) {
+func TestBacklogManager_getSectionHeader(t *testing.T) {
 	manager := NewManager("")
 
 	tests := []struct {
@@ -357,7 +357,7 @@ func TestManager_getSectionHeader(t *testing.T) {
 	}
 }
 
-func TestManager_AddMultiple(t *testing.T) {
+func TestBacklogManager_AddMultiple(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
@@ -417,7 +417,7 @@ func TestManager_AddMultiple(t *testing.T) {
 	}
 }
 
-func TestManager_Cleanup(t *testing.T) {
+func TestBacklogManager_Cleanup(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
@@ -471,7 +471,7 @@ func TestManager_Cleanup(t *testing.T) {
 	}
 }
 
-func TestManager_CleanupByType(t *testing.T) {
+func TestBacklogManager_CleanupByType(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
@@ -525,7 +525,7 @@ func TestManager_CleanupByType(t *testing.T) {
 	}
 }
 
-func TestManager_CleanupNoItems(t *testing.T) {
+func TestBacklogManager_CleanupNoItems(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
@@ -544,7 +544,7 @@ func TestManager_CleanupNoItems(t *testing.T) {
 	}
 }
 
-func TestManager_CleanupInvalidType(t *testing.T) {
+func TestBacklogManager_CleanupInvalidType(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
@@ -560,7 +560,7 @@ func TestManager_CleanupInvalidType(t *testing.T) {
 	}
 }
 
-func TestManager_matchesItemType(t *testing.T) {
+func TestBacklogManager_matchesItemType(t *testing.T) {
 	manager := NewManager("")
 
 	tests := []struct {
@@ -584,7 +584,7 @@ func TestManager_matchesItemType(t *testing.T) {
 	}
 }
 
-func TestManager_ListWithTypeFilter(t *testing.T) {
+func TestBacklogManager_ListWithTypeFilter(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
@@ -673,7 +673,7 @@ func TestManager_ListWithTypeFilter(t *testing.T) {
 	}
 }
 
-func TestManager_PatternTracking(t *testing.T) {
+func TestBacklogManager_PatternTracking(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
@@ -729,7 +729,7 @@ func TestManager_PatternTracking(t *testing.T) {
 	}
 }
 
-func TestManager_GetPatternCount_NotFound(t *testing.T) {
+func TestBacklogManager_GetPatternCount_NotFound(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
@@ -744,9 +744,9 @@ func TestManager_GetPatternCount_NotFound(t *testing.T) {
 
 // Edge case tests
 
-// TestManager_Add_DuplicatePatternIDs verifies that adding multiple items
+// TestBacklogManager_Add_DuplicatePatternIDs verifies that adding multiple items
 // with the same pattern ID correctly increments the pattern count.
-func TestManager_Add_DuplicatePatternIDs(t *testing.T) {
+func TestBacklogManager_Add_DuplicatePatternIDs(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
@@ -784,9 +784,9 @@ func TestManager_Add_DuplicatePatternIDs(t *testing.T) {
 	}
 }
 
-// TestManager_Add_InvalidItemTypes verifies that invalid item types
+// TestBacklogManager_Add_InvalidItemTypes verifies that invalid item types
 // are rejected with appropriate errors.
-func TestManager_Add_InvalidItemTypes(t *testing.T) {
+func TestBacklogManager_Add_InvalidItemTypes(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
@@ -800,9 +800,9 @@ func TestManager_Add_InvalidItemTypes(t *testing.T) {
 	}
 }
 
-// TestManager_Complete_NonExistentItems verifies that attempting to
+// TestBacklogManager_Complete_NonExistentItems verifies that attempting to
 // complete a non-existent item returns an error.
-func TestManager_Complete_NonExistentItems(t *testing.T) {
+func TestBacklogManager_Complete_NonExistentItems(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
@@ -813,9 +813,9 @@ func TestManager_Complete_NonExistentItems(t *testing.T) {
 	}
 }
 
-// TestManager_Complete_AlreadyCompletedItems verifies that attempting
+// TestBacklogManager_Complete_AlreadyCompletedItems verifies that attempting
 // to complete an already completed item returns an error.
-func TestManager_Complete_AlreadyCompletedItems(t *testing.T) {
+func TestBacklogManager_Complete_AlreadyCompletedItems(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
@@ -839,9 +839,9 @@ func TestManager_Complete_AlreadyCompletedItems(t *testing.T) {
 	}
 }
 
-// TestManager_Resolve_NonExistentPattern verifies that querying a
+// TestBacklogManager_Resolve_NonExistentPattern verifies that querying a
 // non-existent pattern returns a count of 0.
-func TestManager_Resolve_NonExistentPattern(t *testing.T) {
+func TestBacklogManager_Resolve_NonExistentPattern(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
@@ -861,9 +861,9 @@ func TestManager_Resolve_NonExistentPattern(t *testing.T) {
 	}
 }
 
-// TestManager_List_EmptyBacklog verifies that listing items from an
+// TestBacklogManager_List_EmptyBacklog verifies that listing items from an
 // empty backlog returns an empty list.
-func TestManager_List_EmptyBacklog(t *testing.T) {
+func TestBacklogManager_List_EmptyBacklog(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
@@ -877,9 +877,9 @@ func TestManager_List_EmptyBacklog(t *testing.T) {
 	}
 }
 
-// TestManager_List_MultipleFilterCombinations verifies that include
+// TestBacklogManager_List_MultipleFilterCombinations verifies that include
 // and exclude filters work correctly in various combinations.
-func TestManager_List_MultipleFilterCombinations(t *testing.T) {
+func TestBacklogManager_List_MultipleFilterCombinations(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
@@ -915,9 +915,9 @@ func TestManager_List_MultipleFilterCombinations(t *testing.T) {
 	}
 }
 
-// TestManager_Cleanup_NoCompletedItems verifies that cleanup with no
+// TestBacklogManager_Cleanup_NoCompletedItems verifies that cleanup with no
 // completed items returns a count of 0 and leaves all items intact.
-func TestManager_Cleanup_NoCompletedItems(t *testing.T) {
+func TestBacklogManager_Cleanup_NoCompletedItems(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
@@ -944,9 +944,9 @@ func TestManager_Cleanup_NoCompletedItems(t *testing.T) {
 	}
 }
 
-// TestManager_Cleanup_AllCompletedItems verifies that cleanup successfully
+// TestBacklogManager_Cleanup_AllCompletedItems verifies that cleanup successfully
 // processes completed items of the specified type.
-func TestManager_Cleanup_AllCompletedItems(t *testing.T) {
+func TestBacklogManager_Cleanup_AllCompletedItems(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
@@ -968,7 +968,7 @@ func TestManager_Cleanup_AllCompletedItems(t *testing.T) {
 	}
 }
 
-func TestManager_AddFeature(t *testing.T) {
+func TestBacklogManager_AddFeature(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
@@ -989,7 +989,7 @@ func TestManager_AddFeature(t *testing.T) {
 	}
 }
 
-func TestManager_AddBugfix(t *testing.T) {
+func TestBacklogManager_AddBugfix(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
@@ -1010,7 +1010,7 @@ func TestManager_AddBugfix(t *testing.T) {
 	}
 }
 
-func TestManager_ListExcludeFeatureAndBugfix(t *testing.T) {
+func TestBacklogManager_ListExcludeFeatureAndBugfix(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(dir)
 
@@ -1027,7 +1027,7 @@ func TestManager_ListExcludeFeatureAndBugfix(t *testing.T) {
 	}
 }
 
-func TestManager_FrontmatterSupport(t *testing.T) {
+func TestBacklogManager_FrontmatterSupport(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
@@ -1061,7 +1061,7 @@ func TestManager_FrontmatterSupport(t *testing.T) {
 	}
 }
 
-func TestManager_FrontmatterMetadataTracking(t *testing.T) {
+func TestBacklogManager_FrontmatterMetadataTracking(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
@@ -1105,9 +1105,9 @@ func TestManager_FrontmatterMetadataTracking(t *testing.T) {
 	}
 }
 
-// TestManager_BackwardCompatibility verifies that backlog files without
+// TestBacklogManager_BackwardCompatibility verifies that backlog files without
 // frontmatter continue to work correctly (backward compatibility).
-func TestManager_BackwardCompatibility(t *testing.T) {
+func TestBacklogManager_BackwardCompatibility(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
@@ -1170,9 +1170,9 @@ func TestManager_BackwardCompatibility(t *testing.T) {
 	}
 }
 
-// TestManager_NoFrontmatterDuplication verifies that frontmatter is not
+// TestBacklogManager_NoFrontmatterDuplication verifies that frontmatter is not
 // duplicated after multiple update operations (bug fix test).
-func TestManager_NoFrontmatterDuplication(t *testing.T) {
+func TestBacklogManager_NoFrontmatterDuplication(t *testing.T) {
 	tempDir := t.TempDir()
 	manager := NewManager(tempDir)
 
